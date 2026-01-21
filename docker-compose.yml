@@ -6,6 +6,7 @@ services:
       - "${WEB_PORT:-5050}:5050"
     volumes:
       - ./data:/data
+      - ./data/legendary:/root/.config/legendary
       - ${GOG_DB_DIR:-./.empty}:/gog:ro
     environment:
       - DATABASE_PATH=/data/game_library.db
