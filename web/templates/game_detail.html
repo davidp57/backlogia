@@ -76,6 +76,241 @@
             opacity: 0.8;
         }
 
+        /* Add to Collection Button */
+        .add-to-collection-btn {
+            padding: 10px 20px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .add-to-collection-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Collection Modal */
+        .collection-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1001;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .collection-modal-overlay.active {
+            display: flex;
+        }
+
+        .collection-modal {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 16px;
+            padding: 25px;
+            max-width: 400px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .collection-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .collection-modal-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .collection-modal-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .collection-modal-close:hover {
+            color: #e4e4e4;
+        }
+
+        .collection-list {
+            margin-bottom: 20px;
+        }
+
+        .collection-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .collection-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .collection-item.in-collection {
+            background: rgba(102, 126, 234, 0.2);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .collection-checkbox {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .collection-item.in-collection .collection-checkbox {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-color: transparent;
+        }
+
+        .collection-checkbox-icon {
+            color: white;
+            font-size: 0.8rem;
+            display: none;
+        }
+
+        .collection-item.in-collection .collection-checkbox-icon {
+            display: block;
+        }
+
+        .collection-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .collection-item-name {
+            font-weight: 500;
+            color: #e4e4e4;
+        }
+
+        .collection-item-count {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .collection-empty {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+        }
+
+        .collection-create-section {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 15px;
+        }
+
+        .collection-create-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #667eea;
+            font-size: 0.9rem;
+            cursor: pointer;
+            padding: 8px 0;
+        }
+
+        .collection-create-toggle:hover {
+            color: #764ba2;
+        }
+
+        .collection-create-form {
+            display: none;
+            margin-top: 12px;
+        }
+
+        .collection-create-form.active {
+            display: block;
+        }
+
+        .collection-create-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #e4e4e4;
+            font-size: 0.95rem;
+            margin-bottom: 10px;
+        }
+
+        .collection-create-input::placeholder {
+            color: #666;
+        }
+
+        .collection-create-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+        }
+
+        .collection-create-btn {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .collection-create-btn:hover {
+            opacity: 0.9;
+        }
+
+        .collection-create-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .collection-status {
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+
+        .collection-status.success {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+        }
+
+        .collection-status.error {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+        }
+
         .hero {
             position: relative;
             height: 400px;
@@ -791,6 +1026,7 @@
         <div class="nav-links">
             <a href="/" class="nav-link">Discover</a>
             <a href="/library" class="nav-link">Library</a>
+            <a href="/collections" class="nav-link">Collections</a>
             <a href="/random" class="nav-link random">Random</a>
             <a href="/settings" class="nav-link">Settings</a>
         </div>
@@ -823,11 +1059,14 @@
                     </div>
                     {% set total_playtime = store_info|selectattr('playtime_hours')|map(attribute='playtime_hours')|sum %}
                     {% if total_playtime %}
-                    <span class="meta-item">🕐 {{ total_playtime|round(1) }} hours played</span>
+                    <span class="meta-item">{{ total_playtime|round(1) }} hours played</span>
                     {% endif %}
                     {% if game.critics_score %}
-                    <span class="meta-item">⭐ {{ game.critics_score|round(1) }} / 100</span>
+                    <span class="meta-item">{{ game.critics_score|round(1) }} / 100</span>
                     {% endif %}
+                    <button class="add-to-collection-btn" onclick="openCollectionModal()">
+                        + Add to Collection
+                    </button>
                 </div>
             </div>
         </div>
@@ -1253,6 +1492,250 @@
                 alert('Network error: ' + error.message);
             });
         }
+
+        // Collection Management
+        let allCollections = [];
+        let gameCollections = [];
+
+        function openCollectionModal() {
+            const modal = document.getElementById('collection-modal');
+            modal.classList.add('active');
+            loadCollections();
+        }
+
+        function closeCollectionModal(event) {
+            if (event && event.target !== document.getElementById('collection-modal')) return;
+            document.getElementById('collection-modal').classList.remove('active');
+            // Reset create form
+            document.getElementById('collection-create-form').classList.remove('active');
+            document.getElementById('new-collection-name').value = '';
+            hideCollectionStatus();
+        }
+
+        function loadCollections() {
+            const listEl = document.getElementById('collection-list');
+            listEl.innerHTML = '<div class="collection-empty">Loading...</div>';
+
+            // Fetch all collections and this game's collections in parallel
+            Promise.all([
+                fetch('/api/collections').then(r => r.json()),
+                fetch(`/api/game/${gameId}/collections`).then(r => r.json())
+            ])
+            .then(([collections, gameColls]) => {
+                allCollections = collections;
+                gameCollections = gameColls.map(c => c.id);
+                renderCollections();
+            })
+            .catch(error => {
+                listEl.innerHTML = '<div class="collection-empty">Failed to load collections</div>';
+            });
+        }
+
+        function renderCollections() {
+            const listEl = document.getElementById('collection-list');
+
+            if (allCollections.length === 0) {
+                listEl.innerHTML = '<div class="collection-empty">No collections yet. Create one below!</div>';
+                return;
+            }
+
+            let html = '';
+            for (const collection of allCollections) {
+                const inCollection = gameCollections.includes(collection.id);
+                html += `
+                    <div class="collection-item ${inCollection ? 'in-collection' : ''}"
+                         data-collection-id="${collection.id}"
+                         onclick="toggleCollection(${collection.id}, ${inCollection})">
+                        <div class="collection-checkbox">
+                            <span class="collection-checkbox-icon">&#10003;</span>
+                        </div>
+                        <div class="collection-item-info">
+                            <div class="collection-item-name">${escapeHtml(collection.name)}</div>
+                            <div class="collection-item-count">${collection.game_count} game${collection.game_count !== 1 ? 's' : ''}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            listEl.innerHTML = html;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function toggleCollection(collectionId, isInCollection) {
+            const item = document.querySelector(`.collection-item[data-collection-id="${collectionId}"]`);
+            item.style.opacity = '0.5';
+            item.style.pointerEvents = 'none';
+
+            if (isInCollection) {
+                // Remove from collection
+                fetch(`/api/collections/${collectionId}/games/${gameId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    item.style.opacity = '1';
+                    item.style.pointerEvents = 'auto';
+
+                    if (data.success) {
+                        gameCollections = gameCollections.filter(id => id !== collectionId);
+                        // Update game count
+                        const coll = allCollections.find(c => c.id === collectionId);
+                        if (coll) coll.game_count--;
+                        renderCollections();
+                    } else {
+                        showCollectionStatus(data.error || 'Failed to remove from collection', 'error');
+                    }
+                })
+                .catch(error => {
+                    item.style.opacity = '1';
+                    item.style.pointerEvents = 'auto';
+                    showCollectionStatus('Network error', 'error');
+                });
+            } else {
+                // Add to collection
+                fetch(`/api/collections/${collectionId}/games`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ game_id: gameId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    item.style.opacity = '1';
+                    item.style.pointerEvents = 'auto';
+
+                    if (data.success) {
+                        gameCollections.push(collectionId);
+                        // Update game count
+                        const coll = allCollections.find(c => c.id === collectionId);
+                        if (coll) coll.game_count++;
+                        renderCollections();
+                    } else {
+                        showCollectionStatus(data.error || 'Failed to add to collection', 'error');
+                    }
+                })
+                .catch(error => {
+                    item.style.opacity = '1';
+                    item.style.pointerEvents = 'auto';
+                    showCollectionStatus('Network error', 'error');
+                });
+            }
+        }
+
+        function toggleCreateForm() {
+            const form = document.getElementById('collection-create-form');
+            form.classList.toggle('active');
+            if (form.classList.contains('active')) {
+                document.getElementById('new-collection-name').focus();
+            }
+        }
+
+        function createAndAddCollection() {
+            const nameInput = document.getElementById('new-collection-name');
+            const name = nameInput.value.trim();
+
+            if (!name) {
+                showCollectionStatus('Please enter a collection name', 'error');
+                return;
+            }
+
+            const btn = document.querySelector('.collection-create-btn');
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+
+            // Create collection and add game to it
+            fetch('/api/collections', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Add game to the new collection
+                    return fetch(`/api/collections/${data.id}/games`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ game_id: gameId })
+                    })
+                    .then(response => response.json())
+                    .then(addData => {
+                        btn.disabled = false;
+                        btn.textContent = 'Create & Add';
+                        nameInput.value = '';
+                        document.getElementById('collection-create-form').classList.remove('active');
+
+                        // Refresh the collections list
+                        loadCollections();
+                        showCollectionStatus(`Added to "${name}"`, 'success');
+                    });
+                } else {
+                    btn.disabled = false;
+                    btn.textContent = 'Create & Add';
+                    showCollectionStatus(data.error || 'Failed to create collection', 'error');
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.textContent = 'Create & Add';
+                showCollectionStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        function showCollectionStatus(message, type) {
+            const statusEl = document.getElementById('collection-status');
+            statusEl.textContent = message;
+            statusEl.className = 'collection-status ' + type;
+            statusEl.style.display = 'block';
+            setTimeout(hideCollectionStatus, 4000);
+        }
+
+        function hideCollectionStatus() {
+            document.getElementById('collection-status').style.display = 'none';
+        }
+
+        // Handle Enter key in collection name input
+        document.getElementById('new-collection-name')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                createAndAddCollection();
+            }
+        });
     </script>
+
+    <!-- Collection Modal -->
+    <div id="collection-modal" class="collection-modal-overlay" onclick="closeCollectionModal(event)">
+        <div class="collection-modal" onclick="event.stopPropagation()">
+            <div class="collection-modal-header">
+                <h2 class="collection-modal-title">Add to Collection</h2>
+                <button class="collection-modal-close" onclick="closeCollectionModal()">&times;</button>
+            </div>
+
+            <div id="collection-list" class="collection-list">
+                <div class="collection-empty">Loading...</div>
+            </div>
+
+            <div class="collection-create-section">
+                <div class="collection-create-toggle" onclick="toggleCreateForm()">
+                    + Create new collection
+                </div>
+                <div id="collection-create-form" class="collection-create-form">
+                    <input type="text" id="new-collection-name" class="collection-create-input"
+                           placeholder="Collection name...">
+                    <button class="collection-create-btn" onclick="createAndAddCollection()">Create & Add</button>
+                </div>
+            </div>
+
+            <div id="collection-status" class="collection-status" style="display: none;"></div>
+        </div>
+    </div>
 </body>
 </html>

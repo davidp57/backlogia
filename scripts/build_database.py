@@ -85,6 +85,29 @@ def create_database():
         )
     """)
 
+    # Collections table for user-created game collections
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS collections (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Junction table for games in collections
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS collection_games (
+            collection_id INTEGER NOT NULL,
+            game_id INTEGER NOT NULL,
+            added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (collection_id, game_id),
+            FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE,
+            FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
+        )
+    """)
+
     conn.commit()
     return conn
 
