@@ -192,17 +192,26 @@ def library():
     grouped_games = group_games_by_igdb(games)
 
     # Sort grouped games by primary game's sort field
-    def get_sort_key(g):
-        primary = g["primary"]
-        val = primary.get(sort_by)
-        if val is None:
-            return (1, "")  # Put nulls last
-        if isinstance(val, str):
-            return (0, val.lower())
-        return (0, val)
-
+    # Separate games with null sort values so nulls are always last
     reverse = sort_order == "desc"
-    grouped_games.sort(key=get_sort_key, reverse=reverse)
+    with_values = []
+    without_values = []
+
+    for g in grouped_games:
+        val = g["primary"].get(sort_by)
+        if val is None:
+            without_values.append(g)
+        else:
+            with_values.append(g)
+
+    def get_sort_key(g):
+        val = g["primary"].get(sort_by)
+        if isinstance(val, str):
+            return val.lower()
+        return val
+
+    with_values.sort(key=get_sort_key, reverse=reverse)
+    grouped_games = with_values + without_values
 
     # Get store counts for filters (exclude duplicates and hidden)
     cursor.execute("SELECT store, COUNT(*) FROM games WHERE 1=1" + EXCLUDE_HIDDEN_FILTER + " GROUP BY store")
