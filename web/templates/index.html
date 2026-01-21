@@ -38,91 +38,23 @@
             background-clip: text;
         }
 
-        .settings-dropdown {
+        .header-links {
             position: absolute;
             top: 20px;
             right: 0;
-        }
-
-        .settings-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            border-radius: 10px;
-            padding: 10px 14px;
-            color: #e4e4e4;
-            cursor: pointer;
-            font-size: 1.2rem;
-            transition: background 0.2s;
-        }
-
-        .settings-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .settings-menu {
-            display: none;
-            position: absolute;
-            top: 100%;
-            right: 0;
-            margin-top: 8px;
-            background: #1e1e3f;
-            border-radius: 12px;
-            padding: 15px;
-            min-width: 200px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-            z-index: 100;
-        }
-
-        .settings-menu.active {
-            display: block;
-        }
-
-        .settings-menu h3 {
-            font-size: 0.8rem;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-        }
-
-        .size-options {
             display: flex;
-            gap: 8px;
+            gap: 15px;
         }
 
-        .size-btn {
-            flex: 1;
-            padding: 8px 12px;
-            border: none;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #e4e4e4;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.2s;
-        }
-
-        .size-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .size-btn.active {
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            color: white;
-        }
-
-        .settings-link {
-            display: block;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            color: #667eea;
+        .header-link {
+            color: #888;
             text-decoration: none;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
+            transition: color 0.2s;
         }
 
-        .settings-link:hover {
-            text-decoration: underline;
+        .header-link:hover {
+            color: #667eea;
         }
 
         .stats {
@@ -403,20 +335,8 @@
 <body>
     <div class="container">
         <header>
-            <div class="settings-dropdown">
-                <button class="settings-btn" onclick="toggleSettings()" title="Settings">&#9881;</button>
-                <div id="settings-menu" class="settings-menu">
-                    <h3>Box Art Size</h3>
-                    <div class="size-options">
-                        <button class="size-btn" data-size="small" onclick="setGridSize('small')">S</button>
-                        <button class="size-btn active" data-size="medium" onclick="setGridSize('medium')">M</button>
-                        <button class="size-btn" data-size="large" onclick="setGridSize('large')">L</button>
-                    </div>
-                    {% if hidden_count %}
-                    <a href="/hidden" class="settings-link">Hidden Games ({{ hidden_count }}) &rarr;</a>
-                    {% endif %}
-                    <a href="/settings" class="settings-link">API Settings &rarr;</a>
-                </div>
+            <div class="header-links">
+                <a href="/settings" class="header-link">Settings</a>
             </div>
             <h1>Game Library</h1>
             <div class="stats">
@@ -499,39 +419,17 @@
     </div>
 
     <script>
-        function toggleSettings() {
-            document.getElementById('settings-menu').classList.toggle('active');
-        }
-
         function setGridSize(size) {
             const grid = document.getElementById('games-grid');
+            if (!grid) return;
             grid.classList.remove('size-small', 'size-medium', 'size-large');
             grid.classList.add('size-' + size);
-
-            // Update active button
-            document.querySelectorAll('.size-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.dataset.size === size) {
-                    btn.classList.add('active');
-                }
-            });
-
-            // Save preference
-            localStorage.setItem('gridSize', size);
         }
 
         // Load saved preference on page load
         document.addEventListener('DOMContentLoaded', function() {
             const savedSize = localStorage.getItem('gridSize') || 'medium';
             setGridSize(savedSize);
-        });
-
-        // Close settings when clicking outside
-        document.addEventListener('click', function(e) {
-            const dropdown = document.querySelector('.settings-dropdown');
-            if (!dropdown.contains(e.target)) {
-                document.getElementById('settings-menu').classList.remove('active');
-            }
         });
     </script>
 </body>

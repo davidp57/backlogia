@@ -13,7 +13,11 @@ from settings import (
     get_setting, set_setting, get_all_settings,
     STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET, ITCH_API_KEY
 )
-from igdb_sync import IGDBClient
+from igdb_sync import IGDBClient, sync_games as igdb_sync_games, add_igdb_columns
+from build_database import (
+    create_database, import_steam_games, import_epic_games,
+    import_gog_games, import_itch_games
+)
 
 app = Flask(__name__)
 
@@ -385,7 +389,15 @@ def settings_page():
         "itch_api_key": get_setting(ITCH_API_KEY, ""),
     }
     success = request.args.get("success") == "1"
-    return render_template("settings.html", settings=settings, success=success)
+
+    # Get hidden count
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM games WHERE hidden = 1")
+    hidden_count = cursor.fetchone()[0]
+    conn.close()
+
+    return render_template("settings.html", settings=settings, success=success, hidden_count=hidden_count)
 
 
 @app.route("/settings", methods=["POST"])
@@ -399,6 +411,73 @@ def save_settings():
     set_setting(ITCH_API_KEY, request.form.get("itch_api_key", "").strip())
 
     return redirect(url_for("settings_page", success=1))
+
+
+@app.route("/api/sync/store/<store>", methods=["POST"])
+def sync_store(store):
+    """Sync games from a specific store or all stores."""
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        # Ensure database tables exist
+        create_database()
+        conn = sqlite3.connect(DATABASE_PATH)
+
+        results = {}
+
+        if store == "steam" or store == "all":
+            results["steam"] = import_steam_games(conn)
+
+        if store == "epic" or store == "all":
+            results["epic"] = import_epic_games(conn)
+
+        if store == "gog" or store == "all":
+            results["gog"] = import_gog_games(conn)
+
+        if store == "itch" or store == "all":
+            results["itch"] = import_itch_games(conn)
+
+        conn.close()
+
+        if store == "all":
+            total = sum(results.values())
+            message = f"Synced {total} games: " + ", ".join(
+                f"{s.capitalize()}: {c}" for s, c in results.items()
+            )
+        else:
+            count = results.get(store, 0)
+            message = f"Synced {count} games from {store.capitalize()}"
+
+        return jsonify({"success": True, "message": message, "results": results})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/sync/igdb/<mode>", methods=["POST"])
+def sync_igdb(mode):
+    """Sync IGDB metadata for games."""
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+
+        # Ensure IGDB columns exist
+        add_igdb_columns(conn)
+
+        # Initialize client
+        client = IGDBClient()
+
+        # Sync games (force=True for 'all' mode)
+        force = (mode == "all")
+        matched, failed = igdb_sync_games(conn, client, force=force)
+
+        conn.close()
+
+        message = f"IGDB sync complete: {matched} matched, {failed} failed/no match"
+        return jsonify({"success": True, "message": message, "matched": matched, "failed": failed})
+
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 if __name__ == "__main__":
