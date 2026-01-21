@@ -18,6 +18,64 @@
             color: #e4e4e4;
         }
 
+        /* Top Navigation Bar */
+        .top-nav {
+            background: rgba(13, 13, 26, 0.95);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: #888;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+            padding: 8px 0;
+        }
+
+        .nav-link:hover {
+            color: #667eea;
+        }
+
+        .nav-link.active {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .nav-link.random {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-link.random:hover {
+            opacity: 0.8;
+        }
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -26,35 +84,13 @@
 
         header {
             text-align: center;
-            padding: 40px 0;
+            padding: 30px 0;
             position: relative;
         }
 
         header h1 {
-            font-size: 2.5rem;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .header-links {
-            position: absolute;
-            top: 20px;
-            right: 0;
-            display: flex;
-            gap: 15px;
-        }
-
-        .header-link {
-            color: #888;
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: color 0.2s;
-        }
-
-        .header-link:hover {
-            color: #667eea;
+            font-size: 2rem;
+            color: #e4e4e4;
         }
 
         .stats {
@@ -333,13 +369,19 @@
     </style>
 </head>
 <body>
+    <nav class="top-nav">
+        <a href="/" class="nav-brand">Backlogia</a>
+        <div class="nav-links">
+            <a href="/" class="nav-link active">Library</a>
+            <a href="/discover" class="nav-link">Discover</a>
+            <a href="/random" class="nav-link random">Random</a>
+            <a href="/settings" class="nav-link">Settings</a>
+        </div>
+    </nav>
+
     <div class="container">
         <header>
-            <div class="header-links">
-                <a href="/discover" class="header-link">Discover</a>
-                <a href="/settings" class="header-link">Settings</a>
-            </div>
-            <h1>Game Library</h1>
+            <h1>Your Game Library</h1>
             <div class="stats">
                 <div class="stat">
                     <div class="stat-value">{{ total_count }}</div>

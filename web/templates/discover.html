@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discover - Game Library</title>
+    <title>Discover - Backlogia</title>
     <style>
         * {
             margin: 0;
@@ -57,6 +57,17 @@
 
         .nav-link:hover, .nav-link.active {
             color: #667eea;
+        }
+
+        .nav-link.random {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-link.random:hover {
+            opacity: 0.8;
         }
 
         /* Hero Section */
@@ -859,10 +870,11 @@
 </head>
 <body>
     <nav class="nav">
-        <a href="/" class="nav-brand">Game Library</a>
+        <a href="/" class="nav-brand">Backlogia</a>
         <div class="nav-links">
             <a href="/" class="nav-link">Library</a>
             <a href="/discover" class="nav-link active">Discover</a>
+            <a href="/random" class="nav-link random">Random</a>
             <a href="/settings" class="nav-link">Settings</a>
         </div>
     </nav>
