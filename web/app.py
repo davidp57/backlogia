@@ -159,7 +159,7 @@ def library():
     cursor = conn.cursor()
 
     # Get filter parameters
-    store_filter = request.args.get("store", "")
+    store_filters = request.args.getlist("stores")  # Multi-select stores
     search = request.args.get("search", "")
     sort_by = request.args.get("sort", "name")
     sort_order = request.args.get("order", "asc")
@@ -168,9 +168,10 @@ def library():
     query = "SELECT * FROM games WHERE 1=1" + EXCLUDE_HIDDEN_FILTER
     params = []
 
-    if store_filter:
-        query += " AND store = ?"
-        params.append(store_filter)
+    if store_filters:
+        placeholders = ",".join("?" * len(store_filters))
+        query += f" AND store IN ({placeholders})"
+        params.extend(store_filters)
 
     if search:
         query += " AND name LIKE ?"
@@ -236,7 +237,7 @@ def library():
         total_count=total_count,
         unique_count=unique_count,
         hidden_count=hidden_count,
-        current_store=store_filter,
+        current_stores=store_filters,
         current_search=search,
         current_sort=sort_by,
         current_order=sort_order,
@@ -513,6 +514,54 @@ def update_nsfw(game_id):
     conn.close()
 
     return jsonify({"success": True, "nsfw": bool(nsfw)})
+
+
+@app.route("/api/games/bulk/hide", methods=["POST"])
+def bulk_hide_games():
+    """Hide multiple games at once."""
+    data = request.get_json()
+    if data is None or "game_ids" not in data:
+        return jsonify({"error": "game_ids is required"}), 400
+
+    game_ids = data.get("game_ids", [])
+    if not game_ids:
+        return jsonify({"error": "No games selected"}), 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    placeholders = ",".join("?" * len(game_ids))
+    cursor.execute(f"UPDATE games SET hidden = 1 WHERE id IN ({placeholders})", game_ids)
+    updated = cursor.rowcount
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True, "updated": updated})
+
+
+@app.route("/api/games/bulk/nsfw", methods=["POST"])
+def bulk_nsfw_games():
+    """Mark multiple games as NSFW at once."""
+    data = request.get_json()
+    if data is None or "game_ids" not in data:
+        return jsonify({"error": "game_ids is required"}), 400
+
+    game_ids = data.get("game_ids", [])
+    if not game_ids:
+        return jsonify({"error": "No games selected"}), 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    placeholders = ",".join("?" * len(game_ids))
+    cursor.execute(f"UPDATE games SET nsfw = 1 WHERE id IN ({placeholders})", game_ids)
+    updated = cursor.rowcount
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True, "updated": updated})
 
 
 @app.route("/hidden")

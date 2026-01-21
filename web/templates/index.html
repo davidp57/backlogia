@@ -157,6 +157,160 @@
         .filter-btn.gog { border-left: 3px solid #86328a; }
         .filter-btn.itch { border-left: 3px solid #fa5c5c; }
 
+        /* Multi-select Dropdown */
+        .store-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .store-dropdown-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #e4e4e4;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            min-width: 140px;
+        }
+
+        .store-dropdown-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .store-dropdown-btn.active {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .store-dropdown-btn .arrow {
+            margin-left: auto;
+            transition: transform 0.2s;
+        }
+
+        .store-dropdown.open .arrow {
+            transform: rotate(180deg);
+        }
+
+        .store-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            background: rgba(13, 13, 26, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 8px 0;
+            min-width: 200px;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .store-dropdown.open .store-dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .store-option {
+            display: flex;
+            align-items: center;
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: background 0.15s;
+            gap: 10px;
+        }
+
+        .store-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .store-option input[type="checkbox"] {
+            display: none;
+        }
+
+        .store-option .checkbox {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            flex-shrink: 0;
+        }
+
+        .store-option input:checked + .checkbox {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-color: #667eea;
+        }
+
+        .store-option input:checked + .checkbox::after {
+            content: '✓';
+            color: white;
+            font-size: 12px;
+        }
+
+        .store-option .store-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .store-option .store-label {
+            flex: 1;
+            color: #e4e4e4;
+            font-size: 0.9rem;
+        }
+
+        .store-option .store-count {
+            color: #888;
+            font-size: 0.8rem;
+        }
+
+        .store-dropdown-actions {
+            display: flex;
+            gap: 8px;
+            padding: 10px 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 8px;
+        }
+
+        .store-dropdown-actions button {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.15s;
+        }
+
+        .store-dropdown-actions .clear-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: #888;
+        }
+
+        .store-dropdown-actions .clear-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #e4e4e4;
+        }
+
+        .store-dropdown-actions .apply-btn {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .store-dropdown-actions .apply-btn:hover {
+            opacity: 0.9;
+        }
+
         .search-box {
             flex: 1;
             min-width: 200px;
@@ -377,6 +531,172 @@
                 justify-content: center;
             }
         }
+
+        /* Multi-select Mode */
+        .select-toggle-btn {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.1);
+            color: #888;
+            transition: all 0.2s;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .select-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #e4e4e4;
+        }
+
+        .select-toggle-btn.active {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .game-card {
+            position: relative;
+        }
+
+        .game-checkbox {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 24px;
+            height: 24px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 6px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: all 0.2s;
+        }
+
+        .game-checkbox:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.3);
+        }
+
+        .game-checkbox.checked {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-color: #667eea;
+        }
+
+        .game-checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .select-mode .game-checkbox {
+            display: flex;
+        }
+
+        .select-mode .game-card {
+            cursor: default;
+        }
+
+        .select-mode .game-card.selected {
+            outline: 3px solid #667eea;
+            outline-offset: -3px;
+        }
+
+        /* Floating Action Bar */
+        .action-bar {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(13, 13, 26, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 15px 25px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            z-index: 200;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .action-bar.visible {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .action-bar .selection-count {
+            font-size: 0.95rem;
+            color: #888;
+        }
+
+        .action-bar .selection-count strong {
+            color: #667eea;
+        }
+
+        .action-bar .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .action-btn.hide {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+
+        .action-btn.hide:hover {
+            background: rgba(244, 67, 54, 0.3);
+        }
+
+        .action-btn.nsfw {
+            background: rgba(255, 152, 0, 0.2);
+            color: #ff9800;
+            border: 1px solid rgba(255, 152, 0, 0.3);
+        }
+
+        .action-btn.nsfw:hover {
+            background: rgba(255, 152, 0, 0.3);
+        }
+
+        .action-btn.cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: #888;
+        }
+
+        .action-btn.cancel:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #e4e4e4;
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -413,31 +733,58 @@
         </header>
 
         <div class="filters">
-            <div class="filter-group">
-                <a href="?" class="filter-btn {% if not current_store %}active{% endif %}">All</a>
-                {% for store, count in store_counts.items() %}
-                <a href="?store={{ store }}{% if current_search %}&search={{ current_search }}{% endif %}"
-                   class="filter-btn {{ store }} {% if current_store == store %}active{% endif %}">
-                    {{ store|capitalize }} ({{ count }})
-                </a>
-                {% endfor %}
+            {% set store_icons = {'steam': 'steam-100.png', 'epic': 'epic-100.png', 'gog': 'gog-48.png', 'itch': 'itch-90.png', 'humble': 'humble-96.png'} %}
+            <div class="store-dropdown" id="store-dropdown">
+                <button type="button" class="store-dropdown-btn {% if current_stores %}active{% endif %}" onclick="toggleStoreDropdown()">
+                    <span class="btn-text">
+                        {% if current_stores %}
+                            {% if current_stores|length == 1 %}
+                                {{ current_stores[0]|capitalize }}
+                            {% else %}
+                                {{ current_stores|length }} Stores
+                            {% endif %}
+                        {% else %}
+                            All Stores
+                        {% endif %}
+                    </span>
+                    <span class="arrow">&#9662;</span>
+                </button>
+                <div class="store-dropdown-menu">
+                    {% for store, count in store_counts.items() %}
+                    <label class="store-option">
+                        <input type="checkbox" name="stores" value="{{ store }}" {% if store in current_stores %}checked{% endif %}>
+                        <span class="checkbox"></span>
+                        <img src="/static/images/{{ store_icons.get(store, 'steam-100.png') }}" alt="{{ store }}" class="store-icon">
+                        <span class="store-label">{{ store|capitalize }}</span>
+                        <span class="store-count">{{ count }}</span>
+                    </label>
+                    {% endfor %}
+                    <div class="store-dropdown-actions">
+                        <button type="button" class="clear-btn" onclick="clearStoreFilter()">Clear</button>
+                        <button type="button" class="apply-btn" onclick="applyStoreFilter()">Apply</button>
+                    </div>
+                </div>
             </div>
 
             <div class="search-box">
-                <form action="" method="get">
-                    {% if current_store %}<input type="hidden" name="store" value="{{ current_store }}">{% endif %}
+                <form action="" method="get" id="search-form">
+                    {% for store in current_stores %}<input type="hidden" name="stores" value="{{ store }}">{% endfor %}
                     <input type="text" name="search" placeholder="Search games..." value="{{ current_search }}">
                 </form>
             </div>
 
-            <select class="sort-select" onchange="window.location.href=this.value">
-                <option value="?{% if current_store %}store={{ current_store }}&{% endif %}{% if current_search %}search={{ current_search }}&{% endif %}sort=name&order=asc" {% if current_sort == 'name' and current_order == 'asc' %}selected{% endif %}>Name (A-Z)</option>
-                <option value="?{% if current_store %}store={{ current_store }}&{% endif %}{% if current_search %}search={{ current_search }}&{% endif %}sort=name&order=desc" {% if current_sort == 'name' and current_order == 'desc' %}selected{% endif %}>Name (Z-A)</option>
-                <option value="?{% if current_store %}store={{ current_store }}&{% endif %}{% if current_search %}search={{ current_search }}&{% endif %}sort=total_rating&order=desc" {% if current_sort == 'total_rating' %}selected{% endif %}>IGDB Rating (High-Low)</option>
-                <option value="?{% if current_store %}store={{ current_store }}&{% endif %}{% if current_search %}search={{ current_search }}&{% endif %}sort=igdb_rating&order=desc" {% if current_sort == 'igdb_rating' %}selected{% endif %}>User Rating (High-Low)</option>
-                <option value="?{% if current_store %}store={{ current_store }}&{% endif %}{% if current_search %}search={{ current_search }}&{% endif %}sort=aggregated_rating&order=desc" {% if current_sort == 'aggregated_rating' %}selected{% endif %}>Critic Rating (High-Low)</option>
-                <option value="?{% if current_store %}store={{ current_store }}&{% endif %}{% if current_search %}search={{ current_search }}&{% endif %}sort=playtime_hours&order=desc" {% if current_sort == 'playtime_hours' %}selected{% endif %}>Most Played</option>
+            <select class="sort-select" onchange="applySort(this.value)">
+                <option value="name-asc" {% if current_sort == 'name' and current_order == 'asc' %}selected{% endif %}>Name (A-Z)</option>
+                <option value="name-desc" {% if current_sort == 'name' and current_order == 'desc' %}selected{% endif %}>Name (Z-A)</option>
+                <option value="total_rating-desc" {% if current_sort == 'total_rating' %}selected{% endif %}>IGDB Rating (High-Low)</option>
+                <option value="igdb_rating-desc" {% if current_sort == 'igdb_rating' %}selected{% endif %}>User Rating (High-Low)</option>
+                <option value="aggregated_rating-desc" {% if current_sort == 'aggregated_rating' %}selected{% endif %}>Critic Rating (High-Low)</option>
+                <option value="playtime_hours-desc" {% if current_sort == 'playtime_hours' %}selected{% endif %}>Most Played</option>
             </select>
+
+            <button class="select-toggle-btn" onclick="toggleSelectMode()" id="select-toggle" title="Multi-select mode">
+                &#10003;
+            </button>
         </div>
 
         {% if games %}
@@ -445,7 +792,8 @@
         <div id="games-grid" class="games-grid size-medium">
             {% for grouped_game in games %}
             {% set game = grouped_game.primary %}
-            <a href="/game/{{ grouped_game.game_ids[0] }}" class="game-card">
+            <a href="/game/{{ grouped_game.game_ids[0] }}" class="game-card" data-game-ids="{{ grouped_game.game_ids|join(',') }}">
+                <div class="game-checkbox" onclick="toggleGameSelection(event, this)"></div>
                 {% set cover_url = game.igdb_cover_url or game.cover_image %}
                 {% if cover_url %}
                 <img src="{{ cover_url }}" alt="{{ game.name }}" class="game-cover" loading="lazy"
@@ -474,6 +822,24 @@
             </a>
             {% endfor %}
         </div>
+
+        <!-- Floating Action Bar -->
+        <div class="action-bar" id="action-bar">
+            <div class="selection-count">
+                <strong id="selection-count">0</strong> selected
+            </div>
+            <div class="action-buttons">
+                <button class="action-btn hide" onclick="bulkAction('hide')">
+                    Hide Selected
+                </button>
+                <button class="action-btn nsfw" onclick="bulkAction('nsfw')">
+                    Mark NSFW
+                </button>
+                <button class="action-btn cancel" onclick="clearSelection()">
+                    Cancel
+                </button>
+            </div>
+        </div>
         {% else %}
         <div class="no-games">
             <h2>No games found</h2>
@@ -494,6 +860,181 @@
         document.addEventListener('DOMContentLoaded', function() {
             const savedSize = localStorage.getItem('gridSize') || 'medium';
             setGridSize(savedSize);
+        });
+
+        // Store dropdown functionality
+        function toggleStoreDropdown() {
+            const dropdown = document.getElementById('store-dropdown');
+            dropdown.classList.toggle('open');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('store-dropdown');
+            if (dropdown && !dropdown.contains(event.target)) {
+                dropdown.classList.remove('open');
+            }
+        });
+
+        function getSelectedStores() {
+            const checkboxes = document.querySelectorAll('#store-dropdown input[type="checkbox"]:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        function buildUrl(stores, search, sort, order) {
+            const params = new URLSearchParams();
+            stores.forEach(store => params.append('stores', store));
+            if (search) params.set('search', search);
+            if (sort) params.set('sort', sort);
+            if (order) params.set('order', order);
+            return '?' + params.toString();
+        }
+
+        function applyStoreFilter() {
+            const stores = getSelectedStores();
+            const search = '{{ current_search }}';
+            const sort = '{{ current_sort }}';
+            const order = '{{ current_order }}';
+            window.location.href = buildUrl(stores, search, sort, order);
+        }
+
+        function clearStoreFilter() {
+            const search = '{{ current_search }}';
+            const sort = '{{ current_sort }}';
+            const order = '{{ current_order }}';
+            window.location.href = buildUrl([], search, sort, order);
+        }
+
+        function applySort(value) {
+            const [sort, order] = value.split('-');
+            const stores = [{% for store in current_stores %}'{{ store }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+            const search = '{{ current_search }}';
+            window.location.href = buildUrl(stores, search, sort, order);
+        }
+
+        // Multi-select functionality
+        let selectMode = false;
+        let selectedGames = new Set();
+
+        function toggleSelectMode() {
+            selectMode = !selectMode;
+            const grid = document.getElementById('games-grid');
+            const toggle = document.getElementById('select-toggle');
+            const actionBar = document.getElementById('action-bar');
+
+            if (selectMode) {
+                grid.classList.add('select-mode');
+                toggle.classList.add('active');
+            } else {
+                grid.classList.remove('select-mode');
+                toggle.classList.remove('active');
+                clearSelection();
+            }
+        }
+
+        function toggleGameSelection(event, checkbox) {
+            if (!selectMode) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            const card = checkbox.closest('.game-card');
+            const gameIds = card.dataset.gameIds.split(',');
+
+            if (checkbox.classList.contains('checked')) {
+                checkbox.classList.remove('checked');
+                card.classList.remove('selected');
+                gameIds.forEach(id => selectedGames.delete(id));
+            } else {
+                checkbox.classList.add('checked');
+                card.classList.add('selected');
+                gameIds.forEach(id => selectedGames.add(id));
+            }
+
+            updateSelectionCount();
+        }
+
+        function updateSelectionCount() {
+            const countEl = document.getElementById('selection-count');
+            const actionBar = document.getElementById('action-bar');
+            const count = document.querySelectorAll('.game-card.selected').length;
+
+            countEl.textContent = count;
+
+            if (count > 0) {
+                actionBar.classList.add('visible');
+            } else {
+                actionBar.classList.remove('visible');
+            }
+        }
+
+        function clearSelection() {
+            selectedGames.clear();
+            document.querySelectorAll('.game-card.selected').forEach(card => {
+                card.classList.remove('selected');
+                card.querySelector('.game-checkbox').classList.remove('checked');
+            });
+            updateSelectionCount();
+        }
+
+        async function bulkAction(action) {
+            if (selectedGames.size === 0) return;
+
+            const gameIds = Array.from(selectedGames).map(id => parseInt(id));
+            const actionBtn = document.querySelector(`.action-btn.${action}`);
+            const originalText = actionBtn.textContent;
+
+            actionBtn.disabled = true;
+            actionBtn.textContent = 'Processing...';
+
+            try {
+                const response = await fetch(`/api/games/bulk/${action}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ game_ids: gameIds })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Remove selected cards from the grid (they're now hidden/marked)
+                    document.querySelectorAll('.game-card.selected').forEach(card => {
+                        card.style.transition = 'opacity 0.3s, transform 0.3s';
+                        card.style.opacity = '0';
+                        card.style.transform = 'scale(0.8)';
+                        setTimeout(() => card.remove(), 300);
+                    });
+
+                    clearSelection();
+                    toggleSelectMode();
+
+                    // Update stats after a short delay
+                    setTimeout(() => {
+                        location.reload();
+                    }, 500);
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            } finally {
+                actionBtn.disabled = false;
+                actionBtn.textContent = originalText;
+            }
+        }
+
+        // Prevent navigation when in select mode
+        document.addEventListener('click', function(event) {
+            if (!selectMode) return;
+
+            const card = event.target.closest('.game-card');
+            if (card && !event.target.classList.contains('game-checkbox')) {
+                event.preventDefault();
+                const checkbox = card.querySelector('.game-checkbox');
+                toggleGameSelection(event, checkbox);
+            }
         });
     </script>
 </body>
