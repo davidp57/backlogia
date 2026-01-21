@@ -16,6 +16,7 @@ IGDB_CLIENT_ID = "igdb_client_id"
 IGDB_CLIENT_SECRET = "igdb_client_secret"
 ITCH_API_KEY = "itch_api_key"
 HUMBLE_SESSION_COOKIE = "humble_session_cookie"
+BATTLENET_SESSION_COOKIE = "battlenet_session_cookie"
 GOG_DB_PATH = "gog_db_path"
 
 # Map setting keys to environment variable names
@@ -26,6 +27,7 @@ ENV_VAR_MAP = {
     IGDB_CLIENT_SECRET: "IGDB_CLIENT_SECRET",
     ITCH_API_KEY: "ITCH_API_KEY",
     HUMBLE_SESSION_COOKIE: "HUMBLE_SESSION_COOKIE",
+    BATTLENET_SESSION_COOKIE: "BATTLENET_SESSION_COOKIE",
     GOG_DB_PATH: "GOG_DB_PATH",
 }
 
@@ -140,6 +142,13 @@ def get_humble_credentials():
     """Get Humble Bundle credentials."""
     return {
         "session_cookie": get_setting(HUMBLE_SESSION_COOKIE),
+    }
+
+
+def get_battlenet_credentials():
+    """Get Battle.net credentials."""
+    return {
+        "session_cookie": get_setting(BATTLENET_SESSION_COOKIE),
     }
 
 

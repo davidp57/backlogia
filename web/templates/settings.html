@@ -133,6 +133,7 @@
         .section-icon.epic { background: #0078f2; }
         .section-icon.gog { background: #86328a; }
         .section-icon.humble { background: #cc3333; }
+        .section-icon.battlenet { background: #00aeff; }
         .section-icon.sync { background: #4caf50; }
 
         /* Collapsible Sections */
@@ -574,6 +575,7 @@
         .sync-btn .icon.gog { background: #86328a; }
         .sync-btn .icon.itch { background: #fa5c5c; }
         .sync-btn .icon.humble { background: #cc3333; }
+        .sync-btn .icon.battlenet { background: #00aeff; }
         .sync-btn .icon.all { background: linear-gradient(90deg, #667eea, #764ba2); }
         .sync-btn .icon.igdb { background: #9147ff; }
 
@@ -768,6 +770,13 @@
                         <div class="text">
                             <span>Sync Humble</span>
                             <small>Import from Humble Bundle</small>
+                        </div>
+                    </button>
+                    <button class="sync-btn" onclick="syncStore('battlenet')">
+                        <div class="icon battlenet">B</div>
+                        <div class="text">
+                            <span>Sync Battle.net</span>
+                            <small>Import from Battle.net</small>
                         </div>
                     </button>
                 </div>
@@ -1046,6 +1055,37 @@
                                 <div class="help-text">
                                     To get this cookie: Log in to <a href="https://www.humblebundle.com" target="_blank">humblebundle.com</a>,
                                     open Developer Tools (F12) → Application → Cookies → find <code>_simpleauth_sess</code> and copy its value
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Battle.net -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon battlenet">B</div>
+                        <div class="header-text">
+                            <div class="section-title">Battle.net</div>
+                            <div class="section-description">Connect to your Battle.net library</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            <div class="form-group">
+                                <label for="battlenet_session_cookie">Battle.net Cookies</label>
+                                <input type="password" id="battlenet_session_cookie" name="battlenet_session_cookie"
+                                       value="{{ settings.battlenet_session_cookie }}"
+                                       placeholder="Paste cookies from account.battle.net">
+                                <div class="instructions-box">
+                                    <ol>
+                                        <li>Log in to <a href="https://account.battle.net" target="_blank">account.battle.net</a></li>
+                                        <li>Open Developer Tools (<code>F12</code>) and go to the <strong>Network</strong> tab</li>
+                                        <li>Refresh the page</li>
+                                        <li>Click on any request to <code>account.battle.net</code></li>
+                                        <li>In Request Headers, find <strong>Cookie</strong> and copy the entire value</li>
+                                    </ol>
                                 </div>
                             </div>
                         </div>

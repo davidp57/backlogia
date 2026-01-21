@@ -16,10 +16,11 @@ Stop jumping between Steam, Epic, GOG, and a dozen other launchers just to see w
   <img src="web/static/images/gog-48.png" alt="GOG" width="48" height="48" style="margin: 0 10px;">
   <img src="web/static/images/itch-90.png" alt="itch.io" width="48" height="48" style="margin: 0 10px;">
   <img src="web/static/images/humble-96.png" alt="Humble Bundle" width="48" height="48" style="margin: 0 10px;">
+  <img src="web/static/images/battlenet-100.png" alt="Battle.net" width="48" height="48" style="margin: 0 10px;">
 </p>
 
 <p align="center">
-  <strong>Steam</strong> &nbsp;•&nbsp; <strong>Epic Games</strong> &nbsp;•&nbsp; <strong>GOG</strong> &nbsp;•&nbsp; <strong>itch.io</strong> &nbsp;•&nbsp; <strong>Humble Bundle</strong>
+  <strong>Steam</strong> &nbsp;•&nbsp; <strong>Epic Games</strong> &nbsp;•&nbsp; <strong>GOG</strong> &nbsp;•&nbsp; <strong>itch.io</strong> &nbsp;•&nbsp; <strong>Humble Bundle</strong> &nbsp;•&nbsp; <strong>Battle.net</strong>
 </p>
 
 Please vote for which stores you would like to see supported next [here](https://github.com/sam1am/backlogia/discussions/1).
@@ -216,6 +217,18 @@ To get your session cookie:
 1. Log in to [humblebundle.com](https://humblebundle.com)
 2. Open browser DevTools (F12) → Application → Cookies
 3. Copy the value of `_simpleauth_sess`
+
+### Battle.net
+
+| Variable | Description |
+|----------|-------------|
+| `BATTLENET_SESSION_COOKIE` | Your cookies from account.battle.net |
+
+To get your cookies:
+1. Log in to [account.battle.net](https://account.battle.net)
+2. Open browser DevTools (F12) → Network tab
+3. Refresh the page and click on any request to `account.battle.net`
+4. In Request Headers, find **Cookie** and copy the entire value
 
 ---
 

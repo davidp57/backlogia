@@ -391,6 +391,51 @@ def import_humble_games(conn):
         return 0
 
 
+def import_battlenet_games(conn):
+    """Import games from Battle.net (requires session cookie)."""
+    print("Importing Battle.net library...")
+    cursor = conn.cursor()
+
+    try:
+        from battlenet import get_battlenet_library
+
+        games = get_battlenet_library()
+        if not games:
+            print("  No Battle.net games found or not authenticated")
+            print("  Set your Battle.net session cookie in Settings")
+            return 0
+
+        count = 0
+        for game in games:
+            try:
+                cursor.execute("""
+                    INSERT OR REPLACE INTO games (
+                        name, store, store_id, cover_image,
+                        extra_data, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                """, (
+                    game.get("name"),
+                    "battlenet",
+                    game.get("title_id"),
+                    game.get("cover_image"),
+                    json.dumps(game.get("raw_data", {})),
+                    datetime.now().isoformat()
+                ))
+                count += 1
+            except Exception as e:
+                print(f"  Error importing {game.get('name')}: {e}")
+
+        conn.commit()
+        print(f"  Imported {count} Battle.net games")
+        return count
+    except ImportError:
+        print("  Battle.net module not available")
+        return 0
+    except Exception as e:
+        print(f"  Battle.net import error: {e}")
+        return 0
+
+
 def get_stats(conn):
     """Get database statistics."""
     cursor = conn.cursor()
@@ -416,6 +461,7 @@ def main():
     gog_count = import_gog_games(conn)
     itch_count = import_itch_games(conn)
     humble_count = import_humble_games(conn)
+    battlenet_count = import_battlenet_games(conn)
 
     print("=" * 60)
     stats = get_stats(conn)

@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 from settings import (
     get_setting, set_setting,
     STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET, ITCH_API_KEY,
-    HUMBLE_SESSION_COOKIE, GOG_DB_PATH
+    HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH
 )
 from igdb_sync import (
     IGDBClient, sync_games as igdb_sync_games, add_igdb_columns,
@@ -24,7 +24,7 @@ from igdb_sync import (
 )
 from build_database import (
     create_database, import_steam_games, import_epic_games,
-    import_gog_games, import_itch_games, import_humble_games
+    import_gog_games, import_itch_games, import_humble_games, import_battlenet_games
 )
 from epic import is_legendary_installed, check_authentication
 import subprocess
@@ -125,6 +125,9 @@ def get_store_url(store, store_id, extra_data=None):
             except (json.JSONDecodeError, TypeError):
                 pass
         return None
+    elif store == "battlenet":
+        # Battle.net - link to account games page
+        return "https://account.battle.net/games"
     return None
 
 
@@ -860,6 +863,7 @@ def settings_page():
         "igdb_client_secret": get_setting(IGDB_CLIENT_SECRET, ""),
         "itch_api_key": get_setting(ITCH_API_KEY, ""),
         "humble_session_cookie": get_setting(HUMBLE_SESSION_COOKIE, ""),
+        "battlenet_session_cookie": get_setting(BATTLENET_SESSION_COOKIE, ""),
         "gog_db_path": get_setting(GOG_DB_PATH, ""),
     }
     success = request.args.get("success") == "1"
@@ -884,6 +888,7 @@ def save_settings():
     set_setting(IGDB_CLIENT_SECRET, request.form.get("igdb_client_secret", "").strip())
     set_setting(ITCH_API_KEY, request.form.get("itch_api_key", "").strip())
     set_setting(HUMBLE_SESSION_COOKIE, request.form.get("humble_session_cookie", "").strip())
+    set_setting(BATTLENET_SESSION_COOKIE, request.form.get("battlenet_session_cookie", "").strip())
     set_setting(GOG_DB_PATH, request.form.get("gog_db_path", "").strip())
 
     return redirect(url_for("settings_page", success=1))
@@ -914,6 +919,9 @@ def sync_store(store):
 
         if store == "humble" or store == "all":
             results["humble"] = import_humble_games(conn)
+
+        if store == "battlenet" or store == "all":
+            results["battlenet"] = import_battlenet_games(conn)
 
         conn.close()
 
