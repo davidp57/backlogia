@@ -130,6 +130,156 @@
         .section-icon.humble { background: #cc3333; }
         .section-icon.sync { background: #4caf50; }
 
+        /* Collapsible Sections */
+        .collapsible-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .collapsible-header:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .collapsible-header .section-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .collapsible-header .header-text {
+            flex: 1;
+        }
+
+        .collapsible-header .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .collapsible-header .section-description {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        .collapsible-toggle {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #888;
+            transition: transform 0.3s;
+        }
+
+        .collapsible-header.expanded .collapsible-toggle {
+            transform: rotate(180deg);
+        }
+
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .collapsible-content.expanded {
+            max-height: 800px;
+        }
+
+        .collapsible-content-inner {
+            padding: 0 20px 20px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .collapsible-content-inner .form-group:first-child {
+            margin-top: 20px;
+        }
+
+        /* Platform Presets */
+        .preset-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ccc;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        /* Copy Button */
+        .copy-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            color: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .copy-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .copy-btn.copied {
+            background: linear-gradient(90deg, #4caf50, #2e7d32);
+        }
+
+        .instructions-box {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 12px;
+        }
+
+        .instructions-box ol {
+            margin: 0;
+            padding-left: 20px;
+            color: #ccc;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .instructions-box code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
         .section-title {
             font-size: 1.2rem;
             font-weight: 600;
@@ -537,101 +687,208 @@
             </div>
         </div>
 
-        <!-- API Credentials -->
-        <form class="settings-panel" method="POST" action="/settings">
-            <div class="section-header">
-                <div class="section-icon steam">S</div>
-                <div>
-                    <div class="section-title">Steam</div>
-                    <div class="section-description">Connect to your Steam library</div>
+        <!-- Provider Settings -->
+        <form method="POST" action="/settings">
+            <div class="settings-panel" style="padding: 20px;">
+                <div class="section-header" style="margin-bottom: 15px;">
+                    <div class="section-icon display">P</div>
+                    <div>
+                        <div class="section-title">Provider Settings</div>
+                        <div class="section-description">Configure your game library connections</div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="form-group">
-                <label for="steam_id">Steam ID (64-bit)</label>
-                <input type="text" id="steam_id" name="steam_id"
-                       value="{{ settings.steam_id }}"
-                       placeholder="76561198000000000">
-                <div class="help-text">
-                    Find your Steam ID at <a href="https://steamid.io" target="_blank">steamid.io</a>
+                <!-- IGDB -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon igdb">I</div>
+                        <div class="header-text">
+                            <div class="section-title">IGDB</div>
+                            <div class="section-description">Fetch game ratings and metadata</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            <div class="form-group">
+                                <label for="igdb_client_id">IGDB Client ID</label>
+                                <input type="text" id="igdb_client_id" name="igdb_client_id"
+                                       value="{{ settings.igdb_client_id }}"
+                                       placeholder="Your Twitch/IGDB Client ID">
+                                <div class="help-text">
+                                    Register at <a href="https://dev.twitch.tv/console/apps" target="_blank">dev.twitch.tv/console/apps</a>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="igdb_client_secret">IGDB Client Secret</label>
+                                <input type="password" id="igdb_client_secret" name="igdb_client_secret"
+                                       value="{{ settings.igdb_client_secret }}"
+                                       placeholder="Your Twitch/IGDB Client Secret">
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="form-group">
-                <label for="steam_api_key">Steam API Key</label>
-                <input type="password" id="steam_api_key" name="steam_api_key"
-                       value="{{ settings.steam_api_key }}"
-                       placeholder="Your Steam API key">
-                <div class="help-text">
-                    Get your API key at <a href="https://steamcommunity.com/dev/apikey" target="_blank">steamcommunity.com/dev/apikey</a>
+                <!-- Steam -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon steam">S</div>
+                        <div class="header-text">
+                            <div class="section-title">Steam</div>
+                            <div class="section-description">Connect to your Steam library</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            <div class="form-group">
+                                <label for="steam_id">Steam ID (64-bit)</label>
+                                <input type="text" id="steam_id" name="steam_id"
+                                       value="{{ settings.steam_id }}"
+                                       placeholder="76561198000000000">
+                                <div class="help-text">
+                                    <button type="button" class="copy-btn" onclick="copySteamIdBookmarklet(this)">
+                                        Copy Steam ID Script
+                                    </button>
+                                    <div class="instructions-box">
+                                        <ol>
+                                            <li>Go to your <a href="https://steamcommunity.com/my" target="_blank">Steam profile page</a> in a web browser</li>
+                                            <li>Open Developer Tools (<code>F12</code> or <code>Ctrl+Shift+I</code>)</li>
+                                            <li>Click the <strong>Console</strong> tab</li>
+                                            <li>Paste the copied code and press <code>Enter</code></li>
+                                            <li>Your Steam ID will appear in a popup - click to copy it</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="steam_api_key">Steam API Key</label>
+                                <input type="password" id="steam_api_key" name="steam_api_key"
+                                       value="{{ settings.steam_api_key }}"
+                                       placeholder="Your Steam API key">
+                                <div class="help-text">
+                                    Get your API key at <a href="https://steamcommunity.com/dev/apikey" target="_blank">steamcommunity.com/dev/apikey</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="section-header" style="margin-top: 30px;">
-                <div class="section-icon igdb">I</div>
-                <div>
-                    <div class="section-title">IGDB</div>
-                    <div class="section-description">Fetch game ratings and metadata</div>
+                <!-- GOG -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon gog">G</div>
+                        <div class="header-text">
+                            <div class="section-title">GOG Galaxy</div>
+                            <div class="section-description">Import from GOG Galaxy database</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            <div class="form-group">
+                                <label for="gog_db_path">GOG Galaxy Database Path</label>
+                                <input type="text" id="gog_db_path" name="gog_db_path"
+                                       value="{{ settings.gog_db_path }}"
+                                       placeholder="Path to galaxy-2.0.db">
+                                <div class="help-text">Location of the GOG Galaxy database file</div>
+                                <div class="preset-buttons">
+                                    <button type="button" class="preset-btn" onclick="setPreset('gog_db_path', 'windows')">Windows</button>
+                                    <button type="button" class="preset-btn" onclick="setPreset('gog_db_path', 'mac')">macOS</button>
+                                    <button type="button" class="preset-btn" onclick="setPreset('gog_db_path', 'linux')">Linux</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="form-group">
-                <label for="igdb_client_id">IGDB Client ID</label>
-                <input type="text" id="igdb_client_id" name="igdb_client_id"
-                       value="{{ settings.igdb_client_id }}"
-                       placeholder="Your Twitch/IGDB Client ID">
-                <div class="help-text">
-                    Register at <a href="https://dev.twitch.tv/console/apps" target="_blank">dev.twitch.tv/console/apps</a>
+                <!-- Epic -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon epic">E</div>
+                        <div class="header-text">
+                            <div class="section-title">Epic Games</div>
+                            <div class="section-description">Import via Legendary CLI</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            <div class="form-group">
+                                <label>Legendary CLI Setup</label>
+                                <div class="help-text">
+                                    Epic Games sync uses <a href="https://github.com/derrod/legendary" target="_blank">Legendary</a>, an open-source Epic Games Launcher replacement.
+                                </div>
+                                <div class="instructions-box">
+                                    <ol>
+                                        <li>Install Legendary: <code>pip install legendary-gl</code> or <code>brew install legendary</code></li>
+                                        <li>Run <code>legendary auth</code> in your terminal to log in to your Epic account</li>
+                                        <li>Once authenticated, click "Sync Epic" above to import your library</li>
+                                    </ol>
+                                </div>
+                                <div class="help-text" style="margin-top: 12px;">
+                                    Legendary stores credentials securely. You only need to authenticate once.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="form-group">
-                <label for="igdb_client_secret">IGDB Client Secret</label>
-                <input type="password" id="igdb_client_secret" name="igdb_client_secret"
-                       value="{{ settings.igdb_client_secret }}"
-                       placeholder="Your Twitch/IGDB Client Secret">
-            </div>
-
-            <div class="section-header" style="margin-top: 30px;">
-                <div class="section-icon itch">i</div>
-                <div>
-                    <div class="section-title">itch.io</div>
-                    <div class="section-description">Connect to your itch.io library</div>
+                <!-- itch.io -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon itch">i</div>
+                        <div class="header-text">
+                            <div class="section-title">itch.io</div>
+                            <div class="section-description">Connect to your itch.io library</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            <div class="form-group">
+                                <label for="itch_api_key">itch.io API Key</label>
+                                <input type="password" id="itch_api_key" name="itch_api_key"
+                                       value="{{ settings.itch_api_key }}"
+                                       placeholder="Your itch.io API key">
+                                <div class="help-text">
+                                    Get your API key at <a href="https://itch.io/user/settings/api-keys" target="_blank">itch.io/user/settings/api-keys</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="form-group">
-                <label for="itch_api_key">itch.io API Key</label>
-                <input type="password" id="itch_api_key" name="itch_api_key"
-                       value="{{ settings.itch_api_key }}"
-                       placeholder="Your itch.io API key">
-                <div class="help-text">
-                    Get your API key at <a href="https://itch.io/user/settings/api-keys" target="_blank">itch.io/user/settings/api-keys</a>
+                <!-- Humble Bundle -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon humble">H</div>
+                        <div class="header-text">
+                            <div class="section-title">Humble Bundle</div>
+                            <div class="section-description">Connect to your Humble Bundle library</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            <div class="form-group">
+                                <label for="humble_session_cookie">Humble Bundle Session Cookie</label>
+                                <input type="password" id="humble_session_cookie" name="humble_session_cookie"
+                                       value="{{ settings.humble_session_cookie }}"
+                                       placeholder="_simpleauth_sess cookie value">
+                                <div class="help-text">
+                                    To get this cookie: Log in to <a href="https://www.humblebundle.com" target="_blank">humblebundle.com</a>,
+                                    open Developer Tools (F12) → Application → Cookies → find <code>_simpleauth_sess</code> and copy its value
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="section-header" style="margin-top: 30px;">
-                <div class="section-icon humble">H</div>
-                <div>
-                    <div class="section-title">Humble Bundle</div>
-                    <div class="section-description">Connect to your Humble Bundle library</div>
+                <div class="button-row">
+                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                    <a href="/" class="btn btn-secondary">Cancel</a>
                 </div>
-            </div>
-
-            <div class="form-group">
-                <label for="humble_session_cookie">Humble Bundle Session Cookie</label>
-                <input type="password" id="humble_session_cookie" name="humble_session_cookie"
-                       value="{{ settings.humble_session_cookie }}"
-                       placeholder="_simpleauth_sess cookie value">
-                <div class="help-text">
-                    To get this cookie: Log in to <a href="https://www.humblebundle.com" target="_blank">humblebundle.com</a>,
-                    open Developer Tools (F12) → Application → Cookies → find <code>_simpleauth_sess</code> and copy its value
-                </div>
-            </div>
-
-            <div class="button-row">
-                <button type="submit" class="btn btn-primary">Save API Settings</button>
-                <a href="/" class="btn btn-secondary">Cancel</a>
             </div>
         </form>
     </div>
@@ -725,6 +982,46 @@
                 btn.innerHTML = originalContent;
                 showStatus('Network error: ' + error.message, 'error');
             });
+        }
+
+        // Collapsible sections
+        function toggleCollapsible(header) {
+            header.classList.toggle('expanded');
+            const content = header.nextElementSibling;
+            content.classList.toggle('expanded');
+        }
+
+        // Steam ID Bookmarklet copy
+        const steamIdBookmarklet = `javascript: (function () { try { const d = document.body.innerHTML.match(/g_rgProfileData\\s*=\\s*({[^}]+})/); if (!d) return alert('Steam profile data not found!'); const p = JSON.parse(d[1].replace(/\\\\'/g, "'")); const s = p.steamid; if (!s) return alert('Steam ID not found!'); const o = document.createElement('div'); o.innerHTML = \`<div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#1b2838,#2a475e);padding:20px 25px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:999999;font-family:-apple-system,BlinkMacSystemFont,sans-serif;border:1px solid #66c0f4;min-width:280px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="color:#66c0f4;font-size:12px;text-transform:uppercase;letter-spacing:1px">Steam ID</span><button onclick="this.closest('div').parentElement.remove()" style="background:none;border:none;color:#8f98a0;cursor:pointer;font-size:18px;padding:0;line-height:1">&times;</button></div><div style="background:#171a21;padding:12px 15px;border-radius:6px;margin-bottom:15px;display:flex;align-items:center;justify-content:space-between"><code style="color:#fff;font-size:16px;font-family:monospace">\${s}</code></div><button id="scb" style="width:100%;padding:10px 15px;background:linear-gradient(90deg,#47bfff,#1a9fff);border:none;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;font-size:14px;transition:opacity 0.2s">Copy to Clipboard</button><div style="margin-top:12px;padding-top:12px;border-top:1px solid #2a475e;color:#8f98a0;font-size:11px"><strong style="color:#c7d5e0">\${p.personaname}</strong></div></div>\`; document.body.appendChild(o); o.querySelector('#scb').onclick = function () { navigator.clipboard.writeText(s).then(() => { this.textContent = 'Copied!'; this.style.background = 'linear-gradient(90deg,#5ba32b,#4a8c24)'; setTimeout(() => { this.textContent = 'Copy to Clipboard'; this.style.background = 'linear-gradient(90deg,#47bfff,#1a9fff)' }, 2000) }) } } catch (e) { alert('Error: ' + e.message) } })();`;
+
+        function copySteamIdBookmarklet(btn) {
+            navigator.clipboard.writeText(steamIdBookmarklet).then(() => {
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                showStatus('Failed to copy: ' + err.message, 'error');
+            });
+        }
+
+        // Platform presets for database paths
+        const presets = {
+            gog_db_path: {
+                windows: '%PROGRAMDATA%\\GOG.com\\Galaxy\\storage\\galaxy-2.0.db',
+                mac: '/Users/Shared/GOG.com/Galaxy/Storage/galaxy-2.0.db',
+                linux: '~/.local/share/GOG.com/Galaxy/storage/galaxy-2.0.db'
+            }
+        };
+
+        function setPreset(field, platform) {
+            const input = document.getElementById(field);
+            if (input && presets[field] && presets[field][platform]) {
+                input.value = presets[field][platform];
+            }
         }
     </script>
 </body>

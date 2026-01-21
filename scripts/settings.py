@@ -14,6 +14,7 @@ IGDB_CLIENT_ID = "igdb_client_id"
 IGDB_CLIENT_SECRET = "igdb_client_secret"
 ITCH_API_KEY = "itch_api_key"
 HUMBLE_SESSION_COOKIE = "humble_session_cookie"
+GOG_DB_PATH = "gog_db_path"
 
 
 def _ensure_settings_table(conn):
@@ -107,4 +108,11 @@ def get_humble_credentials():
     """Get Humble Bundle credentials."""
     return {
         "session_cookie": get_setting(HUMBLE_SESSION_COOKIE),
+    }
+
+
+def get_gog_settings():
+    """Get GOG Galaxy settings."""
+    return {
+        "db_path": get_setting(GOG_DB_PATH),
     }
