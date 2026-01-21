@@ -1041,7 +1041,7 @@
              onerror="this.style.display='none';">
         {% endif %}
         <div class="hero-content">
-            {% set cover_url = game.igdb_cover_url or game.cover_image %}
+            {% set cover_url = game.cover_url_override or game.igdb_cover_url or game.cover_image %}
             {% if cover_url %}
             <img src="{{ cover_url }}" alt="{{ game.name }}" class="hero-cover"
                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
@@ -1285,6 +1285,25 @@
                                     </p>
                                 </div>
                             </div>
+
+                            <div class="settings-section">
+                                <h3>Cover Art</h3>
+                                <div class="igdb-settings">
+                                    <div class="igdb-input-group">
+                                        <input type="url" id="cover-override-input" class="igdb-input"
+                                               placeholder="Enter custom cover image URL"
+                                               value="{{ game.cover_url_override or '' }}">
+                                        <button type="button" class="igdb-btn" onclick="saveCoverOverride()">Save</button>
+                                    </div>
+                                    {% if game.cover_url_override %}
+                                    <button type="button" class="igdb-btn clear" onclick="clearCoverOverride()">Clear Override</button>
+                                    {% endif %}
+                                    <div id="cover-override-status" class="igdb-status" style="display: none;"></div>
+                                    <p class="igdb-help">
+                                        Override the cover art with a custom image URL. This takes priority over IGDB and store images.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1430,6 +1449,84 @@
         document.getElementById('igdb-id-input').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 syncIgdb();
+            }
+        });
+
+        // Cover Override functions
+        function showCoverStatus(message, type) {
+            const statusEl = document.getElementById('cover-override-status');
+            statusEl.textContent = message;
+            statusEl.className = 'igdb-status ' + type;
+            statusEl.style.display = 'block';
+        }
+
+        function saveCoverOverride() {
+            const input = document.getElementById('cover-override-input');
+            const coverUrl = input.value.trim();
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            showCoverStatus('Saving cover URL...', 'loading');
+
+            fetch(`/api/game/${gameId}/cover-override`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ cover_url_override: coverUrl })
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.textContent = 'Save';
+
+                if (data.success) {
+                    showCoverStatus('Cover URL saved', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showCoverStatus(data.error || 'Failed to save', 'error');
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.textContent = 'Save';
+                showCoverStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        function clearCoverOverride() {
+            if (!confirm('Are you sure you want to clear the cover art override?')) {
+                return;
+            }
+
+            showCoverStatus('Clearing cover override...', 'loading');
+
+            fetch(`/api/game/${gameId}/cover-override`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ cover_url_override: '' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showCoverStatus('Cover override cleared', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showCoverStatus(data.error || 'Failed to clear', 'error');
+                }
+            })
+            .catch(error => {
+                showCoverStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        // Allow Enter key to save cover override
+        document.getElementById('cover-override-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                saveCoverOverride();
             }
         });
 

@@ -940,7 +940,7 @@
                 {% for game in featured_games[1:] %}
                 {% set screenshots = parse_json(game.igdb_screenshots) %}
                 {% set genres = parse_json(game.genres) %}
-                {% set cover = game.igdb_cover_url or game.cover_image %}
+                {% set cover = game.cover_url_override or game.igdb_cover_url or game.cover_image %}
                 {% set bg = screenshots[0] if screenshots else cover %}
                 <div class="featured-card" data-game-id="{{ game.id }}" onclick="openExpandedCardFromEvent(event, this)">
                     <div class="featured-card-media">
@@ -999,7 +999,7 @@
                 {% for game in highly_rated %}
                 {% set screenshots = parse_json(game.igdb_screenshots) %}
                 {% set genres = parse_json(game.genres) %}
-                {% set cover = game.igdb_cover_url or game.cover_image %}
+                {% set cover = game.cover_url_override or game.igdb_cover_url or game.cover_image %}
                 {% set bg = screenshots[0] if screenshots else cover %}
                 <div class="featured-card" data-game-id="{{ game.id }}" onclick="openExpandedCardFromEvent(event, this)">
                     <div class="featured-card-media">
@@ -1058,7 +1058,7 @@
                 {% for game in most_played %}
                 {% set screenshots = parse_json(game.igdb_screenshots) %}
                 {% set genres = parse_json(game.genres) %}
-                {% set cover = game.igdb_cover_url or game.cover_image %}
+                {% set cover = game.cover_url_override or game.igdb_cover_url or game.cover_image %}
                 {% set bg = screenshots[0] if screenshots else cover %}
                 <div class="featured-card" data-game-id="{{ game.id }}" onclick="openExpandedCardFromEvent(event, this)">
                     <div class="featured-card-media">
@@ -1120,7 +1120,7 @@
                 {% for game in critic_favorites %}
                 {% set screenshots = parse_json(game.igdb_screenshots) %}
                 {% set genres = parse_json(game.genres) %}
-                {% set cover = game.igdb_cover_url or game.cover_image %}
+                {% set cover = game.cover_url_override or game.igdb_cover_url or game.cover_image %}
                 {% set bg = screenshots[0] if screenshots else cover %}
                 <div class="featured-card" data-game-id="{{ game.id }}" onclick="openExpandedCardFromEvent(event, this)">
                     <div class="featured-card-media">
@@ -1179,7 +1179,7 @@
                 {% for game in hidden_gems %}
                 {% set screenshots = parse_json(game.igdb_screenshots) %}
                 {% set genres = parse_json(game.genres) %}
-                {% set cover = game.igdb_cover_url or game.cover_image %}
+                {% set cover = game.cover_url_override or game.igdb_cover_url or game.cover_image %}
                 {% set bg = screenshots[0] if screenshots else cover %}
                 <div class="featured-card" data-game-id="{{ game.id }}" onclick="openExpandedCardFromEvent(event, this)">
                     <div class="featured-card-media">
@@ -1238,7 +1238,7 @@
                 {% for game in random_picks %}
                 {% set screenshots = parse_json(game.igdb_screenshots) %}
                 {% set genres = parse_json(game.genres) %}
-                {% set cover = game.igdb_cover_url or game.cover_image %}
+                {% set cover = game.cover_url_override or game.igdb_cover_url or game.cover_image %}
                 {% set bg = screenshots[0] if screenshots else cover %}
                 <div class="featured-card" data-game-id="{{ game.id }}" onclick="openExpandedCardFromEvent(event, this)">
                     <div class="featured-card-media">

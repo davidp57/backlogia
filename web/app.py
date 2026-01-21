@@ -53,6 +53,8 @@ def ensure_extra_columns():
         cursor.execute("ALTER TABLE games ADD COLUMN hidden BOOLEAN DEFAULT 0")
     if "nsfw" not in columns:
         cursor.execute("ALTER TABLE games ADD COLUMN nsfw BOOLEAN DEFAULT 0")
+    if "cover_url_override" not in columns:
+        cursor.execute("ALTER TABLE games ADD COLUMN cover_url_override TEXT")
     conn.commit()
     conn.close()
 
@@ -514,6 +516,27 @@ def update_nsfw(game_id):
     conn.close()
 
     return jsonify({"success": True, "nsfw": bool(nsfw)})
+
+
+@app.route("/api/game/<int:game_id>/cover-override", methods=["POST"])
+def update_cover_override(game_id):
+    """Update the cover art override URL for a game."""
+    data = request.get_json()
+    if data is None:
+        return jsonify({"error": "Request body required"}), 400
+
+    # Allow empty string or None to clear the override
+    cover_url = data.get("cover_url_override", "").strip() or None
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE games SET cover_url_override = ? WHERE id = ?", (cover_url, game_id)
+    )
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True, "cover_url_override": cover_url})
 
 
 @app.route("/api/games/bulk/hide", methods=["POST"])
