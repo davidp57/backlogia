@@ -1,17 +1,23 @@
 # routes/discover.py
 # Discover page routes
 
-from flask import Blueprint, render_template
+import sqlite3
+from pathlib import Path
 
-from ..database import get_db
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+
+from ..dependencies import get_db
 from ..utils.filters import EXCLUDE_HIDDEN_FILTER
 from ..utils.helpers import parse_json_field
 
-discover_bp = Blueprint('discover', __name__)
+router = APIRouter()
+templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
 
 
-@discover_bp.route("/discover")
-def discover():
+@router.get("/discover", response_class=HTMLResponse)
+def discover(request: Request, conn: sqlite3.Connection = Depends(get_db)):
     """Discover page - showcase popular games from your library."""
     # Import here to avoid circular imports
     from ..services.igdb_sync import (
@@ -21,7 +27,6 @@ def discover():
         POPULARITY_TYPE_STEAM_PEAK_24H, POPULARITY_TYPE_STEAM_POSITIVE_REVIEWS
     )
 
-    conn = get_db()
     cursor = conn.cursor()
 
     # Get all games with IGDB IDs from the library (excluding hidden/duplicates)
@@ -171,22 +176,23 @@ def discover():
     )
     random_picks = [dict(g) for g in cursor.fetchall()]
 
-    conn.close()
-
-    return render_template(
+    return templates.TemplateResponse(
         "discover.html",
-        featured_games=featured_games,
-        highly_rated=highly_rated,
-        hidden_gems=hidden_gems,
-        most_played=most_played,
-        critic_favorites=critic_favorites,
-        random_picks=random_picks,
-        popularity_source=popularity_source,
-        igdb_visits=igdb_visits,
-        want_to_play=want_to_play,
-        playing=playing,
-        played=played,
-        steam_peak_24h=steam_peak_24h,
-        steam_positive_reviews=steam_positive_reviews,
-        parse_json=parse_json_field
+        {
+            "request": request,
+            "featured_games": featured_games,
+            "highly_rated": highly_rated,
+            "hidden_gems": hidden_gems,
+            "most_played": most_played,
+            "critic_favorites": critic_favorites,
+            "random_picks": random_picks,
+            "popularity_source": popularity_source,
+            "igdb_visits": igdb_visits,
+            "want_to_play": want_to_play,
+            "playing": playing,
+            "played": played,
+            "steam_peak_24h": steam_peak_24h,
+            "steam_positive_reviews": steam_positive_reviews,
+            "parse_json": parse_json_field
+        }
     )

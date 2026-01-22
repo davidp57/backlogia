@@ -35,5 +35,5 @@ ENV DATABASE_PATH=/data/game_library.db
 
 EXPOSE 5050
 
-# Run the Flask application
-CMD ["python", "web/app.py"]
+# Run the FastAPI application
+CMD ["uvicorn", "web.main:app", "--host", "0.0.0.0", "--port", "5050"]

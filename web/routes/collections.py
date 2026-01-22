@@ -1,18 +1,39 @@
 # routes/collections.py
 # Collections page and API routes
 
-from flask import Blueprint, render_template, request, jsonify
+import sqlite3
+from pathlib import Path
+from typing import Optional
 
-from ..database import get_db
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
+
+from ..dependencies import get_db
 from ..utils.helpers import parse_json_field, group_games_by_igdb
 
-collections_bp = Blueprint('collections', __name__)
+router = APIRouter()
+templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
 
 
-@collections_bp.route("/collections")
-def collections_page():
+class CreateCollectionRequest(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+
+class UpdateCollectionRequest(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+
+class AddGameRequest(BaseModel):
+    game_id: int
+
+
+@router.get("/collections", response_class=HTMLResponse)
+def collections_page(request: Request, conn: sqlite3.Connection = Depends(get_db)):
     """Collections listing page."""
-    conn = get_db()
     cursor = conn.cursor()
 
     # Get all collections with game count and cover thumbnails
@@ -50,18 +71,18 @@ def collections_page():
         collection_dict["covers"] = covers
         collections_with_covers.append(collection_dict)
 
-    conn.close()
-
-    return render_template(
+    return templates.TemplateResponse(
         "collections.html",
-        collections=collections_with_covers
+        {
+            "request": request,
+            "collections": collections_with_covers
+        }
     )
 
 
-@collections_bp.route("/collection/<int:collection_id>")
-def collection_detail(collection_id):
+@router.get("/collection/{collection_id}", response_class=HTMLResponse)
+def collection_detail(request: Request, collection_id: int, conn: sqlite3.Connection = Depends(get_db)):
     """View a single collection with its games."""
-    conn = get_db()
     cursor = conn.cursor()
 
     # Get collection info
@@ -69,8 +90,7 @@ def collection_detail(collection_id):
     collection = cursor.fetchone()
 
     if not collection:
-        conn.close()
-        return "Collection not found", 404
+        raise HTTPException(status_code=404, detail="Collection not found")
 
     # Get games in collection
     cursor.execute("""
@@ -85,20 +105,20 @@ def collection_detail(collection_id):
     # Group games by IGDB ID (like the library page)
     grouped_games = group_games_by_igdb(games)
 
-    conn.close()
-
-    return render_template(
+    return templates.TemplateResponse(
         "collection_detail.html",
-        collection=dict(collection),
-        games=grouped_games,
-        parse_json=parse_json_field
+        {
+            "request": request,
+            "collection": dict(collection),
+            "games": grouped_games,
+            "parse_json": parse_json_field
+        }
     )
 
 
-@collections_bp.route("/api/collections", methods=["GET"])
-def api_get_collections():
+@router.get("/api/collections", tags=["Collections"])
+def api_get_collections(conn: sqlite3.Connection = Depends(get_db)):
     """Get all collections."""
-    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -110,21 +130,18 @@ def api_get_collections():
     """)
     collections = [dict(c) for c in cursor.fetchall()]
 
-    conn.close()
-    return jsonify(collections)
+    return collections
 
 
-@collections_bp.route("/api/collections", methods=["POST"])
-def api_create_collection():
+@router.post("/api/collections", tags=["Collections"])
+def api_create_collection(body: CreateCollectionRequest, conn: sqlite3.Connection = Depends(get_db)):
     """Create a new collection."""
-    data = request.get_json()
-    if not data or not data.get("name"):
-        return jsonify({"error": "name is required"}), 400
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="name is required")
 
-    name = data.get("name").strip()
-    description = data.get("description", "").strip() or None
+    description = body.description.strip() if body.description else None
 
-    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute(
@@ -133,60 +150,50 @@ def api_create_collection():
     )
     collection_id = cursor.lastrowid
     conn.commit()
-    conn.close()
 
-    return jsonify({
+    return {
         "success": True,
         "id": collection_id,
         "name": name,
         "description": description
-    })
+    }
 
 
-@collections_bp.route("/api/collections/<int:collection_id>", methods=["DELETE"])
-def api_delete_collection(collection_id):
+@router.delete("/api/collections/{collection_id}", tags=["Collections"])
+def api_delete_collection(collection_id: int, conn: sqlite3.Connection = Depends(get_db)):
     """Delete a collection."""
-    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("DELETE FROM collections WHERE id = ?", (collection_id,))
     if cursor.rowcount == 0:
-        conn.close()
-        return jsonify({"error": "Collection not found"}), 404
+        raise HTTPException(status_code=404, detail="Collection not found")
 
     conn.commit()
-    conn.close()
 
-    return jsonify({"success": True})
+    return {"success": True}
 
 
-@collections_bp.route("/api/collections/<int:collection_id>", methods=["PUT"])
-def api_update_collection(collection_id):
+@router.put("/api/collections/{collection_id}", tags=["Collections"])
+def api_update_collection(collection_id: int, body: UpdateCollectionRequest, conn: sqlite3.Connection = Depends(get_db)):
     """Update a collection's name and description."""
-    data = request.get_json()
-    if not data:
-        return jsonify({"error": "No data provided"}), 400
-
-    conn = get_db()
     cursor = conn.cursor()
 
     # Check if collection exists
     cursor.execute("SELECT id FROM collections WHERE id = ?", (collection_id,))
     if not cursor.fetchone():
-        conn.close()
-        return jsonify({"error": "Collection not found"}), 404
+        raise HTTPException(status_code=404, detail="Collection not found")
 
     # Build update query
     updates = []
     params = []
 
-    if "name" in data:
+    if body.name is not None:
         updates.append("name = ?")
-        params.append(data["name"].strip())
+        params.append(body.name.strip())
 
-    if "description" in data:
+    if body.description is not None:
         updates.append("description = ?")
-        params.append(data["description"].strip() or None)
+        params.append(body.description.strip() or None)
 
     if updates:
         updates.append("updated_at = CURRENT_TIMESTAMP")
@@ -197,33 +204,25 @@ def api_update_collection(collection_id):
         )
         conn.commit()
 
-    conn.close()
-    return jsonify({"success": True})
+    return {"success": True}
 
 
-@collections_bp.route("/api/collections/<int:collection_id>/games", methods=["POST"])
-def api_add_game_to_collection(collection_id):
+@router.post("/api/collections/{collection_id}/games", tags=["Collections"])
+def api_add_game_to_collection(collection_id: int, body: AddGameRequest, conn: sqlite3.Connection = Depends(get_db)):
     """Add a game to a collection."""
-    data = request.get_json()
-    if not data or "game_id" not in data:
-        return jsonify({"error": "game_id is required"}), 400
+    game_id = body.game_id
 
-    game_id = data.get("game_id")
-
-    conn = get_db()
     cursor = conn.cursor()
 
     # Check if collection exists
     cursor.execute("SELECT id FROM collections WHERE id = ?", (collection_id,))
     if not cursor.fetchone():
-        conn.close()
-        return jsonify({"error": "Collection not found"}), 404
+        raise HTTPException(status_code=404, detail="Collection not found")
 
     # Check if game exists
     cursor.execute("SELECT id FROM games WHERE id = ?", (game_id,))
     if not cursor.fetchone():
-        conn.close()
-        return jsonify({"error": "Game not found"}), 404
+        raise HTTPException(status_code=404, detail="Game not found")
 
     # Try to add (ignore if already exists)
     try:
@@ -238,17 +237,14 @@ def api_add_game_to_collection(collection_id):
         )
         conn.commit()
     except Exception as e:
-        conn.close()
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
-    conn.close()
-    return jsonify({"success": True})
+    return {"success": True}
 
 
-@collections_bp.route("/api/collections/<int:collection_id>/games/<int:game_id>", methods=["DELETE"])
-def api_remove_game_from_collection(collection_id, game_id):
+@router.delete("/api/collections/{collection_id}/games/{game_id}", tags=["Collections"])
+def api_remove_game_from_collection(collection_id: int, game_id: int, conn: sqlite3.Connection = Depends(get_db)):
     """Remove a game from a collection."""
-    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute(
@@ -257,8 +253,7 @@ def api_remove_game_from_collection(collection_id, game_id):
     )
 
     if cursor.rowcount == 0:
-        conn.close()
-        return jsonify({"error": "Game not in collection"}), 404
+        raise HTTPException(status_code=404, detail="Game not in collection")
 
     # Update collection's updated_at
     cursor.execute(
@@ -266,15 +261,13 @@ def api_remove_game_from_collection(collection_id, game_id):
         (collection_id,)
     )
     conn.commit()
-    conn.close()
 
-    return jsonify({"success": True})
+    return {"success": True}
 
 
-@collections_bp.route("/api/game/<int:game_id>/collections", methods=["GET"])
-def api_get_game_collections(game_id):
+@router.get("/api/game/{game_id}/collections", tags=["Collections"])
+def api_get_game_collections(game_id: int, conn: sqlite3.Connection = Depends(get_db)):
     """Get all collections a game belongs to."""
-    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -286,6 +279,5 @@ def api_get_game_collections(game_id):
     """, (game_id,))
 
     collections = [dict(c) for c in cursor.fetchall()]
-    conn.close()
 
-    return jsonify(collections)
+    return collections

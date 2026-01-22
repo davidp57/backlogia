@@ -1,23 +1,22 @@
 # routes package
-# Blueprint registration
+# FastAPI router exports
 
-from .library import library_bp
-from .api_games import api_games_bp
-from .api_metadata import api_metadata_bp
-from .discover import discover_bp
-from .settings import settings_bp
-from .sync import sync_bp
-from .auth import auth_bp
-from .collections import collections_bp
+from .library import router as library_router
+from .api_games import router as api_games_router
+from .api_metadata import router as api_metadata_router
+from .discover import router as discover_router
+from .settings import router as settings_router
+from .sync import router as sync_router
+from .auth import router as auth_router
+from .collections import router as collections_router
 
-
-def register_blueprints(app):
-    """Register all blueprints with the Flask app."""
-    app.register_blueprint(library_bp)
-    app.register_blueprint(api_games_bp)
-    app.register_blueprint(api_metadata_bp)
-    app.register_blueprint(discover_bp)
-    app.register_blueprint(settings_bp)
-    app.register_blueprint(sync_bp)
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(collections_bp)
+__all__ = [
+    "library_router",
+    "api_games_router",
+    "api_metadata_router",
+    "discover_router",
+    "settings_router",
+    "sync_router",
+    "auth_router",
+    "collections_router",
+]

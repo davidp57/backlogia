@@ -1,49 +1,56 @@
 # routes/library.py
 # Library, game detail, random game, and hidden games routes
 
-from flask import Blueprint, render_template, request, redirect, url_for
 import json
+import sqlite3
+from pathlib import Path
+from typing import Optional
 
-from ..database import get_db
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
+
+from ..dependencies import get_db
 from ..utils.filters import EXCLUDE_HIDDEN_FILTER, EXCLUDE_DUPLICATES_FILTER
 from ..utils.helpers import parse_json_field, get_store_url, group_games_by_igdb
 
-library_bp = Blueprint('library', __name__)
+router = APIRouter()
+templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
 
 
-@library_bp.route("/")
+@router.get("/", response_class=RedirectResponse)
 def home():
     """Home page - redirect to discover."""
-    return redirect(url_for('discover.discover'))
+    return RedirectResponse(url="/discover", status_code=302)
 
 
-@library_bp.route("/library")
-def library():
+@router.get("/library", response_class=HTMLResponse)
+def library(
+    request: Request,
+    stores: list[str] = Query(default=[]),
+    genres: list[str] = Query(default=[]),
+    search: str = "",
+    sort: str = "name",
+    order: str = "asc",
+    conn: sqlite3.Connection = Depends(get_db)
+):
     """Library page - list all games."""
-    conn = get_db()
     cursor = conn.cursor()
-
-    # Get filter parameters
-    store_filters = request.args.getlist("stores")  # Multi-select stores
-    genre_filters = request.args.getlist("genres")  # Multi-select genres
-    search = request.args.get("search", "")
-    sort_by = request.args.get("sort", "name")
-    sort_order = request.args.get("order", "asc")
 
     # Build query (exclude Amazon Prime/Luna duplicates and hidden games)
     query = "SELECT * FROM games WHERE 1=1" + EXCLUDE_HIDDEN_FILTER
     params = []
 
-    if store_filters:
-        placeholders = ",".join("?" * len(store_filters))
+    if stores:
+        placeholders = ",".join("?" * len(stores))
         query += f" AND store IN ({placeholders})"
-        params.extend(store_filters)
+        params.extend(stores)
 
-    if genre_filters:
+    if genres:
         # Filter by genres (JSON array stored in genres column)
         # Use LIKE with JSON pattern matching for each genre
         genre_conditions = []
-        for genre in genre_filters:
+        for genre in genres:
             # Match genre in JSON array (case-insensitive)
             genre_conditions.append("LOWER(genres) LIKE ?")
             params.append(f'%"{genre.lower()}"%')
@@ -55,12 +62,12 @@ def library():
 
     # Sorting
     valid_sorts = ["name", "store", "playtime_hours", "critics_score", "release_date", "total_rating", "igdb_rating", "aggregated_rating"]
-    if sort_by in valid_sorts:
-        order = "DESC" if sort_order == "desc" else "ASC"
-        if sort_by in ["playtime_hours", "critics_score", "total_rating", "igdb_rating", "aggregated_rating"]:
-            query += f" ORDER BY {sort_by} {order} NULLS LAST"
+    if sort in valid_sorts:
+        order_dir = "DESC" if order == "desc" else "ASC"
+        if sort in ["playtime_hours", "critics_score", "total_rating", "igdb_rating", "aggregated_rating"]:
+            query += f" ORDER BY {sort} {order_dir} NULLS LAST"
         else:
-            query += f" ORDER BY {sort_by} COLLATE NOCASE {order}"
+            query += f" ORDER BY {sort} COLLATE NOCASE {order_dir}"
 
     cursor.execute(query, params)
     games = cursor.fetchall()
@@ -70,19 +77,19 @@ def library():
 
     # Sort grouped games by primary game's sort field
     # Separate games with null sort values so nulls are always last
-    reverse = sort_order == "desc"
+    reverse = order == "desc"
     with_values = []
     without_values = []
 
     for g in grouped_games:
-        val = g["primary"].get(sort_by)
+        val = g["primary"].get(sort)
         if val is None:
             without_values.append(g)
         else:
             with_values.append(g)
 
     def get_sort_key(g):
-        val = g["primary"].get(sort_by)
+        val = g["primary"].get(sort)
         if isinstance(val, str):
             return val.lower()
         return val
@@ -119,37 +126,36 @@ def library():
     # Sort genres by count (descending) then alphabetically
     genre_counts = dict(sorted(genre_counts.items(), key=lambda x: (-x[1], x[0].lower())))
 
-    conn.close()
-
-    return render_template(
+    return templates.TemplateResponse(
         "index.html",
-        games=grouped_games,
-        store_counts=store_counts,
-        genre_counts=genre_counts,
-        total_count=total_count,
-        unique_count=unique_count,
-        hidden_count=hidden_count,
-        current_stores=store_filters,
-        current_genres=genre_filters,
-        current_search=search,
-        current_sort=sort_by,
-        current_order=sort_order,
-        parse_json=parse_json_field
+        {
+            "request": request,
+            "games": grouped_games,
+            "store_counts": store_counts,
+            "genre_counts": genre_counts,
+            "total_count": total_count,
+            "unique_count": unique_count,
+            "hidden_count": hidden_count,
+            "current_stores": stores,
+            "current_genres": genres,
+            "current_search": search,
+            "current_sort": sort,
+            "current_order": order,
+            "parse_json": parse_json_field
+        }
     )
 
 
-@library_bp.route("/game/<int:game_id>")
-def game_detail(game_id):
+@router.get("/game/{game_id}", response_class=HTMLResponse)
+def game_detail(request: Request, game_id: int, conn: sqlite3.Connection = Depends(get_db)):
     """Game detail page - shows combined view for games owned on multiple stores."""
-    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM games WHERE id = ?", (game_id,))
     game = cursor.fetchone()
 
     if not game:
-        conn.close()
-        return "Game not found", 404
+        raise HTTPException(status_code=404, detail="Game not found")
 
     game_dict = dict(game)
 
@@ -163,8 +169,6 @@ def game_detail(game_id):
         related_games = [dict(g) for g in cursor.fetchall()]
     else:
         related_games = [game_dict]
-
-    conn.close()
 
     # Build store info with URLs for each copy
     store_info = []
@@ -186,20 +190,22 @@ def game_detail(game_id):
         elif g.get("playtime_hours") and not primary_game.get("playtime_hours"):
             primary_game = g
 
-    return render_template(
+    return templates.TemplateResponse(
         "game_detail.html",
-        game=primary_game,
-        store_info=store_info,
-        related_games=related_games,
-        parse_json=parse_json_field,
-        get_store_url=get_store_url
+        {
+            "request": request,
+            "game": primary_game,
+            "store_info": store_info,
+            "related_games": related_games,
+            "parse_json": parse_json_field,
+            "get_store_url": get_store_url
+        }
     )
 
 
-@library_bp.route("/random")
-def random_game():
+@router.get("/random", response_class=RedirectResponse)
+def random_game(conn: sqlite3.Connection = Depends(get_db)):
     """Redirect to a random game detail page."""
-    conn = get_db()
     cursor = conn.cursor()
 
     # Get a random game that isn't hidden
@@ -207,21 +213,21 @@ def random_game():
         "SELECT id FROM games WHERE 1=1" + EXCLUDE_HIDDEN_FILTER + " ORDER BY RANDOM() LIMIT 1"
     )
     result = cursor.fetchone()
-    conn.close()
 
     if result:
-        return redirect(url_for('library.game_detail', game_id=result['id']))
+        return RedirectResponse(url=f"/game/{result['id']}", status_code=302)
     else:
-        return redirect(url_for('library.library'))
+        return RedirectResponse(url="/library", status_code=302)
 
 
-@library_bp.route("/hidden")
-def hidden_games():
+@router.get("/hidden", response_class=HTMLResponse)
+def hidden_games(
+    request: Request,
+    search: str = "",
+    conn: sqlite3.Connection = Depends(get_db)
+):
     """Page showing all hidden games."""
-    conn = get_db()
     cursor = conn.cursor()
-
-    search = request.args.get("search", "")
 
     query = "SELECT * FROM games WHERE hidden = 1" + EXCLUDE_DUPLICATES_FILTER
     params = []
@@ -235,11 +241,12 @@ def hidden_games():
     cursor.execute(query, params)
     games = cursor.fetchall()
 
-    conn.close()
-
-    return render_template(
+    return templates.TemplateResponse(
         "hidden_games.html",
-        games=games,
-        current_search=search,
-        parse_json=parse_json_field
+        {
+            "request": request,
+            "games": games,
+            "current_search": search,
+            "parse_json": parse_json_field
+        }
     )

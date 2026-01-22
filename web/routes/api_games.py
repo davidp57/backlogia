@@ -1,32 +1,30 @@
 # routes/api_games.py
 # API endpoints for games data
 
-from flask import Blueprint, jsonify
+import sqlite3
 
-from ..database import get_db
+from fastapi import APIRouter, Depends
+
+from ..dependencies import get_db
 from ..utils.filters import EXCLUDE_DUPLICATES_FILTER
 
-api_games_bp = Blueprint('api_games', __name__)
+router = APIRouter(tags=["Games"])
 
 
-@api_games_bp.route("/api/games")
-def api_games():
-    """API endpoint for games."""
-    conn = get_db()
+@router.get("/api/games")
+def api_games(conn: sqlite3.Connection = Depends(get_db)):
+    """Get all games in the library."""
     cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM games WHERE 1=1" + EXCLUDE_DUPLICATES_FILTER + " ORDER BY name")
     games = cursor.fetchall()
 
-    conn.close()
-
-    return jsonify([dict(g) for g in games])
+    return [dict(g) for g in games]
 
 
-@api_games_bp.route("/api/stats")
-def api_stats():
-    """API endpoint for library statistics."""
-    conn = get_db()
+@router.get("/api/stats")
+def api_stats(conn: sqlite3.Connection = Depends(get_db)):
+    """Get library statistics."""
     cursor = conn.cursor()
 
     cursor.execute("SELECT COUNT(*) FROM games WHERE 1=1" + EXCLUDE_DUPLICATES_FILTER)
@@ -38,10 +36,8 @@ def api_stats():
     cursor.execute("SELECT SUM(playtime_hours) FROM games WHERE playtime_hours IS NOT NULL" + EXCLUDE_DUPLICATES_FILTER)
     total_playtime = cursor.fetchone()[0] or 0
 
-    conn.close()
-
-    return jsonify({
+    return {
         "total_games": total,
         "by_store": by_store,
         "total_playtime_hours": round(total_playtime, 1)
-    })
+    }

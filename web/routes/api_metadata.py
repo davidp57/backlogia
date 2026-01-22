@@ -1,31 +1,50 @@
 # routes/api_metadata.py
 # API endpoints for game metadata operations (IGDB, hidden, NSFW, etc.)
 
-from flask import Blueprint, request, jsonify
 import json
+import sqlite3
+from typing import Optional
 
-from ..database import get_db
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
-api_metadata_bp = Blueprint('api_metadata', __name__)
+from ..dependencies import get_db
+
+router = APIRouter(tags=["Metadata"])
 
 
-@api_metadata_bp.route("/api/game/<int:game_id>/igdb", methods=["POST"])
-def update_igdb(game_id):
-    """Update IGDB ID for a game and resync its data."""
+class UpdateIgdbRequest(BaseModel):
+    igdb_id: Optional[int] = None
+
+
+class UpdateHiddenRequest(BaseModel):
+    hidden: bool
+
+
+class UpdateNsfwRequest(BaseModel):
+    nsfw: bool
+
+
+class UpdateCoverOverrideRequest(BaseModel):
+    cover_url_override: Optional[str] = None
+
+
+class BulkGameIdsRequest(BaseModel):
+    game_ids: list[int]
+
+
+@router.post("/api/game/{game_id}/igdb")
+def update_igdb(game_id: int, body: UpdateIgdbRequest, conn: sqlite3.Connection = Depends(get_db)):
+    """Update IGDB ID for a game."""
     # Import here to avoid circular imports
     from ..services.igdb_sync import (
         IGDBClient, extract_genres_and_themes, merge_and_dedupe_genres
     )
 
-    data = request.get_json()
-    if not data or "igdb_id" not in data:
-        return jsonify({"error": "igdb_id is required"}), 400
-
-    igdb_id = data.get("igdb_id")
+    igdb_id = body.igdb_id
 
     # Allow clearing the IGDB ID
-    if igdb_id is None or igdb_id == "":
-        conn = get_db()
+    if igdb_id is None:
         cursor = conn.cursor()
         cursor.execute(
             """UPDATE games SET
@@ -45,14 +64,7 @@ def update_igdb(game_id):
             (game_id,),
         )
         conn.commit()
-        conn.close()
-        return jsonify({"success": True, "message": "IGDB data cleared"})
-
-    # Validate igdb_id is a number
-    try:
-        igdb_id = int(igdb_id)
-    except (ValueError, TypeError):
-        return jsonify({"error": "igdb_id must be a number"}), 400
+        return {"success": True, "message": "IGDB data cleared"}
 
     # Fetch data from IGDB
     try:
@@ -60,7 +72,7 @@ def update_igdb(game_id):
         igdb_game = client.get_game_by_id(igdb_id)
 
         if not igdb_game:
-            return jsonify({"error": f"No game found with IGDB ID {igdb_id}"}), 404
+            raise HTTPException(status_code=404, detail=f"No game found with IGDB ID {igdb_id}")
 
         # Extract cover URL
         cover_url = None
@@ -84,7 +96,6 @@ def update_igdb(game_id):
         is_nsfw = IGDBClient.is_nsfw(igdb_game)
 
         # Update the database
-        conn = get_db()
         cursor = conn.cursor()
 
         # Fetch existing genres to merge with IGDB data
@@ -131,90 +142,67 @@ def update_igdb(game_id):
             ),
         )
         conn.commit()
-        conn.close()
 
-        return jsonify({
+        return {
             "success": True,
             "message": f"Synced with IGDB: {igdb_game.get('name')}",
             "igdb_name": igdb_game.get("name"),
             "igdb_id": igdb_game.get("id")
-        })
+        }
 
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
-        return jsonify({"error": f"Failed to fetch from IGDB: {str(e)}"}), 500
+        raise HTTPException(status_code=500, detail=f"Failed to fetch from IGDB: {str(e)}")
 
 
-@api_metadata_bp.route("/api/game/<int:game_id>/hidden", methods=["POST"])
-def update_hidden(game_id):
+@router.post("/api/game/{game_id}/hidden")
+def update_hidden(game_id: int, body: UpdateHiddenRequest, conn: sqlite3.Connection = Depends(get_db)):
     """Toggle hidden status for a game."""
-    data = request.get_json()
-    if data is None or "hidden" not in data:
-        return jsonify({"error": "hidden is required"}), 400
+    hidden = 1 if body.hidden else 0
 
-    hidden = 1 if data.get("hidden") else 0
-
-    conn = get_db()
     cursor = conn.cursor()
     cursor.execute("UPDATE games SET hidden = ? WHERE id = ?", (hidden, game_id))
     conn.commit()
-    conn.close()
 
-    return jsonify({"success": True, "hidden": bool(hidden)})
+    return {"success": True, "hidden": bool(hidden)}
 
 
-@api_metadata_bp.route("/api/game/<int:game_id>/nsfw", methods=["POST"])
-def update_nsfw(game_id):
+@router.post("/api/game/{game_id}/nsfw")
+def update_nsfw(game_id: int, body: UpdateNsfwRequest, conn: sqlite3.Connection = Depends(get_db)):
     """Toggle NSFW status for a game."""
-    data = request.get_json()
-    if data is None or "nsfw" not in data:
-        return jsonify({"error": "nsfw is required"}), 400
+    nsfw = 1 if body.nsfw else 0
 
-    nsfw = 1 if data.get("nsfw") else 0
-
-    conn = get_db()
     cursor = conn.cursor()
     cursor.execute("UPDATE games SET nsfw = ? WHERE id = ?", (nsfw, game_id))
     conn.commit()
-    conn.close()
 
-    return jsonify({"success": True, "nsfw": bool(nsfw)})
+    return {"success": True, "nsfw": bool(nsfw)}
 
 
-@api_metadata_bp.route("/api/game/<int:game_id>/cover-override", methods=["POST"])
-def update_cover_override(game_id):
+@router.post("/api/game/{game_id}/cover-override")
+def update_cover_override(game_id: int, body: UpdateCoverOverrideRequest, conn: sqlite3.Connection = Depends(get_db)):
     """Update the cover art override URL for a game."""
-    data = request.get_json()
-    if data is None:
-        return jsonify({"error": "Request body required"}), 400
+    cover_url = body.cover_url_override.strip() if body.cover_url_override else None
 
-    # Allow empty string or None to clear the override
-    cover_url = data.get("cover_url_override", "").strip() or None
-
-    conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
         "UPDATE games SET cover_url_override = ? WHERE id = ?", (cover_url, game_id)
     )
     conn.commit()
-    conn.close()
 
-    return jsonify({"success": True, "cover_url_override": cover_url})
+    return {"success": True, "cover_url_override": cover_url}
 
 
-@api_metadata_bp.route("/api/games/bulk/hide", methods=["POST"])
-def bulk_hide_games():
+@router.post("/api/games/bulk/hide")
+def bulk_hide_games(body: BulkGameIdsRequest, conn: sqlite3.Connection = Depends(get_db)):
     """Hide multiple games at once."""
-    data = request.get_json()
-    if data is None or "game_ids" not in data:
-        return jsonify({"error": "game_ids is required"}), 400
-
-    game_ids = data.get("game_ids", [])
+    game_ids = body.game_ids
     if not game_ids:
-        return jsonify({"error": "No games selected"}), 400
+        raise HTTPException(status_code=400, detail="No games selected")
 
-    conn = get_db()
     cursor = conn.cursor()
 
     placeholders = ",".join("?" * len(game_ids))
@@ -222,23 +210,17 @@ def bulk_hide_games():
     updated = cursor.rowcount
 
     conn.commit()
-    conn.close()
 
-    return jsonify({"success": True, "updated": updated})
+    return {"success": True, "updated": updated}
 
 
-@api_metadata_bp.route("/api/games/bulk/nsfw", methods=["POST"])
-def bulk_nsfw_games():
+@router.post("/api/games/bulk/nsfw")
+def bulk_nsfw_games(body: BulkGameIdsRequest, conn: sqlite3.Connection = Depends(get_db)):
     """Mark multiple games as NSFW at once."""
-    data = request.get_json()
-    if data is None or "game_ids" not in data:
-        return jsonify({"error": "game_ids is required"}), 400
-
-    game_ids = data.get("game_ids", [])
+    game_ids = body.game_ids
     if not game_ids:
-        return jsonify({"error": "No games selected"}), 400
+        raise HTTPException(status_code=400, detail="No games selected")
 
-    conn = get_db()
     cursor = conn.cursor()
 
     placeholders = ",".join("?" * len(game_ids))
@@ -246,6 +228,5 @@ def bulk_nsfw_games():
     updated = cursor.rowcount
 
     conn.commit()
-    conn.close()
 
-    return jsonify({"success": True, "updated": updated})
+    return {"success": True, "updated": updated}
