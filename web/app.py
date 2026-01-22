@@ -13,7 +13,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 from settings import (
     get_setting, set_setting,
     STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET, ITCH_API_KEY,
-    HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH
+    HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH,
+    AMAZON_ACCESS_TOKEN, AMAZON_DB_PATH
 )
 from igdb_sync import (
     IGDBClient, sync_games as igdb_sync_games, add_igdb_columns,
@@ -24,7 +25,8 @@ from igdb_sync import (
 )
 from build_database import (
     create_database, import_steam_games, import_epic_games,
-    import_gog_games, import_itch_games, import_humble_games, import_battlenet_games
+    import_gog_games, import_itch_games, import_humble_games, import_battlenet_games,
+    import_amazon_games
 )
 from epic import is_legendary_installed, check_authentication
 import subprocess
@@ -128,6 +130,9 @@ def get_store_url(store, store_id, extra_data=None):
     elif store == "battlenet":
         # Battle.net - link to account games page
         return "https://account.battle.net/games"
+    elif store == "amazon":
+        # Amazon Games - link to game library
+        return "https://gaming.amazon.com/home"
     return None
 
 
@@ -865,6 +870,8 @@ def settings_page():
         "humble_session_cookie": get_setting(HUMBLE_SESSION_COOKIE, ""),
         "battlenet_session_cookie": get_setting(BATTLENET_SESSION_COOKIE, ""),
         "gog_db_path": get_setting(GOG_DB_PATH, ""),
+        "amazon_access_token": get_setting(AMAZON_ACCESS_TOKEN, ""),
+        "amazon_db_path": get_setting(AMAZON_DB_PATH, ""),
     }
     success = request.args.get("success") == "1"
 
@@ -890,6 +897,8 @@ def save_settings():
     set_setting(HUMBLE_SESSION_COOKIE, request.form.get("humble_session_cookie", "").strip())
     set_setting(BATTLENET_SESSION_COOKIE, request.form.get("battlenet_session_cookie", "").strip())
     set_setting(GOG_DB_PATH, request.form.get("gog_db_path", "").strip())
+    set_setting(AMAZON_ACCESS_TOKEN, request.form.get("amazon_access_token", "").strip())
+    set_setting(AMAZON_DB_PATH, request.form.get("amazon_db_path", "").strip())
 
     return redirect(url_for("settings_page", success=1))
 
@@ -922,6 +931,9 @@ def sync_store(store):
 
         if store == "battlenet" or store == "all":
             results["battlenet"] = import_battlenet_games(conn)
+
+        if store == "amazon" or store == "all":
+            results["amazon"] = import_amazon_games(conn)
 
         conn.close()
 
@@ -1030,6 +1042,102 @@ def epic_authenticate():
         }), 500
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+# Store code verifier temporarily for OAuth flow
+_amazon_code_verifiers = {}
+
+
+@app.route("/api/amazon/auth/start", methods=["POST"])
+def amazon_auth_start():
+    """Start Amazon OAuth flow - returns login URL."""
+    try:
+        from amazon import get_login_url
+        import uuid
+
+        login_url, code_verifier = get_login_url()
+
+        # Store code verifier with a session ID
+        session_id = str(uuid.uuid4())
+        _amazon_code_verifiers[session_id] = code_verifier
+
+        # Clean up old verifiers (keep only last 10)
+        if len(_amazon_code_verifiers) > 10:
+            oldest = list(_amazon_code_verifiers.keys())[:-10]
+            for key in oldest:
+                del _amazon_code_verifiers[key]
+
+        return jsonify({
+            "success": True,
+            "login_url": login_url,
+            "session_id": session_id,
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/amazon/auth/complete", methods=["POST"])
+def amazon_auth_complete():
+    """Complete Amazon OAuth flow - exchange code for tokens."""
+    try:
+        from amazon import authenticate_amazon, extract_auth_code_from_url
+
+        data = request.get_json() or {}
+        auth_input = data.get("code", "").strip()
+        session_id = data.get("session_id", "").strip()
+
+        if not auth_input:
+            return jsonify({"success": False, "error": "Authorization code or redirect URL is required"}), 400
+
+        if not session_id or session_id not in _amazon_code_verifiers:
+            return jsonify({"success": False, "error": "Invalid session. Please start authentication again."}), 400
+
+        # Check if user pasted the full URL - extract auth code from it
+        if auth_input.startswith("http"):
+            auth_code = extract_auth_code_from_url(auth_input)
+            if not auth_code:
+                return jsonify({"success": False, "error": "Could not find authorization code in URL. Make sure you copied the full redirect URL."}), 400
+        else:
+            auth_code = auth_input
+
+        code_verifier = _amazon_code_verifiers.pop(session_id)
+
+        success, message = authenticate_amazon(auth_code, code_verifier)
+
+        if success:
+            return jsonify({"success": True, "message": message})
+        else:
+            return jsonify({"success": False, "error": message}), 400
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/amazon/auth/status", methods=["GET"])
+def amazon_auth_status():
+    """Check Amazon authentication status."""
+    try:
+        from amazon import get_stored_tokens, get_entitlements_from_api
+
+        access_token, refresh_token = get_stored_tokens()
+
+        if not access_token:
+            return jsonify({"authenticated": False})
+
+        # Try to verify by fetching a small amount of data
+        games = get_entitlements_from_api(access_token)
+
+        if games is not None:
+            return jsonify({
+                "authenticated": True,
+                "game_count": len(games) if games else 0,
+            })
+        else:
+            return jsonify({"authenticated": False, "error": "Token may be expired"})
+
+    except Exception as e:
+        return jsonify({"authenticated": False, "error": str(e)})
 
 
 @app.route("/api/sync/igdb/<mode>", methods=["POST"])

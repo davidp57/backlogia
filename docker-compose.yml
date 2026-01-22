@@ -24,4 +24,9 @@ services:
       - HUMBLE_SESSION_COOKIE=${HUMBLE_SESSION_COOKIE:-}
       # GOG configuration - automatically uses mounted path
       - GOG_DB_PATH=/gog/galaxy-2.0.db
+      # Battle.net configuration
+      - BATTLENET_SESSION_COOKIE=${BATTLENET_SESSION_COOKIE:-}
+      # Amazon Games configuration
+      - AMAZON_ACCESS_TOKEN=${AMAZON_ACCESS_TOKEN:-}
+      - AMAZON_DB_PATH=${AMAZON_DB_PATH:-}
     restart: unless-stopped
