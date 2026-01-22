@@ -1,23 +1,11 @@
-# build_database.py
+# database_builder.py
 # Combines Steam, Epic, GOG, and itch.io libraries into a central SQLite database
 
 import sqlite3
 import json
-import os
-import sys
-from pathlib import Path
 from datetime import datetime
 
-# Add scripts directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent))
-
-from steam import get_steam_library
-from epic import get_epic_library_legendary
-from gog import get_gog_library
-
-# itch.io is imported conditionally since it requires OAuth setup
-
-DATABASE_PATH = Path(os.environ.get("DATABASE_PATH", Path(__file__).parent.parent / "game_library.db"))
+from ..config import DATABASE_PATH
 
 
 def create_database():
@@ -118,6 +106,8 @@ def import_steam_games(conn):
     cursor = conn.cursor()
 
     try:
+        from ..sources.steam import get_steam_library
+
         games = get_steam_library()
         if not games:
             print("  No Steam games found or not authenticated")
@@ -165,6 +155,8 @@ def import_epic_games(conn):
     cursor = conn.cursor()
 
     try:
+        from ..sources.epic import get_epic_library_legendary
+
         games = get_epic_library_legendary()
         if not games:
             print("  No Epic games found or not authenticated")
@@ -214,6 +206,8 @@ def import_gog_games(conn):
     cursor = conn.cursor()
 
     try:
+        from ..sources.gog import get_gog_library
+
         games = get_gog_library()
         if not games:
             print("  No GOG games found or database not accessible")
@@ -282,7 +276,7 @@ def import_itch_games(conn):
     cursor = conn.cursor()
 
     try:
-        from itch import get_auth_token, get_owned_games
+        from ..sources.itch import get_auth_token, get_owned_games
 
         token = get_auth_token()
         if not token:
@@ -347,7 +341,7 @@ def import_humble_games(conn):
     cursor = conn.cursor()
 
     try:
-        from humble import get_humble_library
+        from ..sources.humble import get_humble_library
 
         games = get_humble_library()
         if not games:
@@ -397,7 +391,7 @@ def import_battlenet_games(conn):
     cursor = conn.cursor()
 
     try:
-        from battlenet import get_battlenet_library
+        from ..sources.battlenet import get_battlenet_library
 
         games = get_battlenet_library()
         if not games:
@@ -442,7 +436,7 @@ def import_amazon_games(conn):
     cursor = conn.cursor()
 
     try:
-        from amazon import get_amazon_library
+        from ..sources.amazon import get_amazon_library
 
         games = get_amazon_library()
         if not games:
@@ -499,32 +493,3 @@ def get_stats(conn):
     by_store = dict(cursor.fetchall())
 
     return {"total": total, "by_store": by_store}
-
-
-def main():
-    """Main entry point."""
-    print(f"Building game library database at: {DATABASE_PATH}")
-    print("=" * 60)
-
-    conn = create_database()
-
-    steam_count = import_steam_games(conn)
-    epic_count = import_epic_games(conn)
-    gog_count = import_gog_games(conn)
-    itch_count = import_itch_games(conn)
-    humble_count = import_humble_games(conn)
-    battlenet_count = import_battlenet_games(conn)
-    amazon_count = import_amazon_games(conn)
-
-    print("=" * 60)
-    stats = get_stats(conn)
-    print(f"Total games in database: {stats['total']}")
-    for store, count in stats['by_store'].items():
-        print(f"  {store.capitalize()}: {count}")
-
-    conn.close()
-    print(f"\nDatabase saved to: {DATABASE_PATH}")
-
-
-if __name__ == "__main__":
-    main()

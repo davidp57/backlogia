@@ -6,10 +6,8 @@ import requests
 import time
 import json
 import re
-from pathlib import Path
-from settings import get_igdb_credentials
 
-DATABASE_PATH = Path(__file__).parent.parent / "game_library.db"
+from .settings import get_igdb_credentials
 
 # IGDB API endpoints
 TWITCH_TOKEN_URL = "https://id.twitch.tv/oauth2/token"
@@ -503,61 +501,3 @@ def get_stats(conn):
         "avg_rating": avg_rating,
         "top_rated": top_rated,
     }
-
-
-def main():
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Sync game library with IGDB")
-    parser.add_argument(
-        "--limit", type=int, help="Limit number of games to process"
-    )
-    parser.add_argument(
-        "--force", action="store_true", help="Re-sync already matched games"
-    )
-    parser.add_argument(
-        "--stats", action="store_true", help="Show sync statistics only"
-    )
-    args = parser.parse_args()
-
-    conn = sqlite3.connect(DATABASE_PATH)
-
-    if args.stats:
-        stats = get_stats(conn)
-        print(f"\nIGDB Sync Statistics:")
-        print(f"  Total games: {stats['total']}")
-        print(f"  Matched: {stats['matched']} ({stats['match_rate']:.1f}%)")
-        if stats["avg_rating"]:
-            print(f"  Average rating: {stats['avg_rating']:.1f}/100")
-        if stats["top_rated"]:
-            print(f"\n  Top rated games:")
-            for name, rating in stats["top_rated"]:
-                print(f"    {rating:.1f} - {name}")
-        conn.close()
-        return
-
-    print("IGDB Sync")
-    print("=" * 60)
-
-    # Add IGDB columns if needed
-    add_igdb_columns(conn)
-
-    # Initialize client
-    client = IGDBClient()
-
-    # Sync games
-    matched, failed = sync_games(conn, client, limit=args.limit, force=args.force)
-
-    print("=" * 60)
-    print(f"Matched: {matched}")
-    print(f"Failed/No match: {failed}")
-
-    # Show stats
-    stats = get_stats(conn)
-    print(f"\nTotal matched: {stats['matched']}/{stats['total']} ({stats['match_rate']:.1f}%)")
-
-    conn.close()
-
-
-if __name__ == "__main__":
-    main()

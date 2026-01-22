@@ -4,10 +4,9 @@
 
 import os
 import sqlite3
-from pathlib import Path
 from datetime import datetime
 
-DATABASE_PATH = Path(os.environ.get("DATABASE_PATH", Path(__file__).parent.parent / "game_library.db"))
+from ..config import DATABASE_PATH
 
 # Setting keys
 STEAM_ID = "steam_id"

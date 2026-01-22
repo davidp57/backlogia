@@ -8,7 +8,7 @@ import shutil
 import os
 from pathlib import Path
 
-DATABASE_PATH = Path(__file__).parent.parent / "game_library.db"
+from ..config import DATABASE_PATH
 
 # Nile config path - same logic as Nile uses
 NILE_CONFIG_PATH = Path(
@@ -257,6 +257,8 @@ def logout():
 
 def main():
     import argparse
+    import sqlite3
+    from datetime import datetime
 
     parser = argparse.ArgumentParser(description="Import Amazon Games library via Nile")
     parser.add_argument("--export", type=str, help="Export to JSON file instead of database")
@@ -317,9 +319,6 @@ def main():
         print(f"Exported to {args.export}")
     else:
         # Import to database
-        import sqlite3
-        from datetime import datetime
-
         conn = sqlite3.connect(DATABASE_PATH)
         cursor = conn.cursor()
 

@@ -10,17 +10,20 @@ from pathlib import Path
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlencode, urlparse, parse_qs
 from datetime import datetime
-from dotenv import load_dotenv
-from settings import get_itch_credentials
 
-# Load environment variables (for ITCH_CLIENT_ID fallback only)
-load_dotenv(Path(__file__).parent.parent / ".env")
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).parent.parent.parent / ".env")
+except ImportError:
+    pass
+
+from ..services.settings import get_itch_credentials
+from ..config import DATABASE_PATH
 
 # OAuth client ID can still come from .env as it's not sensitive
 ITCH_CLIENT_ID = os.getenv("ITCH_CLIENT_ID")
 
-DATABASE_PATH = Path(__file__).parent.parent / "game_library.db"
-TOKEN_FILE = Path(__file__).parent.parent / ".itch_token"
+TOKEN_FILE = Path(__file__).parent.parent.parent / ".itch_token"
 
 # OAuth settings (only used if no API key)
 REDIRECT_PORT = 8976

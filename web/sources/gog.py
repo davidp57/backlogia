@@ -1,16 +1,12 @@
-# gog_library.py
+# gog.py
+# Fetches games from GOG Galaxy database
+
 import os
 import sqlite3
 import json
 from pathlib import Path
 
-# Import settings to get configured GOG_DB_PATH
-try:
-    from settings import get_gog_settings
-except ImportError:
-    # Fallback if running standalone
-    def get_gog_settings():
-        return {"db_path": os.environ.get("GOG_DB_PATH")}
+from ..services.settings import get_gog_settings
 
 
 def find_gog_database():

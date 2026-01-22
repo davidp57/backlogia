@@ -4,11 +4,10 @@
 import json
 import sqlite3
 import requests
-from pathlib import Path
 from datetime import datetime
-from settings import get_battlenet_credentials
 
-DATABASE_PATH = Path(__file__).parent.parent / "game_library.db"
+from ..services.settings import get_battlenet_credentials
+from ..config import DATABASE_PATH
 
 # Battle.net API endpoints (from Playnite implementation)
 API_BASE = "https://account.battle.net/api"

@@ -24,7 +24,6 @@ RUN pip install --no-cache-dir pycryptodome zstandard requests protobuf json5 \
     && pip install --no-cache-dir .
 
 # Copy application code
-COPY scripts/ ./scripts/
 COPY web/ ./web/
 
 # Create data directory for the database

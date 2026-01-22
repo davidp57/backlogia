@@ -1,7 +1,10 @@
-# steam_library.py
+# steam.py
+# Fetches games from Steam library
+
 import requests
 import json
-from settings import get_steam_credentials
+
+from ..services.settings import get_steam_credentials
 
 
 def get_steam_library():

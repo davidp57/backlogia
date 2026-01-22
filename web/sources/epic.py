@@ -1,4 +1,6 @@
-# legendary_wrapper.py
+# epic.py
+# Fetches games from Epic Games Store using Legendary CLI
+
 import subprocess
 import json
 import sys

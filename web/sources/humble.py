@@ -4,11 +4,10 @@
 import json
 import sqlite3
 import requests
-from pathlib import Path
 from datetime import datetime
-from settings import get_humble_credentials
 
-DATABASE_PATH = Path(__file__).parent.parent / "game_library.db"
+from ..services.settings import get_humble_credentials
+from ..config import DATABASE_PATH
 
 # Humble Bundle API endpoints
 API_BASE = "https://www.humblebundle.com"
