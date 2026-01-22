@@ -122,10 +122,18 @@ def import_steam_games(conn):
                 background_image = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/library_hero.jpg" if appid else None
 
                 cursor.execute("""
-                    INSERT OR REPLACE INTO games (
+                    INSERT INTO games (
                         name, store, store_id, cover_image, background_image, icon,
                         playtime_hours, extra_data, updated_at
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(store, store_id) DO UPDATE SET
+                        name = excluded.name,
+                        cover_image = excluded.cover_image,
+                        background_image = excluded.background_image,
+                        icon = excluded.icon,
+                        playtime_hours = excluded.playtime_hours,
+                        extra_data = excluded.extra_data,
+                        updated_at = excluded.updated_at
                 """, (
                     game.get("name"),
                     "steam",
@@ -166,12 +174,25 @@ def import_epic_games(conn):
         for game in games:
             try:
                 cursor.execute("""
-                    INSERT OR REPLACE INTO games (
+                    INSERT INTO games (
                         name, store, store_id, description, developers,
                         supported_platforms, cover_image, release_date,
                         created_date, last_modified, can_run_offline,
                         dlcs, extra_data, updated_at
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(store, store_id) DO UPDATE SET
+                        name = excluded.name,
+                        description = excluded.description,
+                        developers = excluded.developers,
+                        supported_platforms = excluded.supported_platforms,
+                        cover_image = excluded.cover_image,
+                        release_date = excluded.release_date,
+                        created_date = excluded.created_date,
+                        last_modified = excluded.last_modified,
+                        can_run_offline = excluded.can_run_offline,
+                        dlcs = excluded.dlcs,
+                        extra_data = excluded.extra_data,
+                        updated_at = excluded.updated_at
                 """, (
                     game.get("name"),
                     "epic",
@@ -237,11 +258,23 @@ def import_gog_games(conn):
                         combined_tags.append(tag)
 
                 cursor.execute("""
-                    INSERT OR REPLACE INTO games (
+                    INSERT INTO games (
                         name, store, store_id, description, developers,
                         publishers, genres, cover_image, background_image,
                         icon, release_date, critics_score, extra_data, updated_at
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(store, store_id) DO UPDATE SET
+                        name = excluded.name,
+                        description = excluded.description,
+                        developers = excluded.developers,
+                        publishers = excluded.publishers,
+                        cover_image = excluded.cover_image,
+                        background_image = excluded.background_image,
+                        icon = excluded.icon,
+                        release_date = excluded.release_date,
+                        critics_score = excluded.critics_score,
+                        extra_data = excluded.extra_data,
+                        updated_at = excluded.updated_at
                 """, (
                     game.get("name"),
                     "gog",
@@ -305,10 +338,18 @@ def import_itch_games(conn):
                     platforms.append("Android")
 
                 cursor.execute("""
-                    INSERT OR REPLACE INTO games (
+                    INSERT INTO games (
                         name, store, store_id, description, cover_image,
                         supported_platforms, release_date, extra_data, updated_at
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(store, store_id) DO UPDATE SET
+                        name = excluded.name,
+                        description = excluded.description,
+                        cover_image = excluded.cover_image,
+                        supported_platforms = excluded.supported_platforms,
+                        release_date = excluded.release_date,
+                        extra_data = excluded.extra_data,
+                        updated_at = excluded.updated_at
                 """, (
                     game.get("title"),
                     "itch",
@@ -353,11 +394,20 @@ def import_humble_games(conn):
         for game in games:
             try:
                 cursor.execute("""
-                    INSERT OR REPLACE INTO games (
+                    INSERT INTO games (
                         name, store, store_id, cover_image, icon,
                         supported_platforms, publishers, release_date,
                         extra_data, updated_at
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(store, store_id) DO UPDATE SET
+                        name = excluded.name,
+                        cover_image = excluded.cover_image,
+                        icon = excluded.icon,
+                        supported_platforms = excluded.supported_platforms,
+                        publishers = excluded.publishers,
+                        release_date = excluded.release_date,
+                        extra_data = excluded.extra_data,
+                        updated_at = excluded.updated_at
                 """, (
                     game.get("human_name"),
                     "humble",
@@ -403,10 +453,15 @@ def import_battlenet_games(conn):
         for game in games:
             try:
                 cursor.execute("""
-                    INSERT OR REPLACE INTO games (
+                    INSERT INTO games (
                         name, store, store_id, cover_image,
                         extra_data, updated_at
                     ) VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(store, store_id) DO UPDATE SET
+                        name = excluded.name,
+                        cover_image = excluded.cover_image,
+                        extra_data = excluded.extra_data,
+                        updated_at = excluded.updated_at
                 """, (
                     game.get("name"),
                     "battlenet",
@@ -452,10 +507,18 @@ def import_amazon_games(conn):
                 publishers = [game.get("publisher")] if game.get("publisher") else None
 
                 cursor.execute("""
-                    INSERT OR REPLACE INTO games (
+                    INSERT INTO games (
                         name, store, store_id, cover_image, icon,
                         developers, publishers, extra_data, updated_at
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(store, store_id) DO UPDATE SET
+                        name = excluded.name,
+                        cover_image = excluded.cover_image,
+                        icon = excluded.icon,
+                        developers = excluded.developers,
+                        publishers = excluded.publishers,
+                        extra_data = excluded.extra_data,
+                        updated_at = excluded.updated_at
                 """, (
                     game.get("name"),
                     "amazon",
