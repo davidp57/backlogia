@@ -605,6 +605,28 @@
             color: white;
         }
 
+        .reset-filters-btn {
+            height: 40px;
+            padding: 0 16px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: rgba(255, 100, 100, 0.15);
+            color: #ff6b6b;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .reset-filters-btn:hover {
+            background: rgba(255, 100, 100, 0.25);
+            color: #ff8585;
+        }
+
         .game-card {
             position: relative;
         }
@@ -851,9 +873,11 @@
             {% endif %}
 
             <div class="search-box">
-                <form action="" method="get" id="search-form">
+                <form action="" method="get" id="search-form" onsubmit="saveSearchPreferences()">
                     {% for store in current_stores %}<input type="hidden" name="stores" value="{{ store }}">{% endfor %}
                     {% for genre in current_genres %}<input type="hidden" name="genres" value="{{ genre }}">{% endfor %}
+                    <input type="hidden" name="sort" value="{{ current_sort }}">
+                    <input type="hidden" name="order" value="{{ current_order }}">
                     <input type="text" name="search" placeholder="Search games..." value="{{ current_search }}">
                 </form>
             </div>
@@ -866,6 +890,12 @@
                 <option value="aggregated_rating-desc" {% if current_sort == 'aggregated_rating' %}selected{% endif %}>Critic Rating (High-Low)</option>
                 <option value="playtime_hours-desc" {% if current_sort == 'playtime_hours' %}selected{% endif %}>Most Played</option>
             </select>
+
+            {% if current_stores or current_genres or current_search or (current_sort != 'name') or (current_sort == 'name' and current_order != 'asc') %}
+            <button class="reset-filters-btn" onclick="resetAllFilters()" title="Reset all filters">
+                &#10005;
+            </button>
+            {% endif %}
 
             <button class="select-toggle-btn" onclick="toggleSelectMode()" id="select-toggle" title="Multi-select mode">
                 &#10003;
@@ -945,7 +975,69 @@
         document.addEventListener('DOMContentLoaded', function() {
             const savedSize = localStorage.getItem('gridSize') || 'medium';
             setGridSize(savedSize);
+
+            // Restore filter/sort preferences from localStorage if no URL params
+            restoreFilterPreferences();
         });
+
+        // Save filter/sort preferences to localStorage
+        function saveFilterPreferences(stores, genres, search, sort, order) {
+            const prefs = { stores, genres, search, sort, order };
+            localStorage.setItem('filterPreferences', JSON.stringify(prefs));
+        }
+
+        // Restore filter/sort preferences from localStorage
+        function restoreFilterPreferences() {
+            const urlParams = new URLSearchParams(window.location.search);
+            // Check if there are any filter/sort params in URL
+            const hasUrlParams = urlParams.has('stores') || urlParams.has('genres') ||
+                                 urlParams.has('search') || urlParams.has('sort') || urlParams.has('order');
+
+            if (hasUrlParams) {
+                // URL has params, save them to localStorage for future visits
+                const stores = urlParams.getAll('stores');
+                const genres = urlParams.getAll('genres');
+                const search = urlParams.get('search') || '';
+                const sort = urlParams.get('sort') || 'name';
+                const order = urlParams.get('order') || 'asc';
+                saveFilterPreferences(stores, genres, search, sort, order);
+                return;
+            }
+
+            // No URL params, try to load from localStorage
+            const saved = localStorage.getItem('filterPreferences');
+            if (saved) {
+                const prefs = JSON.parse(saved);
+                // Only redirect if there are actual preferences to apply
+                if ((prefs.stores && prefs.stores.length) || (prefs.genres && prefs.genres.length) ||
+                    prefs.search || (prefs.sort && prefs.sort !== 'name') || (prefs.order && prefs.order !== 'asc')) {
+                    const url = buildUrl(prefs.stores || [], prefs.genres || [], prefs.search || '', prefs.sort || 'name', prefs.order || 'asc');
+                    window.location.href = url;
+                }
+            }
+        }
+
+        // Clear saved filter preferences
+        function clearFilterPreferences() {
+            localStorage.removeItem('filterPreferences');
+        }
+
+        // Reset all filters and clear saved preferences
+        function resetAllFilters() {
+            clearFilterPreferences();
+            window.location.href = '/library';
+        }
+
+        // Save preferences when search form is submitted
+        function saveSearchPreferences() {
+            const form = document.getElementById('search-form');
+            const stores = Array.from(form.querySelectorAll('input[name="stores"]')).map(i => i.value);
+            const genres = Array.from(form.querySelectorAll('input[name="genres"]')).map(i => i.value);
+            const search = form.querySelector('input[name="search"]').value;
+            const sort = form.querySelector('input[name="sort"]').value;
+            const order = form.querySelector('input[name="order"]').value;
+            saveFilterPreferences(stores, genres, search, sort, order);
+        }
 
         // Store dropdown functionality
         function toggleStoreDropdown() {
@@ -999,6 +1091,7 @@
             const search = '{{ current_search }}';
             const sort = '{{ current_sort }}';
             const order = '{{ current_order }}';
+            saveFilterPreferences([], genres, search, sort, order);
             window.location.href = buildUrl([], genres, search, sort, order);
         }
 
@@ -1022,6 +1115,7 @@
             const search = '{{ current_search }}';
             const sort = '{{ current_sort }}';
             const order = '{{ current_order }}';
+            saveFilterPreferences(stores, [], search, sort, order);
             window.location.href = buildUrl(stores, [], search, sort, order);
         }
 
