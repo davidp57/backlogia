@@ -136,6 +136,7 @@
         .section-icon.battlenet { background: #00aeff; }
         .section-icon.amazon { background: #ff9900; }
         .section-icon.ea { background: #ff4747; }
+        .section-icon.ubisoft { background: #0070ff; }
         .section-icon.sync { background: #4caf50; }
 
         /* Collapsible Sections */
@@ -580,6 +581,7 @@
         .sync-btn .icon.battlenet { background: #00aeff; }
         .sync-btn .icon.amazon { background: #ff9900; }
         .sync-btn .icon.ea { background: #ff4747; }
+        .sync-btn .icon.ubisoft { background: #0070ff; }
         .sync-btn .icon.all { background: linear-gradient(90deg, #667eea, #764ba2); }
         .sync-btn .icon.igdb { background: #9147ff; }
         .sync-btn .icon.metacritic { background: #ffcc34; color: #000; }
@@ -699,6 +701,30 @@
             Settings saved successfully!
         </div>
         {% endif %}
+
+        <!-- Tools -->
+        <div class="settings-panel">
+            <div class="section-header">
+                <div class="section-icon" style="background: linear-gradient(90deg, #667eea, #764ba2);">B</div>
+                <div>
+                    <div class="section-title">Backlogia Bookmarklet</div>
+                    <div class="section-description">Browser tool for extracting IDs and importing games</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Installation</label>
+                <div style="display: flex; align-items: center; gap: 15px; margin-top: 10px;">
+                    <a href="javascript:void(0);" id="backlogia-bookmarklet" class="btn btn-primary" style="cursor: grab; text-decoration: none;" onclick="bookmarkletClickHandler(event)">
+                        Backlogia Helper
+                    </a>
+                    <span style="color: #888; font-size: 0.85rem;">Drag this to your bookmarks bar</span>
+                </div>
+                <p style="margin-top: 12px; color: #888; font-size: 0.85rem;">
+                    Used by Steam, EA, and Ubisoft to extract credentials and import games. See each provider section below for instructions.
+                </p>
+            </div>
+        </div>
 
         <!-- Display Settings -->
         <div class="settings-panel">
@@ -914,19 +940,15 @@
                                 <input type="text" id="steam_id" name="steam_id"
                                        value="{{ settings.steam_id }}"
                                        placeholder="76561198000000000">
-                                <div class="help-text">
-                                    <button type="button" class="copy-btn" onclick="copySteamIdBookmarklet(this)">
-                                        Copy Steam ID Script
-                                    </button>
-                                    <div class="instructions-box">
-                                        <ol>
-                                            <li>Go to your <a href="https://steamcommunity.com/my" target="_blank">Steam profile page</a> in a web browser</li>
-                                            <li>Open Developer Tools (<code>F12</code> or <code>Ctrl+Shift+I</code>)</li>
-                                            <li>Click the <strong>Console</strong> tab</li>
-                                            <li>Paste the copied code and press <code>Enter</code></li>
-                                            <li>Your Steam ID will appear in a popup - click to copy it</li>
-                                        </ol>
-                                    </div>
+                                <div class="instructions-box" style="margin-top: 10px;">
+                                    <p style="margin-bottom: 8px; color: #e4e4e4;">Use the <strong>Backlogia Helper</strong> bookmarklet to get your Steam ID:</p>
+                                    <ol>
+                                        <li>Install the bookmarklet from the top of this page (drag to bookmarks bar)</li>
+                                        <li>Go to your <a href="https://steamcommunity.com/my" target="_blank">Steam profile page</a></li>
+                                        <li>Click the bookmarklet in your bookmarks bar</li>
+                                        <li>Your Steam ID will appear - click to copy it</li>
+                                        <li>Paste the ID in the field above</li>
+                                    </ol>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -1194,23 +1216,47 @@
                                 <input type="password" id="ea_bearer_token" name="ea_bearer_token"
                                        value="{{ settings.ea_bearer_token }}"
                                        placeholder="Paste your EA bearer token here">
-                                <div class="help-text">
-                                    <button type="button" class="copy-btn" onclick="copyEaTokenScript(this)">
-                                        Copy EA Token Script
-                                    </button>
+                                <div class="instructions-box" style="margin-top: 10px;">
+                                    <p style="margin-bottom: 8px; color: #e4e4e4;">Use the <strong>Backlogia Helper</strong> bookmarklet to get your EA token:</p>
+                                    <ol>
+                                        <li>Install the bookmarklet from the top of this page (drag to bookmarks bar)</li>
+                                        <li>Log in to <a href="https://www.ea.com" target="_blank">ea.com</a></li>
+                                        <li>Click the bookmarklet in your bookmarks bar</li>
+                                        <li>Your token will appear - click to copy it</li>
+                                        <li>Paste the token in the field above</li>
+                                    </ol>
+                                    <p style="margin-top: 10px; color: #f0ad4e; font-size: 0.8rem;">
+                                        <strong>Note:</strong> Tokens expire after ~1 hour. If sync fails, get a new token.
+                                    </p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ubisoft -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon ubisoft">U</div>
+                        <div class="header-text">
+                            <div class="section-title">Ubisoft</div>
+                            <div class="section-description">Import your Ubisoft Connect library</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
                             <div class="instructions-box">
+                                <p style="margin-bottom: 8px; color: #e4e4e4;">Use the <strong>Backlogia Helper</strong> bookmarklet to import your Ubisoft games:</p>
                                 <ol>
-                                    <li>Log in to <a href="https://www.ea.com" target="_blank">ea.com</a> in your browser</li>
-                                    <li>Once logged in, open Developer Tools (<code>F12</code> or <code>Ctrl+Shift+I</code>)</li>
-                                    <li>Click the <strong>Console</strong> tab</li>
-                                    <li>Click "Copy EA Token Script" above, then paste in the console and press <code>Enter</code></li>
-                                    <li>A popup will appear with your token - click to copy it</li>
-                                    <li>Paste the token in the field above and save settings</li>
+                                    <li>Install the bookmarklet from the top of this page (drag to bookmarks bar)</li>
+                                    <li>Log in to <a href="https://account.ubisoft.com" target="_blank">account.ubisoft.com</a></li>
+                                    <li>Navigate to your <a href="https://account.ubisoft.com/en-US/games-activity" target="_blank">Games Activity</a> page</li>
+                                    <li>Click the bookmarklet in your bookmarks bar</li>
+                                    <li>Wait while it expands all sections and imports your games</li>
                                 </ol>
-                                <p style="margin-top: 10px; color: #f0ad4e; font-size: 0.8rem;">
-                                    <strong>Note:</strong> Tokens expire after some time. If sync fails, get a new token.
+                                <p style="margin-top: 10px; color: #888; font-size: 0.85rem;">
+                                    The bookmarklet will show a progress overlay and confirm when import is complete.
                                 </p>
                             </div>
                         </div>
@@ -1535,75 +1581,6 @@
             content.classList.toggle('expanded');
         }
 
-        // Steam ID Bookmarklet copy
-        const steamIdBookmarklet = `javascript: (function () { try { const d = document.body.innerHTML.match(/g_rgProfileData\\s*=\\s*({[^}]+})/); if (!d) return alert('Steam profile data not found!'); const p = JSON.parse(d[1].replace(/\\\\'/g, "'")); const s = p.steamid; if (!s) return alert('Steam ID not found!'); const o = document.createElement('div'); o.innerHTML = \`<div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#1b2838,#2a475e);padding:20px 25px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:999999;font-family:-apple-system,BlinkMacSystemFont,sans-serif;border:1px solid #66c0f4;min-width:280px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="color:#66c0f4;font-size:12px;text-transform:uppercase;letter-spacing:1px">Steam ID</span><button onclick="this.closest('div').parentElement.remove()" style="background:none;border:none;color:#8f98a0;cursor:pointer;font-size:18px;padding:0;line-height:1">&times;</button></div><div style="background:#171a21;padding:12px 15px;border-radius:6px;margin-bottom:15px;display:flex;align-items:center;justify-content:space-between"><code style="color:#fff;font-size:16px;font-family:monospace">\${s}</code></div><button id="scb" style="width:100%;padding:10px 15px;background:linear-gradient(90deg,#47bfff,#1a9fff);border:none;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;font-size:14px;transition:opacity 0.2s">Copy to Clipboard</button><div style="margin-top:12px;padding-top:12px;border-top:1px solid #2a475e;color:#8f98a0;font-size:11px"><strong style="color:#c7d5e0">\${p.personaname}</strong></div></div>\`; document.body.appendChild(o); o.querySelector('#scb').onclick = function () { navigator.clipboard.writeText(s).then(() => { this.textContent = 'Copied!'; this.style.background = 'linear-gradient(90deg,#5ba32b,#4a8c24)'; setTimeout(() => { this.textContent = 'Copy to Clipboard'; this.style.background = 'linear-gradient(90deg,#47bfff,#1a9fff)' }, 2000) }) } } catch (e) { alert('Error: ' + e.message) } })();`;
-
-        // EA Token Script - fetches bearer token from EA auth endpoint
-        const eaTokenScript = `(async function() {
-  try {
-    const response = await fetch('https://accounts.ea.com/connect/auth?client_id=ORIGIN_JS_SDK&response_type=token&redirect_uri=nucleus:rest&prompt=none', { credentials: 'include' });
-    const data = await response.json();
-    if (data.access_token) {
-      const token = data.access_token;
-      const overlay = document.createElement('div');
-      overlay.innerHTML = \`
-        <div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#1a1a2e,#16213e);padding:20px 25px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:999999;font-family:-apple-system,BlinkMacSystemFont,sans-serif;border:1px solid #ff4747;min-width:320px;max-width:400px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <span style="color:#ff4747;font-size:12px;text-transform:uppercase;letter-spacing:1px">EA Bearer Token</span>
-            <button onclick="this.closest('div').parentElement.remove()" style="background:none;border:none;color:#888;cursor:pointer;font-size:18px;padding:0;line-height:1">&times;</button>
-          </div>
-          <div style="background:#0d0d1a;padding:12px 15px;border-radius:6px;margin-bottom:15px;word-break:break-all;max-height:150px;overflow-y:auto">
-            <code style="color:#e4e4e4;font-size:11px;font-family:monospace">\${token.substring(0,50)}...</code>
-          </div>
-          <button id="eacb" style="width:100%;padding:10px 15px;background:linear-gradient(90deg,#ff4747,#cc3333);border:none;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;font-size:14px">Copy Token</button>
-          <div style="margin-top:12px;color:#888;font-size:11px">Token expires in ~1 hour. Paste it in Backlogia settings.</div>
-        </div>
-      \`;
-      document.body.appendChild(overlay);
-      overlay.querySelector('#eacb').onclick = function() {
-        navigator.clipboard.writeText(token).then(() => {
-          this.textContent = 'Copied!';
-          this.style.background = 'linear-gradient(90deg,#4caf50,#2e7d32)';
-        });
-      };
-    } else if (data.error) {
-      alert('EA Auth Error: ' + data.error + '\\n' + (data.error_description || 'Make sure you are logged in to ea.com'));
-    } else {
-      alert('Could not get token. Make sure you are logged in to ea.com');
-    }
-  } catch (e) {
-    alert('Error: ' + e.message + '\\n\\nMake sure you are on an ea.com page and logged in.');
-  }
-})();`;
-
-        function copyEaTokenScript(btn) {
-            navigator.clipboard.writeText(eaTokenScript).then(() => {
-                const originalText = btn.textContent;
-                btn.textContent = 'Copied!';
-                btn.classList.add('copied');
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.classList.remove('copied');
-                }, 2000);
-            }).catch(err => {
-                showStatus('Failed to copy: ' + err.message, 'error');
-            });
-        }
-
-        function copySteamIdBookmarklet(btn) {
-            navigator.clipboard.writeText(steamIdBookmarklet).then(() => {
-                const originalText = btn.textContent;
-                btn.textContent = 'Copied!';
-                btn.classList.add('copied');
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.classList.remove('copied');
-                }, 2000);
-            }).catch(err => {
-                showStatus('Failed to copy: ' + err.message, 'error');
-            });
-        }
-
         // Platform presets for database paths
         const presets = {
             gog_db_path: {
@@ -1619,6 +1596,29 @@
                 input.value = presets[field][platform];
             }
         }
+
+        // Bookmarklet handler - shows alert if clicked on settings page
+        function bookmarkletClickHandler(event) {
+            event.preventDefault();
+            alert("Don't click here. Drag this to your bookmarks bar and run it from there.");
+        }
+
+        // Generate the bookmarklet code
+        // Steam and EA code runs inline (CSP blocks external scripts on those sites)
+        // Ubisoft loads external script (needs API access to Backlogia)
+        function generateBookmarkletCode(localUrl) {
+            const code = `javascript:(function(){var h=location.hostname;if(h.includes("steamcommunity.com")){try{var d=document.body.innerHTML.match(/g_rgProfileData\\s*=\\s*(\\{[^}]+\\})/);if(!d)return alert("Steam profile data not found!");var p=JSON.parse(d[1].replace(/\\\\'/g,"'"));var s=p.steamid;if(!s)return alert("Steam ID not found!");var o=document.createElement("div");o.innerHTML='<div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#1b2838,#2a475e);padding:20px 25px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:999999;font-family:-apple-system,BlinkMacSystemFont,sans-serif;border:1px solid #66c0f4;min-width:280px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="color:#66c0f4;font-size:12px;text-transform:uppercase;letter-spacing:1px">Steam ID</span><button onclick="this.closest(\\'div\\').parentElement.remove()" style="background:none;border:none;color:#8f98a0;cursor:pointer;font-size:18px;padding:0;line-height:1">&times;</button></div><div style="background:#171a21;padding:12px 15px;border-radius:6px;margin-bottom:15px"><code style="color:#fff;font-size:16px;font-family:monospace">'+s+'</code></div><button id=_scb style="width:100%;padding:10px 15px;background:linear-gradient(90deg,#47bfff,#1a9fff);border:none;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;font-size:14px">Copy to Clipboard</button><div style="margin-top:12px;padding-top:12px;border-top:1px solid #2a475e;color:#8f98a0;font-size:11px"><strong style="color:#c7d5e0">'+p.personaname+'</strong></div></div>';document.body.appendChild(o);o.querySelector("#_scb").onclick=function(){navigator.clipboard.writeText(s).then(function(){this.textContent="Copied!";this.style.background="linear-gradient(90deg,#5ba32b,#4a8c24)"}.bind(this))}}catch(e){alert("Error: "+e.message)}}else if(h.includes("ea.com")){(async function(){try{var r=await fetch("https://accounts.ea.com/connect/auth?client_id=ORIGIN_JS_SDK&response_type=token&redirect_uri=nucleus:rest&prompt=none",{credentials:"include"});var j=await r.json();if(j.access_token){var t=j.access_token;var o=document.createElement("div");o.innerHTML='<div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#1a1a2e,#16213e);padding:20px 25px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:999999;font-family:-apple-system,BlinkMacSystemFont,sans-serif;border:1px solid #ff4747;min-width:320px;max-width:400px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="color:#ff4747;font-size:12px;text-transform:uppercase;letter-spacing:1px">EA Bearer Token</span><button onclick="this.closest(\\'div\\').parentElement.remove()" style="background:none;border:none;color:#888;cursor:pointer;font-size:18px">&times;</button></div><div style="background:#0d0d1a;padding:12px 15px;border-radius:6px;margin-bottom:15px;word-break:break-all;max-height:150px;overflow-y:auto"><code style="color:#e4e4e4;font-size:11px;font-family:monospace">'+t.substring(0,50)+'...</code></div><button id=_eacb style="width:100%;padding:10px 15px;background:linear-gradient(90deg,#ff4747,#cc3333);border:none;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;font-size:14px">Copy Token</button><div style="margin-top:12px;color:#888;font-size:11px">Token expires in ~1 hour</div></div>';document.body.appendChild(o);o.querySelector("#_eacb").onclick=function(){navigator.clipboard.writeText(t).then(function(){this.textContent="Copied!";this.style.background="linear-gradient(90deg,#4caf50,#2e7d32)"}.bind(this))}}else{alert("EA Auth Error: "+(j.error||"Not logged in"))}}catch(e){alert("Error: "+e.message)}})()}else if(h.includes("account.ubisoft.com")){window.__BACKLOGIA_URL__="${localUrl}";var sc=document.createElement("script");sc.src="${localUrl}/static/js/bookmarklet.js?t="+Date.now();document.body.appendChild(sc)}else{window.__BACKLOGIA_URL__="${localUrl}";var sc=document.createElement("script");sc.src="${localUrl}/static/js/bookmarklet.js?t="+Date.now();document.body.appendChild(sc)}})();`;
+            return code;
+        }
+
+        // Initialize bookmarklet on page load using current page's origin
+        document.addEventListener('DOMContentLoaded', function() {
+            const bookmarkletLink = document.getElementById('backlogia-bookmarklet');
+            const localUrl = window.location.origin;
+
+            const code = generateBookmarkletCode(localUrl);
+            bookmarkletLink.href = code;
+        });
     </script>
     {% include '_footer.html' %}
 </body>

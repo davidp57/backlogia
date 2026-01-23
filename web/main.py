@@ -5,6 +5,7 @@ import sqlite3
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -40,6 +41,20 @@ app = FastAPI(
     title="Backlogia API",
     description="API for managing your game library across multiple stores",
     version="1.0.0",
+)
+
+# Add CORS middleware to allow bookmarklet requests from external sites
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://account.ubisoft.com",
+        "https://www.ubisoft.com",
+        "http://localhost:5050",
+        "http://127.0.0.1:5050",
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
 )
 
 # Initialize database on startup
