@@ -84,6 +84,22 @@
             margin-bottom: 40px;
         }
 
+        .hero-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+            pointer-events: none;
+        }
+
+        .hero-slide.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
         .hero-bg {
             position: absolute;
             top: 0;
@@ -96,7 +112,7 @@
             transition: transform 8s ease-out;
         }
 
-        .hero:hover .hero-bg {
+        .hero-slide.active .hero-bg {
             transform: scale(1.1);
         }
 
@@ -116,6 +132,83 @@
             right: 0;
             padding: 0 60px;
             z-index: 10;
+        }
+
+        /* Slideshow Navigation */
+        .hero-nav {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 20;
+        }
+
+        .hero-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            padding: 0;
+        }
+
+        .hero-dot:hover {
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .hero-dot.active {
+            background: #667eea;
+            transform: scale(1.2);
+        }
+
+        .hero-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 20;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+        }
+
+        .hero:hover .hero-arrow {
+            opacity: 1;
+        }
+
+        .hero-arrow:hover {
+            background: rgba(102, 126, 234, 0.8);
+        }
+
+        .hero-arrow-left {
+            left: 20px;
+        }
+
+        .hero-arrow-right {
+            right: 20px;
+        }
+
+        .hero-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            z-index: 20;
+            transition: width 0.1s linear;
         }
 
         .hero-badge {
@@ -830,10 +923,35 @@
 
             .hero-content {
                 padding: 0 20px;
+                bottom: 50px;
             }
 
             .hero-title {
                 font-size: 2rem;
+            }
+
+            .hero-arrow {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+                opacity: 1;
+            }
+
+            .hero-arrow-left {
+                left: 10px;
+            }
+
+            .hero-arrow-right {
+                right: 10px;
+            }
+
+            .hero-nav {
+                bottom: 15px;
+            }
+
+            .hero-dot {
+                width: 8px;
+                height: 8px;
             }
 
             .container {
@@ -885,44 +1003,64 @@
         </div>
     </nav>
 
-    {% if featured_games %}
-    {% set hero_game = featured_games[0] %}
-    {% set hero_screenshots = parse_json(hero_game.igdb_screenshots) %}
-    {% set hero_bg = hero_screenshots[0] if hero_screenshots else (hero_game.igdb_cover_url or hero_game.cover_image) %}
-    {% set hero_genres = parse_json(hero_game.genres) %}
-
-    <section class="hero">
-        {% if hero_bg %}
-        <img src="{{ hero_bg.replace('t_screenshot_big', 't_1080p') if 't_screenshot' in hero_bg else hero_bg }}" alt="" class="hero-bg">
-        {% endif %}
-        <div class="hero-gradient"></div>
-        <div class="hero-content">
-            <span class="hero-badge">Featured in Your Library</span>
-            <h1 class="hero-title">{{ hero_game.name }}</h1>
-            <div class="hero-meta">
-                {% if hero_game.total_rating %}
-                <div class="hero-rating">
-                    <span class="hero-rating-score">{{ hero_game.total_rating|round|int }}</span>
-                    <span class="hero-rating-label">IGDB Score</span>
-                </div>
-                {% endif %}
-                {% if hero_genres %}
-                <div class="hero-genres">
-                    {% for genre in hero_genres[:3] %}
-                    <span class="hero-genre">{{ genre }}</span>
-                    {% endfor %}
-                </div>
-                {% endif %}
-            </div>
-            {% set hero_desc = hero_game.igdb_summary or hero_game.description %}
-            {% if hero_desc %}
-            <p class="hero-description">{{ hero_desc }}</p>
+    {% set slideshow_games = featured_games[1:20] if featured_games|length > 1 else [] %}
+    {% if slideshow_games|length >= 5 %}
+    <section class="hero" id="hero-slideshow">
+        {% for game in slideshow_games %}
+        {% set screenshots = parse_json(game.igdb_screenshots) %}
+        {% set bg = screenshots[0] if screenshots else (game.igdb_cover_url or game.cover_image) %}
+        {% set genres = parse_json(game.genres) %}
+        <div class="hero-slide{% if loop.first %} active{% endif %}" data-slide-index="{{ loop.index0 }}">
+            {% if bg %}
+            <img src="{{ bg.replace('t_screenshot_big', 't_1080p') if 't_screenshot' in bg else bg }}" alt="" class="hero-bg">
             {% endif %}
-            <div class="hero-actions">
-                <a href="/game/{{ hero_game.id }}" class="btn btn-primary">View Details</a>
-                <button class="btn btn-secondary" onclick="openExpandedCard({{ hero_game|tojson|e }})">Quick Look</button>
+            <div class="hero-gradient"></div>
+            <div class="hero-content">
+                <span class="hero-badge">
+                    {% if popularity_source == 'igdb_popularity' %}
+                    Trending in Your Library
+                    {% else %}
+                    Featured in Your Library
+                    {% endif %}
+                </span>
+                <h1 class="hero-title">{{ game.name }}</h1>
+                <div class="hero-meta">
+                    {% if game.total_rating %}
+                    <div class="hero-rating">
+                        <span class="hero-rating-score">{{ game.total_rating|round|int }}</span>
+                        <span class="hero-rating-label">IGDB Score</span>
+                    </div>
+                    {% endif %}
+                    {% if genres %}
+                    <div class="hero-genres">
+                        {% for genre in genres[:3] %}
+                        <span class="hero-genre">{{ genre }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% set desc = game.igdb_summary or game.description %}
+                {% if desc %}
+                <p class="hero-description">{{ desc }}</p>
+                {% endif %}
+                <div class="hero-actions">
+                    <a href="/game/{{ game.id }}" class="btn btn-primary">View Details</a>
+                    <button class="btn btn-secondary" onclick="openExpandedCard({{ game|tojson|e }})">Quick Look</button>
+                </div>
             </div>
         </div>
+        {% endfor %}
+
+        <button class="hero-arrow hero-arrow-left" onclick="prevSlide()">&lsaquo;</button>
+        <button class="hero-arrow hero-arrow-right" onclick="nextSlide()">&rsaquo;</button>
+
+        <div class="hero-nav">
+            {% for game in slideshow_games %}
+            <button class="hero-dot{% if loop.first %} active{% endif %}" data-slide="{{ loop.index0 }}" onclick="goToSlide({{ loop.index0 }})"></button>
+            {% endfor %}
+        </div>
+
+        <div class="hero-progress" id="hero-progress"></div>
     </section>
     {% endif %}
 
@@ -1927,7 +2065,109 @@
                 const row = container.querySelector('.game-row');
                 row.addEventListener('scroll', () => updateScrollButtons(container));
             });
+
+            // Initialize hero slideshow
+            initHeroSlideshow();
         });
+
+        // Hero Slideshow Functions
+        let currentSlide = 0;
+        let slideCount = 0;
+        let slideshowInterval = null;
+        let progressInterval = null;
+        const SLIDE_DURATION = 7000; // 7 seconds per slide
+        const PROGRESS_UPDATE_INTERVAL = 50;
+
+        function initHeroSlideshow() {
+            const hero = document.getElementById('hero-slideshow');
+            if (!hero) return;
+
+            const slides = hero.querySelectorAll('.hero-slide');
+            slideCount = slides.length;
+
+            if (slideCount > 0) {
+                startSlideshow();
+
+                // Pause on hover
+                hero.addEventListener('mouseenter', pauseSlideshow);
+                hero.addEventListener('mouseleave', startSlideshow);
+            }
+        }
+
+        function startSlideshow() {
+            if (slideCount <= 1) return;
+
+            let progressTime = 0;
+            const progressBar = document.getElementById('hero-progress');
+
+            // Clear any existing intervals
+            pauseSlideshow();
+
+            // Progress bar animation
+            progressInterval = setInterval(() => {
+                progressTime += PROGRESS_UPDATE_INTERVAL;
+                const percent = (progressTime / SLIDE_DURATION) * 100;
+                if (progressBar) {
+                    progressBar.style.width = percent + '%';
+                }
+            }, PROGRESS_UPDATE_INTERVAL);
+
+            // Auto-advance slides
+            slideshowInterval = setInterval(() => {
+                nextSlide();
+                progressTime = 0;
+            }, SLIDE_DURATION);
+        }
+
+        function pauseSlideshow() {
+            if (slideshowInterval) {
+                clearInterval(slideshowInterval);
+                slideshowInterval = null;
+            }
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+        }
+
+        function goToSlide(index) {
+            if (index === currentSlide) return;
+
+            const hero = document.getElementById('hero-slideshow');
+            if (!hero) return;
+
+            const slides = hero.querySelectorAll('.hero-slide');
+            const dots = hero.querySelectorAll('.hero-dot');
+            const progressBar = document.getElementById('hero-progress');
+
+            // Update slides
+            slides[currentSlide].classList.remove('active');
+            slides[index].classList.add('active');
+
+            // Update dots
+            dots[currentSlide].classList.remove('active');
+            dots[index].classList.add('active');
+
+            currentSlide = index;
+
+            // Reset progress bar
+            if (progressBar) {
+                progressBar.style.width = '0%';
+            }
+
+            // Restart slideshow timer
+            startSlideshow();
+        }
+
+        function nextSlide() {
+            const nextIndex = (currentSlide + 1) % slideCount;
+            goToSlide(nextIndex);
+        }
+
+        function prevSlide() {
+            const prevIndex = (currentSlide - 1 + slideCount) % slideCount;
+            goToSlide(prevIndex);
+        }
 
         // Expanded Card Functions
         let currentGame = null;
