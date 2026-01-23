@@ -88,36 +88,94 @@
         }
 
         header {
-            text-align: center;
-            padding: 30px 0;
+            padding: 8px 0 20px 0;
             position: relative;
         }
 
-        header h1 {
-            font-size: 2rem;
-            color: #e4e4e4;
-        }
-
-        .stats {
+        .stats-container {
             display: flex;
+            align-items: center;
             justify-content: center;
-            gap: 30px;
-            margin-top: 20px;
+            gap: 24px;
+            flex-wrap: wrap;
         }
 
-        .stat {
-            text-align: center;
+        .stats-summary {
+            display: flex;
+            gap: 6px;
         }
 
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #667eea;
+        .summary-stat {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+            border-radius: 20px;
+            border: 1px solid rgba(102, 126, 234, 0.25);
         }
 
-        .stat-label {
-            font-size: 0.9rem;
-            color: #888;
+        .summary-stat .value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .summary-stat .label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stats-divider {
+            width: 1px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .store-stats {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .store-stat {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px 6px 8px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.2s ease;
+        }
+
+        .store-stat:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .store-stat img {
+            width: 22px;
+            height: 22px;
+            object-fit: contain;
+            opacity: 0.9;
+        }
+
+        .store-stat .count {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .store-stat.no-icon .store-name {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
 
         .filters {
@@ -781,22 +839,27 @@
 
     <div class="container">
         <header>
-            <!-- <h1>Your Game Library</h1> -->
-            <div class="stats">
-                <div class="stat">
-                    <div class="stat-value">{{ unique_count }}</div>
-                    <div class="stat-label">Unique Games</div>
+            {% set store_icons_header = {'steam': 'steam-100.png', 'epic': 'epic-100.png', 'gog': 'gog-48.png', 'itch': 'itch-90.png', 'humble': 'humble-96.png', 'battlenet': 'battlenet-100.png', 'amazon': 'amazon-120.png', 'ea': 'ea-256.png'} %}
+            <div class="stats-container">
+                <div class="stats-summary">
+                    <div class="summary-stat">
+                        <span class="value">{{ total_count }}</span>
+                        <span class="label">Games</span>
+                    </div>
                 </div>
-                <div class="stat">
-                    <div class="stat-value">{{ total_count }}</div>
-                    <div class="stat-label">Total Copies</div>
+                <div class="stats-divider"></div>
+                <div class="store-stats">
+                    {% for store, count in store_counts.items() %}
+                    <div class="store-stat {% if store not in store_icons_header %}no-icon{% endif %}">
+                        {% if store in store_icons_header %}
+                        <img src="{{ url_for('static', path='images/' + store_icons_header[store]) }}" alt="{{ store }}" title="{{ store|capitalize }}">
+                        {% else %}
+                        <span class="store-name">{{ store }}</span>
+                        {% endif %}
+                        <span class="count">{{ count }}</span>
+                    </div>
+                    {% endfor %}
                 </div>
-                {% for store, count in store_counts.items() %}
-                <div class="stat">
-                    <div class="stat-value">{{ count }}</div>
-                    <div class="stat-label">{{ store|capitalize }}</div>
-                </div>
-                {% endfor %}
             </div>
         </header>
 
