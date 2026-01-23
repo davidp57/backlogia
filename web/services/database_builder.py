@@ -108,7 +108,7 @@ def import_steam_games(conn):
     try:
         from ..sources.steam import get_steam_library
 
-        games = get_steam_library()
+        games = get_steam_library(fetch_reviews=True, max_workers=5)
         if not games:
             print("  No Steam games found or not authenticated")
             return 0
@@ -124,14 +124,15 @@ def import_steam_games(conn):
                 cursor.execute("""
                     INSERT INTO games (
                         name, store, store_id, cover_image, background_image, icon,
-                        playtime_hours, extra_data, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        playtime_hours, critics_score, extra_data, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(store, store_id) DO UPDATE SET
                         name = excluded.name,
                         cover_image = excluded.cover_image,
                         background_image = excluded.background_image,
                         icon = excluded.icon,
                         playtime_hours = excluded.playtime_hours,
+                        critics_score = excluded.critics_score,
                         extra_data = excluded.extra_data,
                         updated_at = excluded.updated_at
                 """, (
@@ -142,6 +143,7 @@ def import_steam_games(conn):
                     background_image,
                     game.get("icon_url"),
                     game.get("playtime_hours"),
+                    game.get("review_score"),  # Steam user review percentage
                     json.dumps(game),
                     datetime.now().isoformat()
                 ))

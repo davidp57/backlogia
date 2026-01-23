@@ -601,20 +601,20 @@
         .ratings-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
+            gap: 8px;
             text-align: center;
         }
 
         .rating-item {
-            padding: 15px 10px;
+            padding: 10px 6px;
             background: rgba(255, 255, 255, 0.03);
-            border-radius: 8px;
+            border-radius: 6px;
         }
 
         .rating-item .score {
-            font-size: 1.8rem;
+            font-size: 1.3rem;
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
         }
 
         .rating-item.total { background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15)); }
@@ -635,16 +635,79 @@
         .rating-item .score.none { color: #666; }
 
         .rating-item .label {
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             color: #888;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
         }
 
         .rating-item .count {
-            font-size: 0.7rem;
+            font-size: 0.6rem;
             color: #666;
-            margin-top: 3px;
+            margin-top: 2px;
+        }
+
+        /* Combined Ratings Section */
+        .ratings-combined {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .rating-source {
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .rating-source:last-child {
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .rating-source-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .rating-source-icon {
+            width: 16px;
+            height: 16px;
+            object-fit: contain;
+        }
+
+        .rating-source-name {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .rating-item.steam {
+            background: linear-gradient(135deg, rgba(102, 192, 244, 0.15), rgba(27, 40, 56, 0.3));
+            text-align: center;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .rating-item.steam .score {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #66c0f4;
+        }
+
+        .rating-item.steam .label {
+            font-size: 0.75rem;
+            color: #9acfea;
+            margin-top: 2px;
+        }
+
+        .rating-item.steam .count {
+            font-size: 0.65rem;
+            color: #666;
+            margin-top: 2px;
         }
 
         .platforms {
@@ -1073,9 +1136,6 @@
                     {% if total_playtime %}
                     <span class="meta-item">{{ total_playtime|round(1) }} hours played</span>
                     {% endif %}
-                    {% if game.critics_score %}
-                    <span class="meta-item">{{ game.critics_score|round(1) }} / 100</span>
-                    {% endif %}
                     <button class="add-to-collection-btn" onclick="openCollectionModal()">
                         + Add to Collection
                     </button>
@@ -1200,78 +1260,113 @@
                     </div>
                 </div>
 
-                {% if game.total_rating or game.igdb_rating or game.aggregated_rating %}
-                <div class="section">
-                    <h2>IGDB Ratings</h2>
-                    <div class="ratings-grid">
-                        <div class="rating-item total">
-                            {% if game.total_rating %}
-                            <div class="score">{{ game.total_rating|round|int }}</div>
-                            {% else %}
-                            <div class="score none">--</div>
-                            {% endif %}
-                            <div class="label">Total</div>
-                            {% if game.total_rating_count %}
-                            <div class="count">{{ game.total_rating_count }} total</div>
-                            {% endif %}
-                        </div>
-                        <div class="rating-item user">
-                            {% if game.igdb_rating %}
-                            <div class="score">{{ game.igdb_rating|round|int }}</div>
-                            {% else %}
-                            <div class="score none">--</div>
-                            {% endif %}
-                            <div class="label">User</div>
-                            {% if game.igdb_rating_count %}
-                            <div class="count">{{ game.igdb_rating_count }} votes</div>
-                            {% endif %}
-                        </div>
-                        <div class="rating-item critic">
-                            {% if game.aggregated_rating %}
-                            <div class="score">{{ game.aggregated_rating|round|int }}</div>
-                            {% else %}
-                            <div class="score none">--</div>
-                            {% endif %}
-                            <div class="label">Critic</div>
-                            {% if game.aggregated_rating_count %}
-                            <div class="count">{{ game.aggregated_rating_count }} reviews</div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
+                {% set extra = parse_json(game.extra_data) or {} %}
+                {% set steam_review_desc = extra.get('review_desc') %}
+                {% set steam_total_reviews = extra.get('total_reviews') %}
+                {% set is_steam_game = store_info|selectattr('store', 'equalto', 'steam')|list|length > 0 %}
+                {% set has_steam = game.critics_score and is_steam_game %}
+                {% set has_igdb = game.total_rating or game.igdb_rating or game.aggregated_rating %}
+                {% set has_metacritic = game.metacritic_score or game.metacritic_user_score %}
 
-                {% if game.metacritic_score or game.metacritic_user_score %}
+                {% if has_steam or has_igdb or has_metacritic %}
                 <div class="section">
-                    <h2>Metacritic</h2>
-                    <div class="ratings-grid" style="grid-template-columns: repeat(2, 1fr);">
-                        <div class="rating-item metacritic-critic">
-                            {% if game.metacritic_score %}
-                            <div class="score">{{ game.metacritic_score }}</div>
-                            {% else %}
-                            <div class="score none">--</div>
-                            {% endif %}
-                            <div class="label">Metascore</div>
+                    <h2>Ratings</h2>
+                    <div class="ratings-combined">
+                        {% if has_steam %}
+                        <div class="rating-source">
+                            <div class="rating-source-header">
+                                <img src="/static/images/steam-100.png" alt="Steam" class="rating-source-icon">
+                                <span class="rating-source-name">Steam</span>
+                            </div>
+                            <div class="rating-item steam">
+                                <div class="score">{{ game.critics_score|round|int }}%</div>
+                                <div class="label">{{ steam_review_desc or 'User Reviews' }}</div>
+                                {% if steam_total_reviews %}
+                                <div class="count">{{ "{:,}".format(steam_total_reviews) }} reviews</div>
+                                {% endif %}
+                            </div>
                         </div>
-                        <div class="rating-item metacritic-user">
-                            {% if game.metacritic_user_score %}
-                            <div class="score">{{ (game.metacritic_user_score * 10)|round|int }}</div>
-                            {% else %}
-                            <div class="score none">--</div>
-                            {% endif %}
-                            <div class="label">User Score</div>
-                            {% if game.metacritic_user_score %}
-                            <div class="count">({{ game.metacritic_user_score }} / 10)</div>
+                        {% endif %}
+
+                        {% if has_igdb %}
+                        <div class="rating-source">
+                            <div class="rating-source-header">
+                                <span class="rating-source-name">IGDB</span>
+                            </div>
+                            <div class="ratings-grid">
+                                <div class="rating-item total">
+                                    {% if game.total_rating %}
+                                    <div class="score">{{ game.total_rating|round|int }}</div>
+                                    {% else %}
+                                    <div class="score none">--</div>
+                                    {% endif %}
+                                    <div class="label">Total</div>
+                                    {% if game.total_rating_count %}
+                                    <div class="count">{{ game.total_rating_count }} total</div>
+                                    {% endif %}
+                                </div>
+                                <div class="rating-item user">
+                                    {% if game.igdb_rating %}
+                                    <div class="score">{{ game.igdb_rating|round|int }}</div>
+                                    {% else %}
+                                    <div class="score none">--</div>
+                                    {% endif %}
+                                    <div class="label">User</div>
+                                    {% if game.igdb_rating_count %}
+                                    <div class="count">{{ game.igdb_rating_count }} votes</div>
+                                    {% endif %}
+                                </div>
+                                <div class="rating-item critic">
+                                    {% if game.aggregated_rating %}
+                                    <div class="score">{{ game.aggregated_rating|round|int }}</div>
+                                    {% else %}
+                                    <div class="score none">--</div>
+                                    {% endif %}
+                                    <div class="label">Critic</div>
+                                    {% if game.aggregated_rating_count %}
+                                    <div class="count">{{ game.aggregated_rating_count }} reviews</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if has_metacritic %}
+                        <div class="rating-source">
+                            <div class="rating-source-header">
+                                <span class="rating-source-name">Metacritic</span>
+                            </div>
+                            <div class="ratings-grid" style="grid-template-columns: repeat(2, 1fr);">
+                                <div class="rating-item metacritic-critic">
+                                    {% if game.metacritic_score %}
+                                    <div class="score">{{ game.metacritic_score }}</div>
+                                    {% else %}
+                                    <div class="score none">--</div>
+                                    {% endif %}
+                                    <div class="label">Metascore</div>
+                                </div>
+                                <div class="rating-item metacritic-user">
+                                    {% if game.metacritic_user_score %}
+                                    <div class="score">{{ (game.metacritic_user_score * 10)|round|int }}</div>
+                                    {% else %}
+                                    <div class="score none">--</div>
+                                    {% endif %}
+                                    <div class="label">User Score</div>
+                                    {% if game.metacritic_user_score %}
+                                    <div class="count">({{ game.metacritic_user_score }} / 10)</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if game.metacritic_url %}
+                            <div style="margin-top: 8px; text-align: center;">
+                                <a href="{{ game.metacritic_url }}" target="_blank" rel="noopener" style="color: #ffcc34; font-size: 0.8rem; text-decoration: none;">
+                                    View on Metacritic →
+                                </a>
+                            </div>
                             {% endif %}
                         </div>
+                        {% endif %}
                     </div>
-                    {% if game.metacritic_url %}
-                    <div style="margin-top: 12px; text-align: center;">
-                        <a href="{{ game.metacritic_url }}" target="_blank" rel="noopener" style="color: #ffcc34; font-size: 0.85rem; text-decoration: none;">
-                            View on Metacritic →
-                        </a>
-                    </div>
-                    {% endif %}
                 </div>
                 {% endif %}
 
