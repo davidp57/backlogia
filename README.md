@@ -200,7 +200,7 @@ Configure all store connections through the **Settings** page in Backlogia. Each
 | **Steam** | [Steam Web API](https://steamcommunity.com/dev/apikey) for API key |
 | **IGDB** | [Twitch Developer Console](https://dev.twitch.tv/console/apps) (IGDB uses Twitch auth) |
 | **Epic Games** | OAuth flow in Settings page |
-| **GOG** | Reads from local GOG Galaxy database |
+| **GOG** | Reads from local GOG Galaxy database OR uses bookmarklet import (instructions in Settings) |
 | **itch.io** | [itch.io API Keys](https://itch.io/user/settings/api-keys) |
 | **Humble Bundle** | Session cookie from browser (instructions in Settings) |
 | **Battle.net** | Session cookie from browser (instructions in Settings) |
