@@ -17,6 +17,7 @@ ITCH_API_KEY = "itch_api_key"
 HUMBLE_SESSION_COOKIE = "humble_session_cookie"
 BATTLENET_SESSION_COOKIE = "battlenet_session_cookie"
 GOG_DB_PATH = "gog_db_path"
+EA_BEARER_TOKEN = "ea_bearer_token"
 
 # Map setting keys to environment variable names
 ENV_VAR_MAP = {
@@ -28,6 +29,7 @@ ENV_VAR_MAP = {
     HUMBLE_SESSION_COOKIE: "HUMBLE_SESSION_COOKIE",
     BATTLENET_SESSION_COOKIE: "BATTLENET_SESSION_COOKIE",
     GOG_DB_PATH: "GOG_DB_PATH",
+    EA_BEARER_TOKEN: "EA_BEARER_TOKEN",
 }
 
 
@@ -155,4 +157,11 @@ def get_gog_settings():
     """Get GOG Galaxy settings."""
     return {
         "db_path": get_setting(GOG_DB_PATH),
+    }
+
+
+def get_ea_credentials():
+    """Get EA credentials."""
+    return {
+        "bearer_token": get_setting(EA_BEARER_TOKEN),
     }

@@ -24,7 +24,8 @@ def settings_page(
     # Import here to avoid circular imports
     from ..services.settings import (
         get_setting, STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET,
-        ITCH_API_KEY, HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH
+        ITCH_API_KEY, HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH,
+        EA_BEARER_TOKEN
     )
 
     settings = {
@@ -36,6 +37,7 @@ def settings_page(
         "humble_session_cookie": get_setting(HUMBLE_SESSION_COOKIE, ""),
         "battlenet_session_cookie": get_setting(BATTLENET_SESSION_COOKIE, ""),
         "gog_db_path": get_setting(GOG_DB_PATH, ""),
+        "ea_bearer_token": get_setting(EA_BEARER_TOKEN, ""),
     }
     success_flag = success == "1"
 
@@ -65,12 +67,14 @@ def save_settings(
     humble_session_cookie: str = Form(default=""),
     battlenet_session_cookie: str = Form(default=""),
     gog_db_path: str = Form(default=""),
+    ea_bearer_token: str = Form(default=""),
 ):
     """Save settings from the form."""
     # Import here to avoid circular imports
     from ..services.settings import (
         set_setting, STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET,
-        ITCH_API_KEY, HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH
+        ITCH_API_KEY, HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH,
+        EA_BEARER_TOKEN
     )
 
     # Save all form values
@@ -82,5 +86,6 @@ def save_settings(
     set_setting(HUMBLE_SESSION_COOKIE, humble_session_cookie.strip())
     set_setting(BATTLENET_SESSION_COOKIE, battlenet_session_cookie.strip())
     set_setting(GOG_DB_PATH, gog_db_path.strip())
+    set_setting(EA_BEARER_TOKEN, ea_bearer_token.strip())
 
     return RedirectResponse(url="/settings?success=1", status_code=303)

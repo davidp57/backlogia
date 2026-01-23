@@ -485,6 +485,67 @@ def import_battlenet_games(conn):
         return 0
 
 
+def import_ea_games(conn):
+    """Import games from EA (requires session cookies)."""
+    print("Importing EA library...")
+    cursor = conn.cursor()
+
+    try:
+        from ..sources.ea import get_ea_library
+
+        games = get_ea_library()
+        if not games:
+            print("  No EA games found or not authenticated")
+            print("  Get a new EA bearer token using the script in Settings")
+            return 0
+
+        count = 0
+        for game in games:
+            try:
+                # Build developers/publishers JSON arrays
+                developers = [game.get("developer")] if game.get("developer") else None
+                publishers = [game.get("publisher")] if game.get("publisher") else None
+
+                cursor.execute("""
+                    INSERT INTO games (
+                        name, store, store_id, cover_image,
+                        developers, publishers, release_date,
+                        extra_data, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(store, store_id) DO UPDATE SET
+                        name = excluded.name,
+                        cover_image = excluded.cover_image,
+                        developers = excluded.developers,
+                        publishers = excluded.publishers,
+                        release_date = excluded.release_date,
+                        extra_data = excluded.extra_data,
+                        updated_at = excluded.updated_at
+                """, (
+                    game.get("name"),
+                    "ea",
+                    game.get("offer_id"),
+                    game.get("cover_image"),
+                    json.dumps(developers) if developers else None,
+                    json.dumps(publishers) if publishers else None,
+                    game.get("release_date"),
+                    json.dumps(game.get("raw_data", {})),
+                    datetime.now().isoformat()
+                ))
+                count += 1
+            except Exception as e:
+                print(f"  Error importing {game.get('name')}: {e}")
+
+        conn.commit()
+        print(f"  Imported {count} EA games")
+        return count
+    except ImportError:
+        print("  EA module not available")
+        return 0
+    except Exception as e:
+        print(f"  EA import error: {e}")
+        return 0
+
+
 def import_amazon_games(conn):
     """Import games from Amazon Games (local database or API token)."""
     print("Importing Amazon Games library...")

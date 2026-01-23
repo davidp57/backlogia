@@ -135,6 +135,7 @@
         .section-icon.humble { background: #cc3333; }
         .section-icon.battlenet { background: #00aeff; }
         .section-icon.amazon { background: #ff9900; }
+        .section-icon.ea { background: #ff4747; }
         .section-icon.sync { background: #4caf50; }
 
         /* Collapsible Sections */
@@ -578,6 +579,7 @@
         .sync-btn .icon.humble { background: #cc3333; }
         .sync-btn .icon.battlenet { background: #00aeff; }
         .sync-btn .icon.amazon { background: #ff9900; }
+        .sync-btn .icon.ea { background: #ff4747; }
         .sync-btn .icon.all { background: linear-gradient(90deg, #667eea, #764ba2); }
         .sync-btn .icon.igdb { background: #9147ff; }
         .sync-btn .icon.metacritic { background: #ffcc34; color: #000; }
@@ -787,6 +789,13 @@
                         <div class="text">
                             <span>Sync Amazon</span>
                             <small>Import from Amazon Games</small>
+                        </div>
+                    </button>
+                    <button class="sync-btn" onclick="syncStore('ea')">
+                        <div class="icon ea">E</div>
+                        <div class="text">
+                            <span>Sync EA</span>
+                            <small>Import from EA App</small>
                         </div>
                     </button>
                 </div>
@@ -1168,6 +1177,46 @@
                     </div>
                 </div>
 
+                <!-- EA -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon ea">E</div>
+                        <div class="header-text">
+                            <div class="section-title">EA</div>
+                            <div class="section-description">Connect to your EA App library</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            <div class="form-group">
+                                <label for="ea_bearer_token">EA Bearer Token</label>
+                                <input type="password" id="ea_bearer_token" name="ea_bearer_token"
+                                       value="{{ settings.ea_bearer_token }}"
+                                       placeholder="Paste your EA bearer token here">
+                                <div class="help-text">
+                                    <button type="button" class="copy-btn" onclick="copyEaTokenScript(this)">
+                                        Copy EA Token Script
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="instructions-box">
+                                <ol>
+                                    <li>Log in to <a href="https://www.ea.com" target="_blank">ea.com</a> in your browser</li>
+                                    <li>Once logged in, open Developer Tools (<code>F12</code> or <code>Ctrl+Shift+I</code>)</li>
+                                    <li>Click the <strong>Console</strong> tab</li>
+                                    <li>Click "Copy EA Token Script" above, then paste in the console and press <code>Enter</code></li>
+                                    <li>A popup will appear with your token - click to copy it</li>
+                                    <li>Paste the token in the field above and save settings</li>
+                                </ol>
+                                <p style="margin-top: 10px; color: #f0ad4e; font-size: 0.8rem;">
+                                    <strong>Note:</strong> Tokens expire after some time. If sync fails, get a new token.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="button-row">
                     <button type="submit" class="btn btn-primary">Save Settings</button>
                     <a href="/" class="btn btn-secondary">Cancel</a>
@@ -1488,6 +1537,58 @@
 
         // Steam ID Bookmarklet copy
         const steamIdBookmarklet = `javascript: (function () { try { const d = document.body.innerHTML.match(/g_rgProfileData\\s*=\\s*({[^}]+})/); if (!d) return alert('Steam profile data not found!'); const p = JSON.parse(d[1].replace(/\\\\'/g, "'")); const s = p.steamid; if (!s) return alert('Steam ID not found!'); const o = document.createElement('div'); o.innerHTML = \`<div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#1b2838,#2a475e);padding:20px 25px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:999999;font-family:-apple-system,BlinkMacSystemFont,sans-serif;border:1px solid #66c0f4;min-width:280px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="color:#66c0f4;font-size:12px;text-transform:uppercase;letter-spacing:1px">Steam ID</span><button onclick="this.closest('div').parentElement.remove()" style="background:none;border:none;color:#8f98a0;cursor:pointer;font-size:18px;padding:0;line-height:1">&times;</button></div><div style="background:#171a21;padding:12px 15px;border-radius:6px;margin-bottom:15px;display:flex;align-items:center;justify-content:space-between"><code style="color:#fff;font-size:16px;font-family:monospace">\${s}</code></div><button id="scb" style="width:100%;padding:10px 15px;background:linear-gradient(90deg,#47bfff,#1a9fff);border:none;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;font-size:14px;transition:opacity 0.2s">Copy to Clipboard</button><div style="margin-top:12px;padding-top:12px;border-top:1px solid #2a475e;color:#8f98a0;font-size:11px"><strong style="color:#c7d5e0">\${p.personaname}</strong></div></div>\`; document.body.appendChild(o); o.querySelector('#scb').onclick = function () { navigator.clipboard.writeText(s).then(() => { this.textContent = 'Copied!'; this.style.background = 'linear-gradient(90deg,#5ba32b,#4a8c24)'; setTimeout(() => { this.textContent = 'Copy to Clipboard'; this.style.background = 'linear-gradient(90deg,#47bfff,#1a9fff)' }, 2000) }) } } catch (e) { alert('Error: ' + e.message) } })();`;
+
+        // EA Token Script - fetches bearer token from EA auth endpoint
+        const eaTokenScript = `(async function() {
+  try {
+    const response = await fetch('https://accounts.ea.com/connect/auth?client_id=ORIGIN_JS_SDK&response_type=token&redirect_uri=nucleus:rest&prompt=none', { credentials: 'include' });
+    const data = await response.json();
+    if (data.access_token) {
+      const token = data.access_token;
+      const overlay = document.createElement('div');
+      overlay.innerHTML = \`
+        <div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#1a1a2e,#16213e);padding:20px 25px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:999999;font-family:-apple-system,BlinkMacSystemFont,sans-serif;border:1px solid #ff4747;min-width:320px;max-width:400px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <span style="color:#ff4747;font-size:12px;text-transform:uppercase;letter-spacing:1px">EA Bearer Token</span>
+            <button onclick="this.closest('div').parentElement.remove()" style="background:none;border:none;color:#888;cursor:pointer;font-size:18px;padding:0;line-height:1">&times;</button>
+          </div>
+          <div style="background:#0d0d1a;padding:12px 15px;border-radius:6px;margin-bottom:15px;word-break:break-all;max-height:150px;overflow-y:auto">
+            <code style="color:#e4e4e4;font-size:11px;font-family:monospace">\${token.substring(0,50)}...</code>
+          </div>
+          <button id="eacb" style="width:100%;padding:10px 15px;background:linear-gradient(90deg,#ff4747,#cc3333);border:none;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;font-size:14px">Copy Token</button>
+          <div style="margin-top:12px;color:#888;font-size:11px">Token expires in ~1 hour. Paste it in Backlogia settings.</div>
+        </div>
+      \`;
+      document.body.appendChild(overlay);
+      overlay.querySelector('#eacb').onclick = function() {
+        navigator.clipboard.writeText(token).then(() => {
+          this.textContent = 'Copied!';
+          this.style.background = 'linear-gradient(90deg,#4caf50,#2e7d32)';
+        });
+      };
+    } else if (data.error) {
+      alert('EA Auth Error: ' + data.error + '\\n' + (data.error_description || 'Make sure you are logged in to ea.com'));
+    } else {
+      alert('Could not get token. Make sure you are logged in to ea.com');
+    }
+  } catch (e) {
+    alert('Error: ' + e.message + '\\n\\nMake sure you are on an ea.com page and logged in.');
+  }
+})();`;
+
+        function copyEaTokenScript(btn) {
+            navigator.clipboard.writeText(eaTokenScript).then(() => {
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                showStatus('Failed to copy: ' + err.message, 'error');
+            });
+        }
 
         function copySteamIdBookmarklet(btn) {
             navigator.clipboard.writeText(steamIdBookmarklet).then(() => {

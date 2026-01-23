@@ -18,10 +18,11 @@ Stop jumping between Steam, Epic, GOG, Amazon, and a dozen other launchers just 
   <img src="web/static/images/itch-90.png" alt="itch.io" width="48" height="48" style="margin: 0 10px;">
   <img src="web/static/images/humble-96.png" alt="Humble Bundle" width="48" height="48" style="margin: 0 10px;">
   <img src="web/static/images/battlenet-100.png" alt="Battle.net" width="48" height="48" style="margin: 0 10px;">
+  <img src="web/static/images/ea-256.png" alt="EA" width="48" height="48" style="margin: 0 10px;">
 </p>
 
 <p align="center">
-  <strong>Steam</strong> &nbsp;•&nbsp; <strong>Epic Games</strong> &nbsp;•&nbsp; <strong>GOG</strong> &nbsp;•&nbsp; <strong>Amazon Games</strong> &nbsp;•&nbsp; <strong>itch.io</strong> &nbsp;•&nbsp; <strong>Humble Bundle</strong> &nbsp;•&nbsp; <strong>Battle.net</strong>
+  <strong>Steam</strong> &nbsp;•&nbsp; <strong>Epic Games</strong> &nbsp;•&nbsp; <strong>GOG</strong> &nbsp;•&nbsp; <strong>Amazon Games</strong> &nbsp;•&nbsp; <strong>itch.io</strong> &nbsp;•&nbsp; <strong>Humble Bundle</strong> &nbsp;•&nbsp; <strong>Battle.net</strong> &nbsp;•&nbsp; <strong>EA</strong>
 </p>
 
 Please vote for which stores you would like to see supported next [here](https://github.com/sam1am/backlogia/discussions/1).
@@ -168,78 +169,21 @@ Connect your accounts and sync your library with a single click.
 
 ## Configuration
 
-Configure your store connections by editing the `.env` file or through the Settings page in the app.
+Configure all store connections through the **Settings** page in Backlogia. Each store section includes step-by-step instructions for obtaining the required credentials.
 
-### Steam
+### Where to Get Credentials
 
-| Variable | Description |
-|----------|-------------|
-| `STEAM_ID` | Your 17-digit Steam ID |
-| `STEAM_API_KEY` | Get one at [Steam Web API](https://steamcommunity.com/dev/apikey) |
-
-### IGDB (Metadata)
-
-| Variable | Description |
-|----------|-------------|
-| `IGDB_CLIENT_ID` | Twitch Developer Client ID |
-| `IGDB_CLIENT_SECRET` | Twitch Developer Client Secret |
-
-Get your credentials at [Twitch Developer Console](https://dev.twitch.tv/console/apps) (IGDB uses Twitch authentication).
-
-### Epic Games
-
-Epic Games uses the [Legendary](https://github.com/derrod/legendary) CLI. Authenticate through the Settings page in Backlogia or run:
-```bash
-legendary auth
-```
-
-### GOG Galaxy
-
-| Variable | Description |
-|----------|-------------|
-| `GOG_DB_DIR` | Directory containing `galaxy-2.0.db` |
-
-Default locations:
-- **macOS**: `/Users/Shared/GOG.com/Galaxy/Storage`
-- **Windows**: `C:/ProgramData/GOG.com/Galaxy/storage`
-
-### itch.io
-
-| Variable | Description |
-|----------|-------------|
-| `ITCH_API_KEY` | Your itch.io API key from [itch.io settings](https://itch.io/user/settings/api-keys) |
-
-### Humble Bundle
-
-| Variable | Description |
-|----------|-------------|
-| `HUMBLE_SESSION_COOKIE` | Your `_simpleauth_sess` cookie from humblebundle.com |
-
-To get your session cookie:
-1. Log in to [humblebundle.com](https://humblebundle.com)
-2. Open browser DevTools (F12) → Application → Cookies
-3. Copy the value of `_simpleauth_sess`
-
-### Battle.net
-
-| Variable | Description |
-|----------|-------------|
-| `BATTLENET_SESSION_COOKIE` | Your cookies from account.battle.net |
-
-To get your cookies:
-1. Log in to [account.battle.net](https://account.battle.net)
-2. Open browser DevTools (F12) → Network tab
-3. Refresh the page and click on any request to `account.battle.net`
-4. In Request Headers, find **Cookie** and copy the entire value
-
-### Amazon Games
-
-Amazon Games uses [Nile](https://github.com/imLinguin/nile), an open-source Amazon Games client. Authenticate through the Settings page in Backlogia:
-
-1. Click **Authenticate with Amazon** in Settings
-2. Log in to your Amazon account in the popup window
-3. After login, copy the redirect URL and paste it back into Backlogia
-4. Click **Complete Authentication**
+| Store | Credential Source |
+|-------|-------------------|
+| **Steam** | [Steam Web API](https://steamcommunity.com/dev/apikey) for API key |
+| **IGDB** | [Twitch Developer Console](https://dev.twitch.tv/console/apps) (IGDB uses Twitch auth) |
+| **Epic Games** | OAuth flow in Settings page |
+| **GOG** | Reads from local GOG Galaxy database |
+| **itch.io** | [itch.io API Keys](https://itch.io/user/settings/api-keys) |
+| **Humble Bundle** | Session cookie from browser (instructions in Settings) |
+| **Battle.net** | Session cookie from browser (instructions in Settings) |
+| **Amazon** | OAuth flow in Settings page |
+| **EA** | Bearer token via JavaScript snippet (instructions in Settings) |
 
 ---
 
@@ -259,6 +203,7 @@ Backlogia is built on the shoulders of these excellent open-source projects:
 
 - **[Legendary](https://github.com/derrod/legendary)** — Epic Games Store integration
 - **[Nile](https://github.com/imLinguin/nile)** — Amazon Games integration
+- **[PlayniteExtensions](https://github.com/Jeshibu/PlayniteExtensions)** — EA library integration method
 
 ---
 
