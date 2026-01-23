@@ -128,6 +128,16 @@ Connect your accounts and sync your library with a single click.
 | `./data/nile:/root/.config/nile` | Amazon Games authentication cache |
 | `${GOG_DB_DIR}:/gog:ro` | GOG Galaxy database (read-only) |
 
+#### Updating
+
+To update Backlogia to the latest version:
+
+```bash
+git pull
+docker compose down
+docker compose up -d --build
+```
+
 ### Option 2: Local Installation
 
 1. **Clone the repository**
@@ -165,6 +175,17 @@ Connect your accounts and sync your library with a single click.
    ```
 
 8. **Access Backlogia** at [http://localhost:5050](http://localhost:5050)
+
+#### Updating
+
+To update Backlogia to the latest version:
+
+```bash
+git pull
+pip install -r requirements.txt
+```
+
+Then restart the application.
 
 ---
 
