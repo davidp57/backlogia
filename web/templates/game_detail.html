@@ -1529,6 +1529,17 @@
                                     </p>
                                 </div>
                             </div>
+
+                            <div class="settings-section" style="border-top: 1px solid rgba(244, 67, 54, 0.3); padding-top: 20px; margin-top: 20px;">
+                                <h3 style="color: #f44336;">Danger Zone</h3>
+                                <div class="hide-toggle" style="background: rgba(244, 67, 54, 0.1); border: 1px solid rgba(244, 67, 54, 0.2);">
+                                    <div class="hide-toggle-label">
+                                        <span style="color: #f44336;">Delete from library</span>
+                                        <small>Permanently remove this game. It will be re-added on next sync if still owned.</small>
+                                    </div>
+                                    <button type="button" class="igdb-btn" style="background: rgba(244, 67, 54, 0.2); color: #f44336; border-color: rgba(244, 67, 54, 0.3);" onclick="deleteGame()">Delete</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1829,6 +1840,29 @@
             })
             .catch(error => {
                 showMetacriticStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        // Delete game from library
+        function deleteGame() {
+            if (!confirm('Are you sure you want to delete this game from your library?\n\nThis will remove it from all collections. It will be re-added on next sync if you still own it.')) {
+                return;
+            }
+
+            fetch(`/api/game/${gameId}`, {
+                method: 'DELETE',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.href = '/library';
+                } else {
+                    alert(data.detail || data.error || 'Failed to delete game');
+                }
+            })
+            .catch(error => {
+                alert('Network error: ' + error.message);
             });
         }
 

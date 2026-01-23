@@ -766,10 +766,24 @@
         .action-bar .selection-count {
             font-size: 0.95rem;
             color: #888;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .action-bar .selection-count strong {
             color: #667eea;
+        }
+
+        .action-bar .select-all-link {
+            color: #667eea;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .action-bar .select-all-link:hover {
+            text-decoration: underline;
         }
 
         .action-bar .action-buttons {
@@ -807,6 +821,16 @@
 
         .action-btn.nsfw:hover {
             background: rgba(255, 152, 0, 0.3);
+        }
+
+        .action-btn.delete {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+
+        .action-btn.delete:hover {
+            background: rgba(244, 67, 54, 0.3);
         }
 
         .action-btn.cancel {
@@ -1279,6 +1303,7 @@
         <div class="action-bar" id="action-bar">
             <div class="selection-count">
                 <strong id="selection-count">0</strong> selected
+                <span class="select-all-link" onclick="selectAllGames()">Select All</span>
             </div>
             <div class="action-buttons">
                 <button class="action-btn collection" onclick="openCollectionModal()">
@@ -1289,6 +1314,9 @@
                 </button>
                 <button class="action-btn nsfw" onclick="bulkAction('nsfw')">
                     Mark NSFW
+                </button>
+                <button class="action-btn delete" onclick="bulkDelete()">
+                    Delete Selected
                 </button>
                 <button class="action-btn cancel" onclick="clearSelection()">
                     Cancel
@@ -1579,6 +1607,18 @@
             updateSelectionCount();
         }
 
+        function selectAllGames() {
+            document.querySelectorAll('.game-card').forEach(card => {
+                const gameIds = card.dataset.gameIds;
+                if (gameIds && !card.classList.contains('selected')) {
+                    card.classList.add('selected');
+                    card.querySelector('.game-checkbox')?.classList.add('checked');
+                    gameIds.split(',').forEach(id => selectedGames.add(id));
+                }
+            });
+            updateSelectionCount();
+        }
+
         async function bulkAction(action) {
             if (selectedGames.size === 0) return;
 
@@ -1602,6 +1642,59 @@
 
                 if (data.success) {
                     // Remove selected cards from the grid (they're now hidden/marked)
+                    document.querySelectorAll('.game-card.selected').forEach(card => {
+                        card.style.transition = 'opacity 0.3s, transform 0.3s';
+                        card.style.opacity = '0';
+                        card.style.transform = 'scale(0.8)';
+                        setTimeout(() => card.remove(), 300);
+                    });
+
+                    clearSelection();
+                    toggleSelectMode();
+
+                    // Update stats after a short delay
+                    setTimeout(() => {
+                        location.reload();
+                    }, 500);
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            } finally {
+                actionBtn.disabled = false;
+                actionBtn.textContent = originalText;
+            }
+        }
+
+        async function bulkDelete() {
+            if (selectedGames.size === 0) return;
+
+            const count = selectedGames.size;
+            if (!confirm(`Are you sure you want to delete ${count} game${count > 1 ? 's' : ''} from your library?\n\nThis will remove them from all collections. They will be re-added on next sync if you still own them.`)) {
+                return;
+            }
+
+            const gameIds = Array.from(selectedGames).map(id => parseInt(id));
+            const actionBtn = document.querySelector('.action-btn.delete');
+            const originalText = actionBtn.textContent;
+
+            actionBtn.disabled = true;
+            actionBtn.textContent = 'Deleting...';
+
+            try {
+                const response = await fetch('/api/games/bulk/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ game_ids: gameIds })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Remove selected cards from the grid
                     document.querySelectorAll('.game-card.selected').forEach(card => {
                         card.style.transition = 'opacity 0.3s, transform 0.3s';
                         card.style.opacity = '0';

@@ -408,3 +408,49 @@ def bulk_add_to_collection(body: BulkAddToCollectionRequest, conn: sqlite3.Conne
     conn.commit()
 
     return {"success": True, "added": added}
+
+
+@router.delete("/api/game/{game_id}")
+def delete_game(game_id: int, conn: sqlite3.Connection = Depends(get_db)):
+    """Delete a game from the library."""
+    cursor = conn.cursor()
+
+    # Check if game exists
+    cursor.execute("SELECT name FROM games WHERE id = ?", (game_id,))
+    row = cursor.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    game_name = row[0]
+
+    # Remove from collections first (foreign key constraint)
+    cursor.execute("DELETE FROM collection_games WHERE game_id = ?", (game_id,))
+
+    # Delete the game
+    cursor.execute("DELETE FROM games WHERE id = ?", (game_id,))
+    conn.commit()
+
+    return {"success": True, "message": f"Deleted '{game_name}' from library"}
+
+
+@router.post("/api/games/bulk/delete")
+def bulk_delete_games(body: BulkGameIdsRequest, conn: sqlite3.Connection = Depends(get_db)):
+    """Delete multiple games from the library."""
+    game_ids = body.game_ids
+    if not game_ids:
+        raise HTTPException(status_code=400, detail="No games selected")
+
+    cursor = conn.cursor()
+
+    placeholders = ",".join("?" * len(game_ids))
+
+    # Remove from collections first
+    cursor.execute(f"DELETE FROM collection_games WHERE game_id IN ({placeholders})", game_ids)
+
+    # Delete the games
+    cursor.execute(f"DELETE FROM games WHERE id IN ({placeholders})", game_ids)
+    deleted = cursor.rowcount
+
+    conn.commit()
+
+    return {"success": True, "deleted": deleted}
