@@ -1,0 +1,49 @@
+# Docker Compose for pre-built Backlogia image from GitHub Container Registry
+#
+# Quick Start:
+#   1. Copy .env.example to .env and fill in your credentials
+#   2. Run: docker compose -f docker-compose.ghcr.yml up -d
+#   3. Access Backlogia at http://localhost:5050
+
+services:
+  backlogia:
+    image: ghcr.io/sam1am/backlogia:latest
+    container_name: backlogia
+    ports:
+      - "${WEB_PORT:-5050}:5050"
+    volumes:
+      - ./data:/data
+      - ./data/legendary:/root/.config/legendary
+      - ./data/nile:/root/.config/nile
+      - ${GOG_DB_DIR:-./.empty}:/gog:ro
+      # Local game folders (up to 5 by default, add more if needed)
+      - ${LOCAL_GAMES_DIR_1:-./.empty}:/local-games-1:ro
+      - ${LOCAL_GAMES_DIR_2:-./.empty}:/local-games-2:ro
+      - ${LOCAL_GAMES_DIR_3:-./.empty}:/local-games-3:ro
+      - ${LOCAL_GAMES_DIR_4:-./.empty}:/local-games-4:ro
+      - ${LOCAL_GAMES_DIR_5:-./.empty}:/local-games-5:ro
+    environment:
+      - DATABASE_PATH=/data/game_library.db
+      - DEBUG=false
+      - PORT=5050
+      # Steam configuration
+      - STEAM_ID=${STEAM_ID:-}
+      - STEAM_API_KEY=${STEAM_API_KEY:-}
+      # IGDB configuration
+      - IGDB_CLIENT_ID=${IGDB_CLIENT_ID:-}
+      - IGDB_CLIENT_SECRET=${IGDB_CLIENT_SECRET:-}
+      # itch.io configuration
+      - ITCH_API_KEY=${ITCH_API_KEY:-}
+      # Humble Bundle configuration
+      - HUMBLE_SESSION_COOKIE=${HUMBLE_SESSION_COOKIE:-}
+      # GOG configuration - automatically uses mounted path
+      - GOG_DB_PATH=/gog/galaxy-2.0.db
+      # Battle.net configuration
+      - BATTLENET_SESSION_COOKIE=${BATTLENET_SESSION_COOKIE:-}
+      # Local games - host paths for display, container paths for scanning
+      - LOCAL_GAMES_DIR_1=${LOCAL_GAMES_DIR_1:-}
+      - LOCAL_GAMES_DIR_2=${LOCAL_GAMES_DIR_2:-}
+      - LOCAL_GAMES_DIR_3=${LOCAL_GAMES_DIR_3:-}
+      - LOCAL_GAMES_DIR_4=${LOCAL_GAMES_DIR_4:-}
+      - LOCAL_GAMES_DIR_5=${LOCAL_GAMES_DIR_5:-}
+    restart: unless-stopped

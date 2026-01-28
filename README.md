@@ -93,11 +93,51 @@ Connect your accounts and sync your library with a single click.
 
 ### Prerequisites
 
-- **Python 3.11+** (for local installation)
 - **Docker & Docker Compose** (for containerized installation)
+- **Python 3.11+** (for local installation only)
 - API keys for the stores you want to sync (see [Configuration](#configuration))
 
-### Option 1: Docker (Recommended)
+### Option 1: Pre-built Image (Recommended)
+
+The easiest way to run Backlogia—no cloning or building required.
+
+1. **Create a directory for Backlogia**
+   ```bash
+   mkdir backlogia && cd backlogia
+   ```
+
+2. **Download the configuration files**
+   ```bash
+   curl -O https://raw.githubusercontent.com/sam1am/backlogia/main/.env.example
+   curl -O https://raw.githubusercontent.com/sam1am/backlogia/main/docker-compose.ghcr.yml
+   ```
+
+3. **Create your environment file**
+   ```bash
+   cp .env.example .env
+   ```
+
+4. **Edit `.env` with your API credentials** (see [Configuration](#configuration))
+
+5. **Start the container**
+   ```bash
+   docker compose -f docker-compose.ghcr.yml up -d
+   ```
+
+6. **Access Backlogia** at [http://localhost:5050](http://localhost:5050)
+
+#### Updating (Pre-built Image)
+
+```bash
+docker compose -f docker-compose.ghcr.yml pull
+docker compose -f docker-compose.ghcr.yml up -d
+```
+
+---
+
+### Option 2: Build from Source (Docker)
+
+Build the image locally from the repository.
 
 1. **Clone the repository**
    ```bash
@@ -119,7 +159,17 @@ Connect your accounts and sync your library with a single click.
 
 5. **Access Backlogia** at [http://localhost:5050](http://localhost:5050)
 
-#### Docker Volumes
+#### Updating (Build from Source)
+
+```bash
+git pull
+docker compose down
+docker compose up -d --build
+```
+
+---
+
+### Docker Volumes
 
 | Volume | Purpose |
 |--------|---------|
@@ -129,21 +179,13 @@ Connect your accounts and sync your library with a single click.
 | `${GOG_DB_DIR}:/gog:ro` | GOG Galaxy database (read-only) |
 | `${LOCAL_GAMES_DIR_N}:/local-games-N:ro` | Local games folders 1-5 (read-only, add more in docker-compose.yml if needed) |
 
-#### Updating
+---
 
-To update Backlogia to the latest version:
-
-```bash
-git pull
-docker compose down
-docker compose up -d --build
-```
-
-### Option 2: Local Installation
+### Option 3: Local Installation
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/backlogia.git
+   git clone https://github.com/sam1am/backlogia.git
    cd backlogia
    ```
 
@@ -177,9 +219,7 @@ docker compose up -d --build
 
 8. **Access Backlogia** at [http://localhost:5050](http://localhost:5050)
 
-#### Updating
-
-To update Backlogia to the latest version:
+#### Updating (Local Installation)
 
 ```bash
 git pull
