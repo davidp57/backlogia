@@ -13,6 +13,7 @@ from .config import DATABASE_PATH
 from .database import ensure_extra_columns, ensure_collections_tables
 from .services.database_builder import create_database
 from .services.igdb_sync import add_igdb_columns
+from .services.jobs import cleanup_orphaned_jobs
 
 # Import routers
 from .routes.api_games import router as api_games_router
@@ -23,6 +24,7 @@ from .routes.collections import router as collections_router
 from .routes.library import router as library_router
 from .routes.discover import router as discover_router
 from .routes.settings import router as settings_router
+from .routes.jobs import router as jobs_router
 
 
 def init_database():
@@ -34,6 +36,9 @@ def init_database():
     conn = sqlite3.connect(DATABASE_PATH)
     add_igdb_columns(conn)
     conn.close()
+
+    # Clean up any jobs that were running when the server last stopped
+    cleanup_orphaned_jobs()
 
 
 # Create FastAPI app
@@ -78,3 +83,4 @@ app.include_router(settings_router)
 app.include_router(sync_router)
 app.include_router(auth_router)
 app.include_router(collections_router)
+app.include_router(jobs_router)

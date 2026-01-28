@@ -339,8 +339,16 @@ def calculate_match_score(game_name, igdb_result):
     return score
 
 
-def sync_games(conn, client, limit=None, force=False):
-    """Sync games with IGDB."""
+def sync_games(conn, client, limit=None, force=False, progress_callback=None):
+    """Sync games with IGDB.
+
+    Args:
+        conn: Database connection
+        client: IGDBClient instance
+        limit: Maximum number of games to process
+        force: If True, resync all games; if False, only sync unmatched games
+        progress_callback: Optional callback function(current, total, message) for progress updates
+    """
     cursor = conn.cursor()
 
     # Get games that haven't been matched yet (or all if force)
@@ -361,13 +369,18 @@ def sync_games(conn, client, limit=None, force=False):
     if limit:
         games = games[:limit]
 
-    print(f"Processing {len(games)} games...")
+    total = len(games)
+    print(f"Processing {total} games...")
 
     matched = 0
     failed = 0
 
     for i, (game_id, name, store, existing_genres) in enumerate(games):
-        print(f"[{i+1}/{len(games)}] Searching for: {name}...", end=" ", flush=True)
+        print(f"[{i+1}/{total}] Searching for: {name}...", end=" ", flush=True)
+
+        # Report progress
+        if progress_callback:
+            progress_callback(i, total, f"Processing: {name[:50]}...")
 
         try:
             results = client.search_game(name)

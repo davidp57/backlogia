@@ -320,8 +320,17 @@ def _process_single_game(client, game_id, name):
         return (game_id, False, f"Error: {e}")
 
 
-def sync_games(conn, client, limit=None, force=False, max_workers=5):
-    """Sync games with Metacritic using multithreading."""
+def sync_games(conn, client, limit=None, force=False, max_workers=5, progress_callback=None):
+    """Sync games with Metacritic using multithreading.
+
+    Args:
+        conn: Database connection
+        client: MetacriticClient instance
+        limit: Maximum number of games to process
+        force: If True, resync all games; if False, only sync unmatched games
+        max_workers: Number of parallel workers
+        progress_callback: Optional callback function(current, total, message) for progress updates
+    """
     cursor = conn.cursor()
 
     # Get games that haven't been matched yet (or all if force)
@@ -399,6 +408,10 @@ def sync_games(conn, client, limit=None, force=False, max_workers=5):
         for future in as_completed(future_to_game):
             game_id, name = future_to_game[future]
             completed += 1
+
+            # Report progress
+            if progress_callback:
+                progress_callback(completed, total, f"Processing: {name[:50]}...")
 
             try:
                 result_game_id, success, result = future.result()

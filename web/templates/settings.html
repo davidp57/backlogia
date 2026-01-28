@@ -656,6 +656,159 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Job Progress Styles */
+        .job-progress-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .job-progress-panel.hidden {
+            display: none;
+        }
+
+        .job-progress-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .job-progress-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .job-progress-title h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #e4e4e4;
+            margin: 0;
+        }
+
+        .job-progress-info {
+            color: #888;
+            font-size: 0.8rem;
+        }
+
+        .job-item {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .job-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .job-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .job-item-type {
+            font-weight: 600;
+            color: #e4e4e4;
+        }
+
+        .job-item-status {
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+
+        .job-item-status.running {
+            background: rgba(102, 126, 234, 0.3);
+            color: #9fa8da;
+        }
+
+        .job-item-status.completed {
+            background: rgba(76, 175, 80, 0.3);
+            color: #81c784;
+        }
+
+        .job-item-status.failed {
+            background: rgba(244, 67, 54, 0.3);
+            color: #e57373;
+        }
+
+        .job-item-status.pending {
+            background: rgba(255, 165, 0, 0.3);
+            color: #ffcc80;
+        }
+
+        .job-dismiss-btn {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            padding: 4px 8px;
+            font-size: 1.1rem;
+            line-height: 1;
+            border-radius: 4px;
+            transition: all 0.2s;
+            margin-left: 10px;
+        }
+
+        .job-dismiss-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e4e4e4;
+        }
+
+        .job-progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .job-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .job-progress-fill.completed {
+            background: linear-gradient(90deg, #4caf50, #2e7d32);
+        }
+
+        .job-progress-fill.failed {
+            background: linear-gradient(90deg, #f44336, #c62828);
+        }
+
+        .job-item-message {
+            font-size: 0.85rem;
+            color: #ccc;
+        }
+
+        .job-item-message.error {
+            color: #e57373;
+        }
+
+        .leave-page-notice {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 15px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: #9fa8da;
+        }
+
+        .leave-page-notice svg {
+            flex-shrink: 0;
+        }
+
         @media (max-width: 600px) {
             .settings-panel {
                 padding: 20px;
@@ -704,6 +857,26 @@
             Settings saved successfully!
         </div>
         {% endif %}
+
+        <!-- Job Progress Panel -->
+        <div id="job-progress-panel" class="job-progress-panel hidden">
+            <div class="job-progress-header">
+                <div class="job-progress-title">
+                    <span class="spinner"></span>
+                    <h3>Sync in Progress</h3>
+                </div>
+                <span class="job-progress-info">Updates every 2 seconds</span>
+            </div>
+            <div id="job-list"></div>
+            <div class="leave-page-notice">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <span>You can safely leave this page. Progress will continue in the background and will be shown when you return.</span>
+            </div>
+        </div>
 
         <!-- Tools -->
         <div class="settings-panel">
@@ -1440,16 +1613,161 @@ LOCAL_GAMES_DIR_2=/another/path/to/games</pre>
             statusEl.textContent = '';
         }
 
-        // Sync Store
+        // Job Progress Tracking
+        let jobPollingInterval = null;
+        let dismissedJobs = JSON.parse(localStorage.getItem('dismissedJobs') || '[]');
+
+        function getJobTypeLabel(type) {
+            const labels = {
+                'store_sync': 'Store Sync',
+                'igdb_sync': 'IGDB Metadata Sync',
+                'metacritic_sync': 'Metacritic Scores Sync'
+            };
+            return labels[type] || type;
+        }
+
+        function dismissJob(jobId) {
+            dismissedJobs.push(jobId);
+            localStorage.setItem('dismissedJobs', JSON.stringify(dismissedJobs));
+            // Re-render the job list
+            checkActiveJobs();
+        }
+
+        function renderJobItem(job) {
+            const percentage = job.total > 0 ? Math.round((job.progress / job.total) * 100) : 0;
+            const statusClass = job.status;
+            const progressClass = job.status === 'completed' ? 'completed' : (job.status === 'failed' ? 'failed' : '');
+            const messageClass = job.status === 'failed' ? 'error' : '';
+
+            return `
+                <div class="job-item" data-job-id="${job.id}">
+                    <div class="job-item-header">
+                        <span class="job-item-type">${getJobTypeLabel(job.type)}</span>
+                        <div style="display: flex; align-items: center;">
+                            <span class="job-item-status ${statusClass}">${job.status}</span>
+                            <button class="job-dismiss-btn" onclick="dismissJob('${job.id}')" title="Dismiss">&times;</button>
+                        </div>
+                    </div>
+                    <div class="job-progress-bar">
+                        <div class="job-progress-fill ${progressClass}" style="width: ${percentage}%"></div>
+                    </div>
+                    <div class="job-item-message ${messageClass}">
+                        ${job.error || job.message || 'Starting...'}
+                        ${job.total > 0 ? ` (${job.progress}/${job.total})` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateJobProgressPanel(jobs) {
+            const panel = document.getElementById('job-progress-panel');
+            const jobList = document.getElementById('job-list');
+
+            // Filter out dismissed jobs and old completed jobs
+            const now = Date.now();
+            const relevantJobs = jobs.filter(job => {
+                // Skip dismissed jobs
+                if (dismissedJobs.includes(job.id)) return false;
+
+                // Always show active jobs
+                if (job.status === 'pending' || job.status === 'running') return true;
+
+                // For completed/failed jobs, show for 60 seconds after completion
+                if (job.completed_at) {
+                    // Parse the ISO timestamp - handle both with and without timezone
+                    const completedAt = new Date(job.completed_at);
+                    const elapsed = now - completedAt.getTime();
+                    return elapsed < 60000; // Show for 60 seconds
+                }
+                return false;
+            });
+
+            if (relevantJobs.length === 0) {
+                panel.classList.add('hidden');
+                stopJobPolling();
+                return;
+            }
+
+            panel.classList.remove('hidden');
+            jobList.innerHTML = relevantJobs.map(renderJobItem).join('');
+
+            // Update panel header based on job states
+            const hasRunning = relevantJobs.some(j => j.status === 'running' || j.status === 'pending');
+            const spinner = panel.querySelector('.job-progress-title .spinner');
+            const title = panel.querySelector('.job-progress-title h3');
+            const notice = panel.querySelector('.leave-page-notice');
+
+            if (hasRunning) {
+                spinner.style.display = 'inline-block';
+                title.textContent = 'Sync in Progress';
+                if (notice) notice.style.display = 'flex';
+            } else {
+                spinner.style.display = 'none';
+                title.textContent = 'Sync Complete';
+                if (notice) notice.style.display = 'none';
+            }
+        }
+
+        // Clean up old dismissed job IDs (keep only last 50)
+        function cleanupDismissedJobs() {
+            if (dismissedJobs.length > 50) {
+                dismissedJobs = dismissedJobs.slice(-50);
+                localStorage.setItem('dismissedJobs', JSON.stringify(dismissedJobs));
+            }
+        }
+
+        function checkActiveJobs() {
+            fetch('/api/jobs')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.jobs) {
+                    updateJobProgressPanel(data.jobs);
+
+                    // Check if there are jobs that need tracking (active or recently completed)
+                    const now = Date.now();
+                    const hasRelevantJobs = data.jobs.some(j => {
+                        if (dismissedJobs.includes(j.id)) return false;
+                        if (j.status === 'pending' || j.status === 'running') return true;
+                        if (j.completed_at) {
+                            const completedAt = new Date(j.completed_at);
+                            return (now - completedAt.getTime()) < 60000;
+                        }
+                        return false;
+                    });
+
+                    // Start/continue polling if there are relevant jobs
+                    if (hasRelevantJobs && !jobPollingInterval) {
+                        startJobPolling();
+                    } else if (!hasRelevantJobs && jobPollingInterval) {
+                        stopJobPolling();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error checking jobs:', error);
+            });
+        }
+
+        function startJobPolling() {
+            if (jobPollingInterval) return;
+            jobPollingInterval = setInterval(checkActiveJobs, 2000);
+        }
+
+        function stopJobPolling() {
+            if (jobPollingInterval) {
+                clearInterval(jobPollingInterval);
+                jobPollingInterval = null;
+            }
+        }
+
+        // Sync Store (async with job tracking)
         function syncStore(store) {
             const btn = event.target.closest('.sync-btn');
             btn.disabled = true;
             const originalContent = btn.innerHTML;
-            btn.innerHTML = '<span class="spinner"></span> Syncing...';
+            btn.innerHTML = '<span class="spinner"></span> Starting...';
 
-            showStatus(`Syncing ${store === 'all' ? 'all stores' : store}... This may take a moment.`, 'loading');
-
-            fetch(`/api/sync/store/${store}`, {
+            fetch(`/api/sync/store/${store}/async`, {
                 method: 'POST'
             })
             .then(response => response.json())
@@ -1459,8 +1777,11 @@ LOCAL_GAMES_DIR_2=/another/path/to/games</pre>
 
                 if (data.success) {
                     showStatus(data.message, 'success');
+                    // Start polling for job updates
+                    checkActiveJobs();
+                    startJobPolling();
                 } else {
-                    showStatus(data.error || 'Sync failed', 'error');
+                    showStatus(data.error || 'Failed to start sync', 'error');
                 }
             })
             .catch(error => {
@@ -1470,16 +1791,14 @@ LOCAL_GAMES_DIR_2=/another/path/to/games</pre>
             });
         }
 
-        // Sync IGDB
+        // Sync IGDB (async with job tracking)
         function syncIgdb(mode) {
             const btn = event.target.closest('.sync-btn');
             btn.disabled = true;
             const originalContent = btn.innerHTML;
-            btn.innerHTML = '<span class="spinner"></span> Syncing...';
+            btn.innerHTML = '<span class="spinner"></span> Starting...';
 
-            showStatus(`Syncing IGDB metadata (${mode})... This may take several minutes.`, 'loading');
-
-            fetch(`/api/sync/igdb/${mode}`, {
+            fetch(`/api/sync/igdb/${mode}/async`, {
                 method: 'POST'
             })
             .then(response => response.json())
@@ -1489,8 +1808,10 @@ LOCAL_GAMES_DIR_2=/another/path/to/games</pre>
 
                 if (data.success) {
                     showStatus(data.message, 'success');
+                    checkActiveJobs();
+                    startJobPolling();
                 } else {
-                    showStatus(data.error || 'Sync failed', 'error');
+                    showStatus(data.error || 'Failed to start sync', 'error');
                 }
             })
             .catch(error => {
@@ -1500,16 +1821,14 @@ LOCAL_GAMES_DIR_2=/another/path/to/games</pre>
             });
         }
 
-        // Sync Metacritic
+        // Sync Metacritic (async with job tracking)
         function syncMetacritic(mode) {
             const btn = event.target.closest('.sync-btn');
             btn.disabled = true;
             const originalContent = btn.innerHTML;
-            btn.innerHTML = '<span class="spinner"></span> Syncing...';
+            btn.innerHTML = '<span class="spinner"></span> Starting...';
 
-            showStatus(`Syncing Metacritic scores (${mode})... This may take several minutes.`, 'loading');
-
-            fetch(`/api/sync/metacritic/${mode}`, {
+            fetch(`/api/sync/metacritic/${mode}/async`, {
                 method: 'POST'
             })
             .then(response => response.json())
@@ -1519,8 +1838,10 @@ LOCAL_GAMES_DIR_2=/another/path/to/games</pre>
 
                 if (data.success) {
                     showStatus(data.message, 'success');
+                    checkActiveJobs();
+                    startJobPolling();
                 } else {
-                    showStatus(data.detail || data.error || 'Sync failed', 'error');
+                    showStatus(data.detail || data.error || 'Failed to start sync', 'error');
                 }
             })
             .catch(error => {
@@ -1619,10 +1940,14 @@ LOCAL_GAMES_DIR_2=/another/path/to/games</pre>
             });
         }
 
-        // Check Epic status on page load
+        // Check Epic status and active jobs on page load
         document.addEventListener('DOMContentLoaded', function() {
             checkEpicStatus();
             checkAmazonStatus();
+            // Clean up old dismissed job IDs
+            cleanupDismissedJobs();
+            // Check for active jobs and show progress if any
+            checkActiveJobs();
         });
 
         // Amazon Authentication
