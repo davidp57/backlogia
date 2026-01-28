@@ -574,17 +574,12 @@
             flex-shrink: 0;
         }
 
-        .sync-btn .icon.steam { background: #1b2838; }
-        .sync-btn .icon.epic { background: #0078f2; }
-        .sync-btn .icon.gog { background: #86328a; }
-        .sync-btn .icon.itch { background: #fa5c5c; }
-        .sync-btn .icon.humble { background: #cc3333; }
-        .sync-btn .icon.battlenet { background: #00aeff; }
-        .sync-btn .icon.amazon { background: #ff9900; }
-        .sync-btn .icon.ea { background: #ff4747; }
-        .sync-btn .icon.xbox { background: #107C10; }
-        .sync-btn .icon.ubisoft { background: #0070ff; }
-        .sync-btn .icon.local { background: #6b8e23; }
+        .sync-btn .icon img {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+        }
+
         .sync-btn .icon.all { background: linear-gradient(90deg, #667eea, #764ba2); }
         .sync-btn .icon.igdb { background: #9147ff; }
         .sync-btn .icon.metacritic { background: #ffcc34; color: #000; }
@@ -945,70 +940,70 @@
                 <div class="sync-section-title">Sync Games from Stores</div>
                 <div class="sync-grid">
                     <button class="sync-btn" onclick="syncStore('steam')">
-                        <div class="icon steam">S</div>
+                        <div class="icon"><img src="/static/images/steam-100.png" alt="Steam"></div>
                         <div class="text">
                             <span>Sync Steam</span>
                             <small>Import from Steam library</small>
                         </div>
                     </button>
                     <button class="sync-btn" onclick="syncStore('epic')">
-                        <div class="icon epic">E</div>
+                        <div class="icon"><img src="/static/images/epic-100.png" alt="Epic"></div>
                         <div class="text">
                             <span>Sync Epic</span>
                             <small>Import from Epic Games</small>
                         </div>
                     </button>
                     <button class="sync-btn" onclick="syncStore('gog')">
-                        <div class="icon gog">G</div>
+                        <div class="icon"><img src="/static/images/gog-48.png" alt="GOG"></div>
                         <div class="text">
                             <span>Sync GOG</span>
                             <small>Import from GOG Galaxy</small>
                         </div>
                     </button>
                     <button class="sync-btn" onclick="syncStore('itch')">
-                        <div class="icon itch">i</div>
+                        <div class="icon"><img src="/static/images/itch-90.png" alt="itch.io"></div>
                         <div class="text">
                             <span>Sync itch.io</span>
                             <small>Import from itch.io</small>
                         </div>
                     </button>
                     <button class="sync-btn" onclick="syncStore('humble')">
-                        <div class="icon humble">H</div>
+                        <div class="icon"><img src="/static/images/humble-96.png" alt="Humble"></div>
                         <div class="text">
                             <span>Sync Humble</span>
                             <small>Import from Humble Bundle</small>
                         </div>
                     </button>
                     <button class="sync-btn" onclick="syncStore('battlenet')">
-                        <div class="icon battlenet">B</div>
+                        <div class="icon"><img src="/static/images/battlenet-100.png" alt="Battle.net"></div>
                         <div class="text">
                             <span>Sync Battle.net</span>
                             <small>Import from Battle.net</small>
                         </div>
                     </button>
                     <button class="sync-btn" onclick="syncStore('amazon')">
-                        <div class="icon amazon">A</div>
+                        <div class="icon"><img src="/static/images/amazon-120.png" alt="Amazon"></div>
                         <div class="text">
                             <span>Sync Amazon</span>
                             <small>Import from Amazon Games</small>
                         </div>
                     </button>
                     <button class="sync-btn" onclick="syncStore('ea')">
-                        <div class="icon ea">E</div>
+                        <div class="icon"><img src="/static/images/ea-256.png" alt="EA"></div>
                         <div class="text">
                             <span>Sync EA</span>
                             <small>Import from EA App</small>
                         </div>
                     </button>
                     <button class="sync-btn" onclick="syncStore('xbox')">
-                        <div class="icon xbox">X</div>
+                        <div class="icon"><img src="/static/images/xbox-100.png" alt="Xbox"></div>
                         <div class="text">
                             <span>Sync Xbox</span>
                             <small>Import from Xbox/Game Pass</small>
                         </div>
                     </button>
                     <button class="sync-btn" onclick="syncStore('local')">
-                        <div class="icon local">L</div>
+                        <div class="icon"><img src="/static/images/local-96.png" alt="Local"></div>
                         <div class="text">
                             <span>Sync Local</span>
                             <small>Import from local folders</small>
