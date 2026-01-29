@@ -634,6 +634,40 @@
 
         .rating-item .score.none { color: #666; }
 
+        /* ProtonDB tier badges */
+        .protondb-tier {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+        .protondb-tier.platinum { background: #b4c7dc; color: #000; }
+        .protondb-tier.gold { background: #cfb53b; color: #000; }
+        .protondb-tier.silver { background: #a6a6a6; color: #000; }
+        .protondb-tier.bronze { background: #cd7f32; color: #000; }
+        .protondb-tier.borked { background: #ff0000; color: #fff; }
+        .protondb-tier.pending { background: #666; color: #fff; }
+        .protondb-tier.native { background: #5c9e31; color: #fff; }
+
+        .rating-item.protondb {
+            background: linear-gradient(135deg, rgba(126, 87, 194, 0.15), rgba(103, 58, 183, 0.15));
+            text-align: center;
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .rating-item.protondb .label {
+            font-size: 0.75rem;
+            color: #b39ddb;
+            margin-top: 6px;
+        }
+        .rating-item.protondb .count {
+            font-size: 0.65rem;
+            color: #666;
+            margin-top: 2px;
+        }
+
         .rating-item .label {
             font-size: 0.65rem;
             color: #888;
@@ -1307,8 +1341,9 @@
                 {% set has_steam = game.critics_score and is_steam_game %}
                 {% set has_igdb = game.total_rating or game.igdb_rating or game.aggregated_rating %}
                 {% set has_metacritic = game.metacritic_score or game.metacritic_user_score %}
+                {% set has_protondb = game.protondb_tier and game.protondb_tier != 'unknown' %}
 
-                {% if has_steam or has_igdb or has_metacritic %}
+                {% if has_steam or has_igdb or has_metacritic or has_protondb %}
                 <div class="section">
                     <h2>Ratings</h2>
                     {% if game.average_rating %}
@@ -1414,6 +1449,39 @@
                             <div style="margin-top: 8px; text-align: center;">
                                 <a href="{{ game.metacritic_url }}" target="_blank" rel="noopener" style="color: #ffcc34; font-size: 0.8rem; text-decoration: none;">
                                     View on Metacritic →
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        {% if has_protondb %}
+                        <div class="rating-source">
+                            <div class="rating-source-header">
+                                <span class="rating-source-name">ProtonDB (Linux/Steam Deck)</span>
+                            </div>
+                            <div class="rating-item protondb">
+                                <span class="protondb-tier {{ game.protondb_tier }}">{{ game.protondb_tier }}</span>
+                                <div class="label">Compatibility Rating</div>
+                                {% if game.protondb_total %}
+                                <div class="count">{{ game.protondb_total }} user report{{ 's' if game.protondb_total != 1 else '' }}</div>
+                                {% endif %}
+                                {% if game.protondb_trending_tier and game.protondb_trending_tier != game.protondb_tier %}
+                                <div class="count" style="margin-top: 4px;">Trending: <span class="protondb-tier {{ game.protondb_trending_tier }}" style="padding: 2px 8px; font-size: 0.7rem;">{{ game.protondb_trending_tier }}</span></div>
+                                {% endif %}
+                            </div>
+                            {% set protondb_steam_id = game.steam_app_id %}
+                            {% if not protondb_steam_id %}
+                            {% for info in store_info %}
+                            {% if info.store == 'steam' %}
+                            {% set protondb_steam_id = info.store_id %}
+                            {% endif %}
+                            {% endfor %}
+                            {% endif %}
+                            {% if protondb_steam_id %}
+                            <div style="margin-top: 8px; text-align: center;">
+                                <a href="https://www.protondb.com/app/{{ protondb_steam_id }}" target="_blank" rel="noopener" style="color: #b39ddb; font-size: 0.8rem; text-decoration: none;">
+                                    View on ProtonDB →
                                 </a>
                             </div>
                             {% endif %}
@@ -1526,6 +1594,50 @@
                                     <p class="igdb-help">
                                         Find the slug by searching on <a href="https://www.metacritic.com/search/{{ game.name|urlencode }}/" target="_blank" rel="noopener">metacritic.com</a>.
                                         The slug is in the URL (e.g., metacritic.com/game/<strong>slug</strong>/).
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="settings-section">
+                                <h3>ProtonDB (Linux/Steam Deck)</h3>
+                                <div class="igdb-settings">
+                                    {% if game.protondb_tier and game.protondb_tier != 'unknown' %}
+                                    <div class="igdb-current">
+                                        <span>Tier: <span class="protondb-tier {{ game.protondb_tier }}" style="padding: 2px 8px; font-size: 0.75rem;">{{ game.protondb_tier }}</span></span>
+                                        {% if game.protondb_total %}
+                                        <span style="margin-left: 10px;">({{ game.protondb_total }} reports)</span>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                    {% set steam_store_id = None %}
+                                    {% for info in store_info %}
+                                    {% if info.store == 'steam' %}
+                                    {% set steam_store_id = info.store_id %}
+                                    {% endif %}
+                                    {% endfor %}
+                                    {% set effective_steam_id = game.steam_app_id or steam_store_id %}
+                                    {% if game.steam_app_id and not steam_store_id %}
+                                    <div class="igdb-current" style="color: #4caf50;">
+                                        <span>Steam ID from IGDB: {{ game.steam_app_id }}</span>
+                                    </div>
+                                    {% endif %}
+                                    <div class="igdb-input-group">
+                                        <input type="text" id="protondb-steam-id-input" class="igdb-input"
+                                               placeholder="Enter Steam ID (e.g., 292030)"
+                                               value="{{ effective_steam_id or '' }}">
+                                        <button type="button" class="igdb-btn" onclick="syncProtondb()">Sync</button>
+                                    </div>
+                                    {% if game.protondb_tier %}
+                                    <button type="button" class="igdb-btn clear" onclick="clearProtondb()">Clear ProtonDB Data</button>
+                                    {% endif %}
+                                    <div id="protondb-status" class="igdb-status" style="display: none;"></div>
+                                    <p class="igdb-help">
+                                        ProtonDB rates Linux/Steam Deck compatibility.
+                                        {% if effective_steam_id %}
+                                        <a href="https://www.protondb.com/app/{{ effective_steam_id }}" target="_blank" rel="noopener">View on ProtonDB</a>
+                                        {% else %}
+                                        Sync with IGDB first to get Steam ID, or search on <a href="https://www.protondb.com/search?q={{ game.name|urlencode }}" target="_blank" rel="noopener">protondb.com</a>.
+                                        {% endif %}
                                     </p>
                                 </div>
                             </div>
@@ -1870,6 +1982,90 @@
         document.getElementById('metacritic-slug-input')?.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 syncMetacriticGame();
+            }
+        });
+
+        // ProtonDB Sync Functions
+        function showProtondbStatus(message, type) {
+            const statusEl = document.getElementById('protondb-status');
+            statusEl.textContent = message;
+            statusEl.className = 'igdb-status ' + type;
+            statusEl.style.display = 'block';
+        }
+
+        function syncProtondb() {
+            const input = document.getElementById('protondb-steam-id-input');
+            const steamId = input.value.trim();
+
+            if (!steamId) {
+                showProtondbStatus('Please enter a Steam ID', 'error');
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Syncing...';
+            showProtondbStatus('Fetching data from ProtonDB...', 'loading');
+
+            fetch(`/api/game/${gameId}/protondb`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ steam_id: steamId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.textContent = 'Sync';
+
+                if (data.success) {
+                    showProtondbStatus(data.message, 'success');
+                    // Reload page after a short delay to show updated data
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showProtondbStatus(data.detail || data.error || 'Failed to sync', 'error');
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.textContent = 'Sync';
+                showProtondbStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        function clearProtondb() {
+            if (!confirm('Are you sure you want to clear all ProtonDB data for this game?')) {
+                return;
+            }
+
+            showProtondbStatus('Clearing ProtonDB data...', 'loading');
+
+            fetch(`/api/game/${gameId}/protondb`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ steam_id: '' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showProtondbStatus(data.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showProtondbStatus(data.detail || data.error || 'Failed to clear data', 'error');
+                }
+            })
+            .catch(error => {
+                showProtondbStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        // Allow Enter key to sync ProtonDB
+        document.getElementById('protondb-steam-id-input')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                syncProtondb();
             }
         });
 

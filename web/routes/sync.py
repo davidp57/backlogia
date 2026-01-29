@@ -328,6 +328,77 @@ def sync_metacritic_async(mode: str):
     return {"success": True, "job_id": job_id, "message": f"Started Metacritic sync job ({mode_text})"}
 
 
+@router.post("/api/sync/protondb/{mode}")
+def sync_protondb(mode: str):
+    """Sync ProtonDB data. Mode can be 'missing' (unmatched only) or 'all' (resync everything)."""
+    from ..services.protondb_sync import (
+        ProtonDBClient, sync_games as protondb_sync_games, add_protondb_columns
+    )
+
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+
+        # Ensure ProtonDB columns exist
+        add_protondb_columns(conn)
+
+        # Initialize client
+        client = ProtonDBClient()
+
+        # Sync games (force=True for 'all' mode)
+        force = (mode == "all")
+        matched, failed = protondb_sync_games(conn, client, force=force)
+
+        conn.close()
+
+        message = f"ProtonDB sync complete: {matched} matched, {failed} failed/no data"
+        return {"success": True, "message": message, "matched": matched, "failed": failed}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/api/sync/protondb/{mode}/async")
+def sync_protondb_async(mode: str):
+    """Start a background job to sync ProtonDB data. Returns job ID for tracking."""
+    from ..services.protondb_sync import (
+        ProtonDBClient, sync_games as protondb_sync_games, add_protondb_columns
+    )
+
+    mode_text = "all Steam games" if mode == "all" else "missing data"
+    job_id = create_job(JobType.PROTONDB_SYNC, f"Starting ProtonDB sync ({mode_text})...")
+
+    def run_sync(job_id: str):
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            conn.row_factory = sqlite3.Row
+
+            # Ensure ProtonDB columns exist
+            add_protondb_columns(conn)
+
+            update_job_progress(job_id, 0, 1, f"Initializing ProtonDB sync...")
+
+            # Progress callback to update job status
+            def on_progress(current, total, message):
+                update_job_progress(job_id, current, total, message)
+
+            # Initialize client and sync
+            client = ProtonDBClient()
+            force = (mode == "all")
+            matched, failed = protondb_sync_games(conn, client, force=force, progress_callback=on_progress)
+
+            conn.close()
+
+            message = f"ProtonDB sync complete: {matched} matched, {failed} failed/no data"
+            complete_job(job_id, json.dumps({"matched": matched, "failed": failed}), message)
+
+        except Exception as e:
+            fail_job(job_id, str(e))
+
+    run_job_async(job_id, run_sync)
+
+    return {"success": True, "job_id": job_id, "message": f"Started ProtonDB sync job ({mode_text})"}
+
+
 class UbisoftGame(BaseModel):
     title: str
     playtime: Optional[str] = None

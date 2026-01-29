@@ -33,6 +33,10 @@ class UpdateMetacriticRequest(BaseModel):
     metacritic_slug: Optional[str] = None
 
 
+class UpdateProtonDBRequest(BaseModel):
+    steam_id: Optional[str] = None
+
+
 class BulkGameIdsRequest(BaseModel):
     game_ids: list[int]
 
@@ -106,6 +110,9 @@ def update_igdb(game_id: int, body: UpdateIgdbRequest, conn: sqlite3.Connection 
         # Check if game is NSFW
         is_nsfw = IGDBClient.is_nsfw(igdb_game)
 
+        # Extract Steam App ID from IGDB external_games
+        steam_app_id = IGDBClient.extract_steam_app_id(igdb_game)
+
         # Update the database
         cursor = conn.cursor()
 
@@ -133,7 +140,8 @@ def update_igdb(game_id: int, body: UpdateIgdbRequest, conn: sqlite3.Connection 
                 igdb_screenshots = ?,
                 igdb_matched_at = CURRENT_TIMESTAMP,
                 nsfw = ?,
-                genres = ?
+                genres = ?,
+                steam_app_id = ?
             WHERE id = ?""",
             (
                 igdb_game.get("id"),
@@ -149,6 +157,7 @@ def update_igdb(game_id: int, body: UpdateIgdbRequest, conn: sqlite3.Connection 
                 json.dumps(screenshots) if screenshots else None,
                 1 if is_nsfw else 0,
                 merged_genres,
+                steam_app_id,
                 game_id,
             ),
         )
@@ -289,6 +298,79 @@ def update_metacritic(game_id: int, body: UpdateMetacriticRequest, conn: sqlite3
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch from Metacritic: {str(e)}")
+
+
+@router.post("/api/game/{game_id}/protondb")
+def update_protondb(game_id: int, body: UpdateProtonDBRequest, conn: sqlite3.Connection = Depends(get_db)):
+    """Set custom Steam ID and fetch ProtonDB data."""
+    from ..services.protondb_sync import ProtonDBClient, add_protondb_columns
+
+    # Ensure columns exist
+    add_protondb_columns(conn)
+
+    steam_id = body.steam_id
+
+    # Allow clearing the ProtonDB data
+    if not steam_id:
+        cursor = conn.cursor()
+        cursor.execute(
+            """UPDATE games SET
+                protondb_tier = NULL,
+                protondb_score = NULL,
+                protondb_confidence = NULL,
+                protondb_total = NULL,
+                protondb_trending_tier = NULL,
+                protondb_matched_at = NULL
+            WHERE id = ?""",
+            (game_id,),
+        )
+        conn.commit()
+        return {"success": True, "message": "ProtonDB data cleared"}
+
+    # Fetch data from ProtonDB
+    try:
+        client = ProtonDBClient()
+        data = client.get_game_by_steam_id(steam_id)
+
+        if not data or not data.get("tier"):
+            raise HTTPException(status_code=404, detail=f"No ProtonDB data found for Steam ID '{steam_id}'")
+
+        # Update the database
+        cursor = conn.cursor()
+        cursor.execute(
+            """UPDATE games SET
+                protondb_tier = ?,
+                protondb_score = ?,
+                protondb_confidence = ?,
+                protondb_total = ?,
+                protondb_trending_tier = ?,
+                protondb_matched_at = CURRENT_TIMESTAMP
+            WHERE id = ?""",
+            (
+                data.get("tier"),
+                data.get("score"),
+                data.get("confidence"),
+                data.get("total"),
+                data.get("trending_tier"),
+                game_id,
+            ),
+        )
+        conn.commit()
+
+        tier = data.get("tier", "unknown")
+        total_reports = data.get("total", 0)
+
+        return {
+            "success": True,
+            "message": f"Synced with ProtonDB: {tier} ({total_reports} reports)",
+            "tier": tier,
+            "total": total_reports,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch from ProtonDB: {str(e)}")
 
 
 @router.post("/api/games/recalculate-average-ratings")

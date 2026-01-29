@@ -93,6 +93,7 @@ class IGDBClient:
         clean_name = self._clean_game_name(name)
 
         # Search with exact match first, then fuzzy
+        # Include external_games to get Steam App ID (category 1 = Steam)
         body = f'''
             search "{clean_name}";
             fields id, name, slug, rating, rating_count, aggregated_rating,
@@ -101,7 +102,8 @@ class IGDBClient:
                    genres.name, themes.id, themes.name, platforms.name,
                    involved_companies.company.name, involved_companies.developer,
                    involved_companies.publisher,
-                   cover.url, screenshots.url;
+                   cover.url, screenshots.url,
+                   external_games.uid, external_games.category;
             limit 5;
         '''
 
@@ -110,6 +112,7 @@ class IGDBClient:
 
     def get_game_by_id(self, igdb_id):
         """Get a game by its IGDB ID."""
+        # Include external_games to get Steam App ID (category 1 = Steam)
         body = f'''
             where id = {igdb_id};
             fields id, name, slug, rating, rating_count, aggregated_rating,
@@ -118,7 +121,8 @@ class IGDBClient:
                    genres.name, themes.id, themes.name, platforms.name,
                    involved_companies.company.name, involved_companies.developer,
                    involved_companies.publisher,
-                   cover.url, screenshots.url;
+                   cover.url, screenshots.url,
+                   external_games.uid, external_games.category;
         '''
 
         results = self._request("games", body)
@@ -197,6 +201,24 @@ class IGDBClient:
 
         return False
 
+    @staticmethod
+    def extract_steam_app_id(game_data):
+        """Extract Steam App ID from IGDB external_games data.
+
+        IGDB external_games category 1 = Steam
+        Returns the Steam App ID as a string, or None if not found.
+        """
+        if not game_data:
+            return None
+
+        external_games = game_data.get("external_games", [])
+        for ext_game in external_games:
+            # Category 1 = Steam
+            if ext_game.get("category") == 1:
+                return str(ext_game.get("uid"))
+
+        return None
+
     def _clean_game_name(self, name):
         """Clean game name for better search matching."""
         if not name:
@@ -242,6 +264,7 @@ def add_igdb_columns(conn):
         ("igdb_screenshots", "TEXT"),  # JSON array of screenshot URLs
         ("igdb_matched_at", "TIMESTAMP"),
         ("nsfw", "BOOLEAN DEFAULT 0"),  # NSFW flag (from IGDB themes/age ratings or manual)
+        ("steam_app_id", "TEXT"),  # Steam App ID from IGDB external_games (for ProtonDB)
     ]
 
     for col_name, col_type in new_columns:
@@ -430,6 +453,9 @@ def sync_games(conn, client, limit=None, force=False, progress_callback=None):
                 # Check if game is NSFW
                 is_nsfw = IGDBClient.is_nsfw(best_match)
 
+                # Extract Steam App ID from IGDB external_games
+                steam_app_id = IGDBClient.extract_steam_app_id(best_match)
+
                 # Extract genres and themes from IGDB and merge with existing
                 igdb_tags = extract_genres_and_themes(best_match)
                 merged_genres = merge_and_dedupe_genres(existing_genres, igdb_tags)
@@ -450,7 +476,8 @@ def sync_games(conn, client, limit=None, force=False, progress_callback=None):
                         igdb_screenshots = ?,
                         igdb_matched_at = CURRENT_TIMESTAMP,
                         nsfw = ?,
-                        genres = ?
+                        genres = ?,
+                        steam_app_id = ?
                     WHERE id = ?""",
                     (
                         best_match.get("id"),
@@ -466,6 +493,7 @@ def sync_games(conn, client, limit=None, force=False, progress_callback=None):
                         json.dumps(screenshots) if screenshots else None,
                         1 if is_nsfw else 0,
                         merged_genres,
+                        steam_app_id,
                         game_id,
                     ),
                 )

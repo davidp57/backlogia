@@ -583,6 +583,7 @@
         .sync-btn .icon.all { background: linear-gradient(90deg, #667eea, #764ba2); }
         .sync-btn .icon.igdb { background: #9147ff; }
         .sync-btn .icon.metacritic { background: #ffcc34; color: #000; }
+        .sync-btn .icon.protondb { background: #7e57c2; }
 
         .sync-btn .text {
             display: flex;
@@ -1060,6 +1061,26 @@
                         <div class="text">
                             <span>Resync All Scores</span>
                             <small>Re-fetch scores for all games</small>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="sync-section">
+                <div class="sync-section-title">ProtonDB Compatibility (Linux/Steam Deck)</div>
+                <div class="sync-grid">
+                    <button class="sync-btn" onclick="syncProtondb('missing')">
+                        <div class="icon protondb">P</div>
+                        <div class="text">
+                            <span>Sync Missing Data</span>
+                            <small>Fetch compatibility for games with Steam IDs</small>
+                        </div>
+                    </button>
+                    <button class="sync-btn" onclick="syncProtondb('all')">
+                        <div class="icon protondb">P</div>
+                        <div class="text">
+                            <span>Resync All</span>
+                            <small>Re-fetch for all games (Steam + IGDB matched)</small>
                         </div>
                     </button>
                 </div>
@@ -1824,6 +1845,36 @@ LOCAL_GAMES_DIR_2=/another/path/to/games</pre>
             btn.innerHTML = '<span class="spinner"></span> Starting...';
 
             fetch(`/api/sync/metacritic/${mode}/async`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+
+                if (data.success) {
+                    showStatus(data.message, 'success');
+                    checkActiveJobs();
+                    startJobPolling();
+                } else {
+                    showStatus(data.detail || data.error || 'Failed to start sync', 'error');
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+                showStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        // Sync ProtonDB (async with job tracking)
+        function syncProtondb(mode) {
+            const btn = event.target.closest('.sync-btn');
+            btn.disabled = true;
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner"></span> Starting...';
+
+            fetch(`/api/sync/protondb/${mode}/async`, {
                 method: 'POST'
             })
             .then(response => response.json())

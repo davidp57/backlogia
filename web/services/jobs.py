@@ -22,6 +22,7 @@ class JobType(str, Enum):
     STORE_SYNC = "store_sync"
     IGDB_SYNC = "igdb_sync"
     METACRITIC_SYNC = "metacritic_sync"
+    PROTONDB_SYNC = "protondb_sync"
 
 
 def ensure_jobs_table():
