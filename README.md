@@ -377,6 +377,8 @@ Backlogia is built on the shoulders of these excellent open-source projects:
 - **[Nile](https://github.com/imLinguin/nile)** — Amazon Games integration
 - **[PlayniteExtensions](https://github.com/Jeshibu/PlayniteExtensions)** — EA library integration method
 
+Backlogia was built with assistance from Claude and other AI models. 
+
 ---
 
 ## License
