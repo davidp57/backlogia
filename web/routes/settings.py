@@ -26,7 +26,7 @@ def settings_page(
     from ..services.settings import (
         get_setting, STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET,
         ITCH_API_KEY, HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH,
-        EA_BEARER_TOKEN
+        EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD
     )
     from ..sources.local import discover_local_game_paths
 
@@ -46,6 +46,7 @@ def settings_page(
         "steam_api_key": get_setting(STEAM_API_KEY, ""),
         "igdb_client_id": get_setting(IGDB_CLIENT_ID, ""),
         "igdb_client_secret": get_setting(IGDB_CLIENT_SECRET, ""),
+        "igdb_match_threshold": get_setting(IGDB_MATCH_THRESHOLD, "50"),
         "itch_api_key": get_setting(ITCH_API_KEY, ""),
         "humble_session_cookie": get_setting(HUMBLE_SESSION_COOKIE, ""),
         "battlenet_session_cookie": get_setting(BATTLENET_SESSION_COOKIE, ""),
@@ -77,6 +78,7 @@ def save_settings(
     steam_api_key: str = Form(default=""),
     igdb_client_id: str = Form(default=""),
     igdb_client_secret: str = Form(default=""),
+    igdb_match_threshold: str = Form(default="50"),
     itch_api_key: str = Form(default=""),
     humble_session_cookie: str = Form(default=""),
     battlenet_session_cookie: str = Form(default=""),
@@ -88,7 +90,7 @@ def save_settings(
     from ..services.settings import (
         set_setting, STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET,
         ITCH_API_KEY, HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH,
-        EA_BEARER_TOKEN
+        EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD
     )
 
     # Save all form values (LOCAL_GAMES_PATHS is read-only from .env)
@@ -96,6 +98,7 @@ def save_settings(
     set_setting(STEAM_API_KEY, steam_api_key.strip())
     set_setting(IGDB_CLIENT_ID, igdb_client_id.strip())
     set_setting(IGDB_CLIENT_SECRET, igdb_client_secret.strip())
+    set_setting(IGDB_MATCH_THRESHOLD, igdb_match_threshold.strip())
     set_setting(ITCH_API_KEY, itch_api_key.strip())
     set_setting(HUMBLE_SESSION_COOKIE, humble_session_cookie.strip())
     set_setting(BATTLENET_SESSION_COOKIE, battlenet_session_cookie.strip())

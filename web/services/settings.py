@@ -20,6 +20,7 @@ GOG_DB_PATH = "gog_db_path"
 EA_BEARER_TOKEN = "ea_bearer_token"
 XBOX_XSTS_TOKEN = "xbox_xsts_token"
 LOCAL_GAMES_PATHS = "local_games_paths"
+IGDB_MATCH_THRESHOLD = "igdb_match_threshold"
 
 # Map setting keys to environment variable names
 ENV_VAR_MAP = {
@@ -34,6 +35,7 @@ ENV_VAR_MAP = {
     EA_BEARER_TOKEN: "EA_BEARER_TOKEN",
     XBOX_XSTS_TOKEN: "XBOX_XSTS_TOKEN",
     LOCAL_GAMES_PATHS: "LOCAL_GAMES_PATHS",
+    IGDB_MATCH_THRESHOLD: "IGDB_MATCH_THRESHOLD",
 }
 
 

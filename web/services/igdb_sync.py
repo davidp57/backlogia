@@ -7,7 +7,7 @@ import time
 import json
 import re
 
-from .settings import get_igdb_credentials
+from .settings import get_igdb_credentials, get_setting, IGDB_MATCH_THRESHOLD
 
 # IGDB API endpoints
 TWITCH_TOKEN_URL = "https://id.twitch.tv/oauth2/token"
@@ -429,7 +429,8 @@ def sync_games(conn, client, limit=None, force=False, progress_callback=None):
                     best_score = score
                     best_match = result
 
-            if best_match and best_score >= 50:
+            min_match_score = int(get_setting(IGDB_MATCH_THRESHOLD, "50"))
+            if best_match and best_score >= min_match_score:
                 # Extract cover URL (IGDB returns thumbnail, we want bigger)
                 cover_url = None
                 if best_match.get("cover"):
