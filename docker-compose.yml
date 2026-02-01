@@ -4,6 +4,8 @@ services:
     container_name: backlogia
     ports:
       - "${WEB_PORT:-5050}:5050"
+    networks:
+      - backlogia-net
     volumes:
       - ./data:/data
       - ./data/legendary:/root/.config/legendary
@@ -41,3 +43,23 @@ services:
       - LOCAL_GAMES_DIR_5=${LOCAL_GAMES_DIR_5:-}
       # Amazon Games - uses Nile (pip install nile && nile auth --login)
     restart: unless-stopped
+
+  caddy:
+    build: ./caddy
+    container_name: backlogia-caddy
+    profiles:
+      - https
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./data/caddy_data:/data
+      - ./data/caddy_config:/config
+    networks:
+      - backlogia-net
+    restart: unless-stopped
+
+networks:
+  backlogia-net:
+    driver: bridge

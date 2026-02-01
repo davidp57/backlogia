@@ -117,7 +117,7 @@ The easiest way to run Backlogia—no cloning or building required.
    cp .env.example .env
    ```
 
-4. **Edit `.env` with your API credentials** (see [Configuration](#configuration))
+4. **Edit `.env` with your settings** (see [Configuration](#configuration))
 
 5. **Start the container**
    ```bash
@@ -150,7 +150,7 @@ Build the image locally from the repository.
    cp .env.example .env
    ```
 
-3. **Edit `.env` with your API credentials** (see [Configuration](#configuration))
+3. **Edit `.env` with your settings** (see [Configuration](#configuration))
 
 4. **Start the container**
    ```bash
@@ -181,6 +181,49 @@ docker compose up -d --build
 
 ---
 
+### HTTPS Access (Optional)
+
+Enable HTTPS access via a Caddy reverse proxy. This is useful for:
+- Using the bookmarklet from HTTPS sites (avoids mixed-content blocking)
+- Accessing Backlogia from other devices on your network
+
+**Enable HTTPS:**
+
+Add to your `.env` file:
+```bash
+COMPOSE_PROFILES=https
+```
+
+Then restart:
+```bash
+docker compose down && docker compose up -d --build
+```
+
+**Access URLs:**
+
+| URL | Scope |
+|-----|-------|
+| `https://backlogia.localhost` | Local machine only |
+| `https://backlogia.local` | Any device on your network (requires mDNS) |
+
+**Network Access (backlogia.local):**
+
+On **macOS**, Docker runs in a VM and can't broadcast mDNS directly. Run this helper script in a separate terminal:
+```bash
+./scripts/advertise-mdns.sh
+```
+
+On **Linux** hosts, mDNS is advertised automatically via Avahi.
+
+**Trusting the Certificate:**
+
+Caddy generates a self-signed certificate. Your browser will show a warning on first visit. You can click past it. To trust it permanently on macOS:
+```bash
+sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ./data/caddy_data/pki/authorities/local/root.crt
+```
+
+---
+
 ### Option 3: Local Installation
 
 1. **Clone the repository**
@@ -205,7 +248,7 @@ docker compose up -d --build
    cp .env.example .env
    ```
 
-5. **Edit `.env` with your API credentials** (see [Configuration](#configuration))
+5. **Edit `.env` with your settings** (see [Configuration](#configuration))
 
 6. **Initialize the database**
    ```bash

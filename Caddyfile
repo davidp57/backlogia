@@ -1,0 +1,4 @@
+backlogia.local, backlogia.localhost {
+    tls internal
+    reverse_proxy backlogia:5050
+}
