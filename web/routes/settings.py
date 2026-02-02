@@ -26,7 +26,7 @@ def settings_page(
     from ..services.settings import (
         get_setting, STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET,
         ITCH_API_KEY, HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH,
-        EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD
+        EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD, LOCAL_GAMES_PATHS
     )
     from ..sources.local import discover_local_game_paths
 
@@ -41,6 +41,12 @@ def settings_page(
         if host_path and container_path in discovered_paths:
             host_paths.append(host_path)
 
+    # Get local_games_paths from database/env (supports both Docker and local usage)
+    local_games_paths_value = get_setting(LOCAL_GAMES_PATHS, "")
+    if not local_games_paths_value and host_paths:
+        # Fallback to Docker mount points for display
+        local_games_paths_value = ",".join(host_paths)
+
     settings = {
         "steam_id": get_setting(STEAM_ID, ""),
         "steam_api_key": get_setting(STEAM_API_KEY, ""),
@@ -52,7 +58,7 @@ def settings_page(
         "battlenet_session_cookie": get_setting(BATTLENET_SESSION_COOKIE, ""),
         "gog_db_path": get_setting(GOG_DB_PATH, ""),
         "ea_bearer_token": get_setting(EA_BEARER_TOKEN, ""),
-        "local_games_paths": ",".join(host_paths) if host_paths else "",
+        "local_games_paths": local_games_paths_value,
     }
     success_flag = success == "1"
 
@@ -84,16 +90,17 @@ def save_settings(
     battlenet_session_cookie: str = Form(default=""),
     gog_db_path: str = Form(default=""),
     ea_bearer_token: str = Form(default=""),
+    local_games_paths: str = Form(default=""),
 ):
     """Save settings from the form."""
     # Import here to avoid circular imports
     from ..services.settings import (
         set_setting, STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET,
         ITCH_API_KEY, HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH,
-        EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD
+        EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD, LOCAL_GAMES_PATHS
     )
 
-    # Save all form values (LOCAL_GAMES_PATHS is read-only from .env)
+    # Save all form values
     set_setting(STEAM_ID, steam_id.strip())
     set_setting(STEAM_API_KEY, steam_api_key.strip())
     set_setting(IGDB_CLIENT_ID, igdb_client_id.strip())
@@ -104,5 +111,6 @@ def save_settings(
     set_setting(BATTLENET_SESSION_COOKIE, battlenet_session_cookie.strip())
     set_setting(GOG_DB_PATH, gog_db_path.strip())
     set_setting(EA_BEARER_TOKEN, ea_bearer_token.strip())
+    set_setting(LOCAL_GAMES_PATHS, local_games_paths.strip())
 
     return RedirectResponse(url="/settings?success=1", status_code=303)
