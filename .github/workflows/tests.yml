@@ -32,12 +32,12 @@ jobs:
     
     - name: Check imports
       run: |
-        python -c "from web.main import app; print('✓ FastAPI app loads')"
-        python -c "import desktop; print('✓ Desktop launcher loads')"
+        python -c "from web.main import app; print('[OK] FastAPI app loads')"
+        python -c "import desktop; print('[OK] Desktop launcher loads')"
     
     - name: Verify file structure
       run: |
-        python -c "from pathlib import Path; assert (Path('web') / 'main.py').exists(); print('✓ File structure OK')"
+        python -c "from pathlib import Path; assert (Path('web') / 'main.py').exists(); print('[OK] File structure OK')"
 
   lint:
     name: Code Quality
@@ -60,4 +60,4 @@ jobs:
     - name: Run Ruff
       run: |
         ruff check . --exit-zero
-        echo "✓ Code quality check complete"
+        echo "[OK] Code quality check complete"
