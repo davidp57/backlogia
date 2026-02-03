@@ -272,7 +272,7 @@ def update_metacritic(game_id: int, body: UpdateMetacriticRequest, conn: sqlite3
         if mc_game.get("user_score"):
             score_info.append(f"User: {mc_game['user_score']}")
 
-        message = f"Synced with Metacritic"
+        message = "Synced with Metacritic"
         if score_info:
             message += f" ({', '.join(score_info)})"
 

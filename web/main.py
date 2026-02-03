@@ -23,6 +23,7 @@ from .routes.collections import router as collections_router
 from .routes.library import router as library_router
 from .routes.discover import router as discover_router
 from .routes.settings import router as settings_router
+from .routes.loading import router as loading_router
 
 
 def init_database():
@@ -70,6 +71,7 @@ if static_path.exists():
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
 # Include routers
+app.include_router(loading_router)  # Loading screen for desktop app
 app.include_router(library_router)
 app.include_router(api_games_router)
 app.include_router(api_metadata_router)

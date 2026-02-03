@@ -1,6 +1,7 @@
 # routes/settings.py
 # Settings page routes
 
+import sys
 import sqlite3
 from pathlib import Path
 
@@ -46,13 +47,17 @@ def settings_page(
     cursor.execute("SELECT COUNT(*) FROM games WHERE hidden = 1")
     hidden_count = cursor.fetchone()[0]
 
+    # Check if running as PyInstaller executable (desktop app)
+    is_desktop_app = getattr(sys, 'frozen', False)
+
     return templates.TemplateResponse(
         "settings.html",
         {
             "request": request,
             "settings": settings,
             "success": success_flag,
-            "hidden_count": hidden_count
+            "hidden_count": hidden_count,
+            "is_desktop_app": is_desktop_app
         }
     )
 

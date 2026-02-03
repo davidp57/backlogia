@@ -13,6 +13,10 @@ uvicorn[standard]
 python-multipart
 jinja2
 
+# Desktop application
+pywebview
+pystray  # Optional: system tray icon support
+
 # IGDB integration
 python-dotenv
 

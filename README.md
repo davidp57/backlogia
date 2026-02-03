@@ -89,15 +89,46 @@ Connect your accounts and sync your library with a single click.
 
 ---
 
-## Setup
+## Installation
 
-### Prerequisites
+### Option 1: Desktop Application (Recommended for Windows)
 
-- **Python 3.11+** (for local installation)
-- **Docker & Docker Compose** (for containerized installation)
-- API keys for the stores you want to sync (see [Configuration](#configuration))
+The easiest way to use Backlogia is with the standalone desktop application.
 
-### Option 1: Docker (Recommended)
+1. **Download the latest release**
+   - Go to the [Releases page](https://github.com/sam1am/backlogia/releases)
+   - Download `Backlogia-Windows.zip` for Windows
+   - Download `Backlogia-macOS.zip` for macOS (if available)
+   - Download `Backlogia-Linux.tar.gz` for Linux (if available)
+
+2. **Extract and run**
+   - Extract the archive to a folder of your choice
+   - Run `Backlogia.exe` (Windows) or the appropriate executable
+   - The application will open in a native window with a loading screen
+   - Your game library data is stored in `%APPDATA%\Backlogia` (Windows) or equivalent user directory
+
+3. **Configure your stores**
+   - Go to Settings to connect your game store accounts
+   - See [Configuration](#configuration) for details
+
+#### System Requirements
+
+**Windows:**
+- Windows 10 or later
+- Microsoft Edge WebView2 Runtime (usually pre-installed on Windows 11)
+  - If missing, download from [Microsoft](https://developer.microsoft.com/microsoft-edge/webview2/)
+
+**macOS:**
+- macOS 10.15 (Catalina) or later
+- WebKit (built-in)
+
+**Linux:**
+- Ubuntu 20.04+ / Fedora 35+ or equivalent
+- WebKitGTK 2.0: `sudo apt install gir1.2-webkit2-4.0` (Ubuntu/Debian)
+
+### Option 2: Docker
+
+For running Backlogia as a server (accessible from multiple devices):
 
 1. **Clone the repository**
    ```bash
@@ -138,7 +169,9 @@ docker compose down
 docker compose up -d --build
 ```
 
-### Option 2: Local Installation
+### Option 3: Python/pip (For Developers)
+
+For development or if you prefer running from source:
 
 1. **Clone the repository**
    ```bash
@@ -164,17 +197,17 @@ docker compose up -d --build
 
 5. **Edit `.env` with your API credentials** (see [Configuration](#configuration))
 
-6. **Initialize the database**
+6. **Run the desktop launcher**
    ```bash
-   python scripts/build_database.py
+   python desktop.py
    ```
 
-7. **Run the application**
+   Or run as a web server:
    ```bash
-   python web/app.py
+   python -m uvicorn web.main:app --host 127.0.0.1 --port 5050
    ```
 
-8. **Access Backlogia** at [http://localhost:5050](http://localhost:5050)
+7. **Access Backlogia** in the native window or at [http://localhost:5050](http://localhost:5050)
 
 #### Updating
 
@@ -186,6 +219,51 @@ pip install -r requirements.txt
 ```
 
 Then restart the application.
+
+### Building the Desktop Application
+
+To build the standalone executable yourself:
+
+1. **Install build dependencies**
+   ```bash
+   pip install -r requirements-build.txt
+   ```
+
+2. **Run the build script**
+   ```bash
+   python build.py
+   ```
+
+3. **The executable will be in `dist/Backlogia/`**
+   ```bash
+   dist\Backlogia\Backlogia.exe  # Windows
+   ```
+
+---
+
+## Troubleshooting
+
+### Desktop Application Issues
+
+**Windows: "Edge WebView2 not found"**
+- Download and install [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)
+
+**All ports in use error**
+- Close some applications and try again
+- The launcher tries ports 8000-8099 automatically
+
+**Server failed to start**
+- Check that all dependencies are installed: `pip install -r requirements.txt`
+- Run `python desktop.py` from the terminal to see error messages
+
+**Linux: "webkit2gtk not found"**
+- Ubuntu/Debian: `sudo apt install gir1.2-webkit2-4.0 python3-gi`
+- Fedora: `sudo dnf install webkit2gtk3 python3-gobject`
+
+**Application window is blank**
+- Wait a few seconds for the server to fully start
+- Check console output for errors
+- Try running in web server mode to diagnose: `python -m uvicorn web.main:app`
 
 ---
 
@@ -212,10 +290,12 @@ Configure all store connections through the **Settings** page in Backlogia. Each
 
 ## Tech Stack
 
-- **Backend**: Flask (Python)
+- **Backend**: FastAPI (Python)
+- **Desktop**: PyWebView (native window wrapper)
 - **Database**: SQLite
 - **Frontend**: Jinja2 templates, vanilla JavaScript
 - **Metadata**: IGDB API integration
+- **Packaging**: PyInstaller
 - **Deployment**: Docker + Docker Compose
 
 ---

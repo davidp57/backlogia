@@ -26,7 +26,7 @@ def find_gog_database():
             print(f"[GOG DEBUG] Using configured path: {path}")
             return path
         else:
-            print(f"[GOG DEBUG] Configured path does not exist!")
+            print("[GOG DEBUG] Configured path does not exist!")
 
     # Fall back to auto-detection
     print("[GOG DEBUG] Falling back to auto-detection...")
@@ -74,10 +74,10 @@ def get_gog_library():
 
     # SQLite database (Windows/macOS with GOG Galaxy)
     if db_path.suffix == ".db":
-        print(f"[GOG DEBUG] Connecting to SQLite database...")
+        print("[GOG DEBUG] Connecting to SQLite database...")
         try:
             conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-            print(f"[GOG DEBUG] Connected successfully")
+            print("[GOG DEBUG] Connected successfully")
         except Exception as e:
             print(f"[GOG DEBUG] Connection failed: {e}")
             return []

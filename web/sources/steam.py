@@ -111,7 +111,7 @@ def get_steam_library(fetch_reviews=True, max_workers=5):
         print("Steam credentials not configured. Please set them in Settings.")
         return []
 
-    url = f"https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/"
+    url = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/"
     params = {
         "key": STEAM_API_KEY,
         "steamid": STEAM_ID,
