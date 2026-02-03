@@ -5,13 +5,13 @@ import sqlite3
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from ..dependencies import get_db
-from ..utils.helpers import parse_json_field, group_games_by_igdb
+from ..utils.helpers import parse_json_field, group_games_by_igdb, get_query_filter_counts
 
 router = APIRouter()
 templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
@@ -72,17 +72,26 @@ def collections_page(request: Request, conn: sqlite3.Connection = Depends(get_db
         collections_with_covers.append(collection_dict)
 
     return templates.TemplateResponse(
+        request,
         "collections.html",
         {
-            "request": request,
             "collections": collections_with_covers
         }
     )
 
 
 @router.get("/collection/{collection_id}", response_class=HTMLResponse)
-def collection_detail(request: Request, collection_id: int, conn: sqlite3.Connection = Depends(get_db)):
-    """View a single collection with its games."""
+def collection_detail(
+    request: Request,
+    collection_id: int,
+    stores: list[str] = Query(default=[]),
+    genres: list[str] = Query(default=[]),
+    queries: list[str] = Query(default=[]),
+    conn: sqlite3.Connection = Depends(get_db)
+):
+    """View a single collection with its games (with optional filters)."""
+    from ..utils.filters import PREDEFINED_QUERIES, QUERY_DISPLAY_NAMES, QUERY_CATEGORIES, QUERY_DESCRIPTIONS
+    
     cursor = conn.cursor()
 
     # Get collection info
@@ -91,27 +100,88 @@ def collection_detail(request: Request, collection_id: int, conn: sqlite3.Connec
 
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
-
-    # Get games in collection
+    
+    # Get store and genre counts for filters (from all collection games, not filtered)
     cursor.execute("""
+        SELECT g.store, COUNT(*) as count
+        FROM collection_games cg
+        JOIN games g ON cg.game_id = g.id
+        WHERE cg.collection_id = ?
+        GROUP BY g.store
+        ORDER BY count DESC
+    """, (collection_id,))
+    store_counts = dict(cursor.fetchall())
+    
+    cursor.execute("""
+        SELECT DISTINCT g.genres
+        FROM collection_games cg
+        JOIN games g ON cg.game_id = g.id
+        WHERE cg.collection_id = ? AND g.genres IS NOT NULL AND g.genres != '[]'
+    """, (collection_id,))
+    genre_counts = {}
+    for row in cursor.fetchall():
+        try:
+            import json
+            genres_list = json.loads(row[0])
+            for genre in genres_list:
+                genre_counts[genre] = genre_counts.get(genre, 0) + 1
+        except:
+            pass
+    genre_counts = dict(sorted(genre_counts.items(), key=lambda x: x[1], reverse=True))
+
+    # Build query with filters
+    query = """
         SELECT g.*, cg.added_at as collection_added_at
         FROM collection_games cg
         JOIN games g ON cg.game_id = g.id
         WHERE cg.collection_id = ?
-        ORDER BY cg.added_at DESC
-    """, (collection_id,))
+    """
+    params: list[str | int] = [collection_id]
+
+    if stores:
+        placeholders = ",".join("?" * len(stores))
+        query += f" AND g.store IN ({placeholders})"
+        params.extend(stores)
+
+    if genres:
+        genre_conditions = []
+        for genre in genres:
+            genre_conditions.append("LOWER(g.genres) LIKE ?")
+            params.append(f'%"{genre.lower()}%')
+        query += " AND (" + " OR ".join(genre_conditions) + ")"
+    
+    if queries:
+        valid_queries = [q for q in queries if q in PREDEFINED_QUERIES]
+        for query_id in valid_queries:
+            query += f" AND {PREDEFINED_QUERIES[query_id].replace('playtime_hours', 'g.playtime_hours').replace('total_rating', 'g.total_rating').replace('added_at', 'g.added_at').replace('release_date', 'g.release_date').replace('nsfw', 'g.nsfw')}"
+
+    query += " ORDER BY cg.added_at DESC"
+    cursor.execute(query, params)
     games = cursor.fetchall()
 
     # Group games by IGDB ID (like the library page)
     grouped_games = group_games_by_igdb(games)
 
     return templates.TemplateResponse(
+        request,
         "collection_detail.html",
         {
-            "request": request,
             "collection": dict(collection),
             "games": grouped_games,
-            "parse_json": parse_json_field
+            "parse_json": parse_json_field,
+            # Filter data for _filter_bar.html
+            "store_counts": store_counts,
+            "genre_counts": genre_counts,
+            "current_stores": stores,
+            "current_genres": genres,
+            "current_queries": queries,
+            "query_display_names": QUERY_DISPLAY_NAMES,
+            "query_categories": QUERY_CATEGORIES,
+            "query_descriptions": QUERY_DESCRIPTIONS,
+            "query_filter_counts": {},  # Empty for collection detail (performance)
+            "show_search": False,  # No search on collection detail
+            "show_sort": False,  # No sort on collection detail
+            "show_actions": True,
         }
     )
 
@@ -185,7 +255,7 @@ def api_update_collection(collection_id: int, body: UpdateCollectionRequest, con
 
     # Build update query
     updates = []
-    params = []
+    params: list[str | int | None] = []
 
     if body.name is not None:
         updates.append("name = ?")

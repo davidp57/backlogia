@@ -18,3 +18,5 @@ python-dotenv
 
 # Metacritic scraping
 beautifulsoup4
+# Testing
+pytest

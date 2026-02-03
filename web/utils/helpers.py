@@ -2,6 +2,7 @@
 # Utility functions for the Backlogia application
 
 import json
+from .filters import PREDEFINED_QUERIES, EXCLUDE_HIDDEN_FILTER
 
 
 def parse_json_field(value):
@@ -113,3 +114,64 @@ def group_games_by_igdb(games):
     # Convert grouped dict to list and add non-IGDB games
     result = list(grouped.values()) + no_igdb_games
     return result
+
+
+def get_query_filter_counts(cursor, stores=None, genres=None, exclude_query=None):
+    """
+    Calculate the number of games that match each predefined query filter.
+    
+    Args:
+        cursor: Database cursor
+        stores: List of stores to filter by (optional)
+        genres: List of genres to filter by (optional)
+        exclude_query: Query filter ID to exclude from the WHERE clause (optional)
+    
+    Returns:
+        Dict mapping query filter IDs to their result counts
+    """
+    # Build base WHERE clause with store and genre filters
+    # Start with EXCLUDE_HIDDEN_FILTER which already has "AND" prefix
+    where_conditions = ["1=1" + EXCLUDE_HIDDEN_FILTER]
+    params = []
+    
+    if stores:
+        placeholders = ','.join(['?' for _ in stores])
+        where_conditions.append(f"store IN ({placeholders})")
+        params.extend(stores)
+    
+    if genres:
+        # For genres, we need to check if the genre appears in the JSON array
+        genre_conditions = []
+        for genre in genres:
+            genre_conditions.append("genres LIKE ?")
+            params.append(f'%"{genre}"%')
+        where_conditions.append(f"({' OR '.join(genre_conditions)})")
+    
+    base_where = " AND ".join(where_conditions)
+    
+    # Build a single SQL query with COUNT(CASE) for all filters
+    # Use indexed approach since filter IDs contain hyphens (not valid in SQL)
+    count_cases = []
+    filter_ids = []
+    for filter_id, condition in PREDEFINED_QUERIES.items():
+        if filter_id == exclude_query:
+            continue  # Skip the filter we're currently viewing
+        count_cases.append(f"COUNT(CASE WHEN {condition} THEN 1 END)")
+        filter_ids.append(filter_id)
+    
+    query = f"""
+        SELECT {', '.join(count_cases)}
+        FROM games
+        WHERE {base_where}
+    """
+    
+    cursor.execute(query, params)
+    row = cursor.fetchone()
+    
+    # Convert row to dictionary
+    counts = {}
+    if row:
+        for i, filter_id in enumerate(filter_ids):
+            counts[filter_id] = row[i]
+    
+    return counts

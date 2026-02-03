@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from .config import DATABASE_PATH
-from .database import ensure_extra_columns, ensure_collections_tables
+from .database import ensure_extra_columns, ensure_collections_tables, ensure_predefined_query_indexes, ensure_popularity_cache_table
 from .services.database_builder import create_database
 from .services.igdb_sync import add_igdb_columns
 from .services.jobs import cleanup_orphaned_jobs
@@ -32,6 +32,8 @@ def init_database():
     create_database()
     ensure_extra_columns()
     ensure_collections_tables()
+    ensure_predefined_query_indexes()
+    ensure_popularity_cache_table()
 
     conn = sqlite3.connect(DATABASE_PATH)
     add_igdb_columns(conn)

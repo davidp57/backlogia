@@ -9,6 +9,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/favicons/apple-touch-icon.png">
     <link rel="manifest" href="/static/favicons/site.webmanifest">
+    <link rel="stylesheet" href="/static/css/filters.css">
     <style>
         * {
             margin: 0;
@@ -178,49 +179,113 @@
             letter-spacing: 0.3px;
         }
 
-        .filters {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            align-items: center;
-        }
+        /* Filter styles are now in /static/css/filters.css */
 
-        .filter-group {
-            display: flex;
-            gap: 10px;
-        }
-
-        .filter-btn {
-            padding: 8px 16px;
-            border: none;
+        .games-grid {
             border-radius: 20px;
-            cursor: pointer;
             background: rgba(255, 255, 255, 0.1);
             color: #e4e4e4;
-            transition: all 0.2s;
-            text-decoration: none;
             font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            min-width: 140px;
         }
 
-        .filter-btn:hover {
+        .dropdown-btn:hover {
             background: rgba(255, 255, 255, 0.2);
         }
 
-        .filter-btn.active {
+        .dropdown-btn.active,
+        .dropdown-btn .filter-count {
             background: linear-gradient(90deg, #667eea, #764ba2);
-            color: white;
         }
 
-        .filter-btn.steam { border-left: 3px solid #1b2838; }
-        .filter-btn.epic { border-left: 3px solid #0078f2; }
-        .filter-btn.gog { border-left: 3px solid #86328a; }
-        .filter-btn.itch { border-left: 3px solid #fa5c5c; }
+        .dropdown-btn .filter-count {
+            display: inline-block;
+            min-width: 20px;
+            height: 20px;
+            line-height: 20px;
+            text-align: center;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 4px;
+        }
 
-        /* Multi-select Dropdown */
+        .dropdown-btn .dropdown-arrow {
+            margin-left: auto;
+            font-size: 0.7rem;
+        }
+
+        .dropdown-content {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            background: rgba(13, 13, 26, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 8px 0;
+            min-width: 280px;
+            max-height: 480px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .dropdown-category {
+            padding: 8px 0;
+        }
+
+        .dropdown-category:not(:last-child) {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .category-header {
+            padding: 8px 16px;
+            color: #667eea;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: background 0.15s;
+            gap: 10px;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .dropdown-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .dropdown-item label {
+            flex: 1;
+            color: #e4e4e4;
+            font-size: 0.9rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .dropdown-item input[type="checkbox"]:checked + label {
+            color: #667eea;
+            font-weight: 500;
+        }
+
         .store-dropdown {
             position: relative;
             display: inline-block;
@@ -439,16 +504,6 @@
             background: rgba(255, 255, 255, 0.15);
         }
 
-        .sort-select {
-            padding: 10px 16px;
-            border: none;
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #e4e4e4;
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-
         .games-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -653,6 +708,31 @@
             .filter-group {
                 flex-wrap: wrap;
                 justify-content: center;
+            }
+
+            /* Responsive dropdown adjustments */
+            .dropdown-content {
+                position: fixed;
+                top: auto;
+                left: 50%;
+                transform: translateX(-50%);
+                bottom: 0;
+                max-width: 100%;
+                width: calc(100vw - 32px);
+                max-height: 60vh;
+                border-radius: 16px 16px 0 0;
+            }
+
+            .dropdown-btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .category-header {
+                position: sticky;
+                top: 0;
+                background: rgba(13, 13, 26, 0.98);
+                z-index: 1;
             }
         }
 
@@ -1143,7 +1223,7 @@
     <nav class="top-nav">
         <a href="/" class="nav-brand">Backlogia</a>
         <div class="nav-links">
-            <a href="/" class="nav-link">Discover</a>
+            <a href="/discover" class="nav-link">Discover</a>
             <a href="/library" class="nav-link active">Library</a>
             <a href="/collections" class="nav-link">Collections</a>
             <a href="/random" class="nav-link random">Random</a>
@@ -1177,111 +1257,11 @@
             </div>
         </header>
 
-        <div class="filters">
-            {% set store_icons = {'steam': 'steam-100.png', 'epic': 'epic-100.png', 'gog': 'gog-48.png', 'itch': 'itch-90.png', 'humble': 'humble-96.png', 'battlenet': 'battlenet-100.png', 'amazon': 'amazon-120.png', 'ea': 'ea-256.png', 'xbox': 'xbox-100.png', 'ubisoft': 'ubisoft-96.png', 'local': 'local-96.png'} %}
-            <div class="store-dropdown" id="store-dropdown">
-                <button type="button" class="store-dropdown-btn {% if current_stores %}active{% endif %}" onclick="toggleStoreDropdown()">
-                    <span class="btn-text">
-                        {% if current_stores %}
-                            {% if current_stores|length == 1 %}
-                                {{ current_stores[0]|capitalize }}
-                            {% else %}
-                                {{ current_stores|length }} Stores
-                            {% endif %}
-                        {% else %}
-                            All Stores
-                        {% endif %}
-                    </span>
-                    <span class="arrow">&#9662;</span>
-                </button>
-                <div class="store-dropdown-menu">
-                    {% for store, count in store_counts.items() %}
-                    <label class="store-option">
-                        <input type="checkbox" name="stores" value="{{ store }}" {% if store in current_stores %}checked{% endif %}>
-                        <span class="checkbox"></span>
-                        <img src="/static/images/{{ store_icons.get(store, 'steam-100.png') }}" alt="{{ store }}" class="store-icon">
-                        <span class="store-label">{{ store|capitalize }}</span>
-                        <span class="store-count">{{ count }}</span>
-                    </label>
-                    {% endfor %}
-                    <div class="store-dropdown-actions">
-                        <button type="button" class="clear-btn" onclick="clearStoreFilter()">Clear</button>
-                        <button type="button" class="apply-btn" onclick="applyStoreFilter()">Apply</button>
-                    </div>
-                </div>
-            </div>
+        {% include '_filter_bar.html' %}
 
-            {% if genre_counts %}
-            <div class="store-dropdown" id="genre-dropdown">
-                <button type="button" class="store-dropdown-btn {% if current_genres %}active{% endif %}" onclick="toggleGenreDropdown()">
-                    <span class="btn-text">
-                        {% if current_genres %}
-                            {% if current_genres|length == 1 %}
-                                {{ current_genres[0] }}
-                            {% else %}
-                                {{ current_genres|length }} Tags
-                            {% endif %}
-                        {% else %}
-                            All Tags
-                        {% endif %}
-                    </span>
-                    <span class="arrow">&#9662;</span>
-                </button>
-                <div class="store-dropdown-menu genre-dropdown-menu">
-                    <div class="genre-search">
-                        <input type="text" placeholder="Search tags..." id="genre-search-input" oninput="filterGenreOptions()">
-                    </div>
-                    <div class="genre-options-list">
-                        {% for genre, count in genre_counts.items() %}
-                        <label class="store-option genre-option">
-                            <input type="checkbox" name="genres" value="{{ genre }}" {% if genre in current_genres %}checked{% endif %}>
-                            <span class="checkbox"></span>
-                            <span class="store-label">{{ genre }}</span>
-                            <span class="store-count">{{ count }}</span>
-                        </label>
-                        {% endfor %}
-                    </div>
-                    <div class="store-dropdown-actions">
-                        <button type="button" class="clear-btn" onclick="clearGenreFilter()">Clear</button>
-                        <button type="button" class="apply-btn" onclick="applyGenreFilter()">Apply</button>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <div class="search-box">
-                <form action="" method="get" id="search-form" onsubmit="saveSearchPreferences()">
-                    {% for store in current_stores %}<input type="hidden" name="stores" value="{{ store }}">{% endfor %}
-                    {% for genre in current_genres %}<input type="hidden" name="genres" value="{{ genre }}">{% endfor %}
-                    <input type="hidden" name="sort" value="{{ current_sort }}">
-                    <input type="hidden" name="order" value="{{ current_order }}">
-                    <input type="text" name="search" placeholder="Search games..." value="{{ current_search }}">
-                </form>
-            </div>
-
-            <select class="sort-select" onchange="applySort(this.value)">
-                <option value="name-asc" {% if current_sort == 'name' and current_order == 'asc' %}selected{% endif %}>Name (A-Z)</option>
-                <option value="name-desc" {% if current_sort == 'name' and current_order == 'desc' %}selected{% endif %}>Name (Z-A)</option>
-                <option value="average_rating-desc" {% if current_sort == 'average_rating' %}selected{% endif %}>Average Rating (High-Low)</option>
-                <option value="critics_score-desc" {% if current_sort == 'critics_score' %}selected{% endif %}>Steam Rating (High-Low)</option>
-                <option value="metacritic_score-desc" {% if current_sort == 'metacritic_score' %}selected{% endif %}>Metacritic Score (High-Low)</option>
-                <option value="metacritic_user_score-desc" {% if current_sort == 'metacritic_user_score' %}selected{% endif %}>Metacritic User Score (High-Low)</option>
-                <option value="total_rating-desc" {% if current_sort == 'total_rating' %}selected{% endif %}>IGDB Rating (High-Low)</option>
-                <option value="igdb_rating-desc" {% if current_sort == 'igdb_rating' %}selected{% endif %}>IGDB User Rating (High-Low)</option>
-                <option value="aggregated_rating-desc" {% if current_sort == 'aggregated_rating' %}selected{% endif %}>IGDB Critic Rating (High-Low)</option>
-                <option value="playtime_hours-desc" {% if current_sort == 'playtime_hours' %}selected{% endif %}>Most Played</option>
-            </select>
-
-            {% if current_stores or current_genres or current_search or (current_sort != 'name') or (current_sort == 'name' and current_order != 'asc') %}
-            <button class="reset-filters-btn" onclick="resetAllFilters()" title="Reset all filters">
-                &#10005;
-            </button>
-            {% endif %}
-
-            <button class="select-toggle-btn" onclick="toggleSelectMode()" id="select-toggle" title="Multi-select mode">
-                &#10003;
-            </button>
-        </div>
+        <button class="select-toggle-btn" onclick="toggleSelectMode()" id="select-toggle" title="Multi-select mode" style="position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(90deg, #667eea, #764ba2); border: none; color: white; font-size: 1.5rem; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 50; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+            &#10003;
+        </button>
 
         {% if games %}
         {% set store_icons = {'steam': 'steam-100.png', 'epic': 'epic-100.png', 'gog': 'gog-48.png', 'itch': 'itch-90.png', 'humble': 'humble-96.png', 'battlenet': 'battlenet-100.png', 'amazon': 'amazon-120.png', 'ea': 'ea-256.png', 'xbox': 'xbox-100.png', 'ubisoft': 'ubisoft-96.png', 'local': 'local-96.png'} %}
@@ -1388,7 +1368,14 @@
         {% endif %}
     </div>
 
+    <script src="/static/js/filters.js"></script>
     <script>
+        // Initialize filter data for filters.js
+        window.currentStores = {{ current_stores|tojson }};
+        window.currentGenres = {{ current_genres|tojson }};
+        window.currentQueries = {{ current_queries|tojson }};
+        window.queryCategories = {{ query_categories|tojson }};
+
         function setGridSize(size) {
             const grid = document.getElementById('games-grid');
             if (!grid) return;
@@ -1400,18 +1387,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             const savedSize = localStorage.getItem('gridSize') || 'medium';
             setGridSize(savedSize);
-
-            // Restore filter/sort preferences from localStorage if no URL params
-            restoreFilterPreferences();
         });
 
-        // Save filter/sort preferences to localStorage
-        function saveFilterPreferences(stores, genres, search, sort, order) {
-            const prefs = { stores, genres, search, sort, order };
-            localStorage.setItem('filterPreferences', JSON.stringify(prefs));
-        }
+        // All filter-related functions are now in /static/js/filters.js
 
-        // Restore filter/sort preferences from localStorage
+        // Multi-select functionality
         function restoreFilterPreferences() {
             const urlParams = new URLSearchParams(window.location.search);
             // Check if there are any filter/sort params in URL
@@ -1464,108 +1444,8 @@
             saveFilterPreferences(stores, genres, search, sort, order);
         }
 
-        // Store dropdown functionality
-        function toggleStoreDropdown() {
-            const dropdown = document.getElementById('store-dropdown');
-            dropdown.classList.toggle('open');
-        }
-
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', function(event) {
-            const storeDropdown = document.getElementById('store-dropdown');
-            if (storeDropdown && !storeDropdown.contains(event.target)) {
-                storeDropdown.classList.remove('open');
-            }
-            const genreDropdown = document.getElementById('genre-dropdown');
-            if (genreDropdown && !genreDropdown.contains(event.target)) {
-                genreDropdown.classList.remove('open');
-            }
-        });
-
-        function getSelectedStores() {
-            const checkboxes = document.querySelectorAll('#store-dropdown input[type="checkbox"]:checked');
-            return Array.from(checkboxes).map(cb => cb.value);
-        }
-
-        function getSelectedGenres() {
-            const checkboxes = document.querySelectorAll('#genre-dropdown input[type="checkbox"]:checked');
-            return Array.from(checkboxes).map(cb => cb.value);
-        }
-
-        function buildUrl(stores, genres, search, sort, order) {
-            const params = new URLSearchParams();
-            stores.forEach(store => params.append('stores', store));
-            genres.forEach(genre => params.append('genres', genre));
-            if (search) params.set('search', search);
-            if (sort) params.set('sort', sort);
-            if (order) params.set('order', order);
-            return '?' + params.toString();
-        }
-
-        function applyStoreFilter() {
-            const stores = getSelectedStores();
-            const genres = getSelectedGenres();
-            const search = '{{ current_search }}';
-            const sort = '{{ current_sort }}';
-            const order = '{{ current_order }}';
-            window.location.href = buildUrl(stores, genres, search, sort, order);
-        }
-
-        function clearStoreFilter() {
-            const genres = getSelectedGenres();
-            const search = '{{ current_search }}';
-            const sort = '{{ current_sort }}';
-            const order = '{{ current_order }}';
-            saveFilterPreferences([], genres, search, sort, order);
-            window.location.href = buildUrl([], genres, search, sort, order);
-        }
-
-        // Genre dropdown functionality
-        function toggleGenreDropdown() {
-            const dropdown = document.getElementById('genre-dropdown');
-            dropdown.classList.toggle('open');
-        }
-
-        function applyGenreFilter() {
-            const stores = getSelectedStores();
-            const genres = getSelectedGenres();
-            const search = '{{ current_search }}';
-            const sort = '{{ current_sort }}';
-            const order = '{{ current_order }}';
-            window.location.href = buildUrl(stores, genres, search, sort, order);
-        }
-
-        function clearGenreFilter() {
-            const stores = getSelectedStores();
-            const search = '{{ current_search }}';
-            const sort = '{{ current_sort }}';
-            const order = '{{ current_order }}';
-            saveFilterPreferences(stores, [], search, sort, order);
-            window.location.href = buildUrl(stores, [], search, sort, order);
-        }
-
-        function filterGenreOptions() {
-            const searchInput = document.getElementById('genre-search-input');
-            const searchTerm = searchInput.value.toLowerCase();
-            const options = document.querySelectorAll('.genre-option');
-
-            options.forEach(option => {
-                const label = option.querySelector('.store-label').textContent.toLowerCase();
-                if (label.includes(searchTerm)) {
-                    option.classList.remove('hidden');
-                } else {
-                    option.classList.add('hidden');
-                }
-            });
-        }
-
-        function applySort(value) {
-            const [sort, order] = value.split('-');
-            const stores = [{% for store in current_stores %}'{{ store }}'{% if not loop.last %}, {% endif %}{% endfor %}];
-            const genres = [{% for genre in current_genres %}'{{ genre }}'{% if not loop.last %}, {% endif %}{% endfor %}];
-            const search = '{{ current_search }}';
-            window.location.href = buildUrl(stores, genres, search, sort, order);
-        }
+        // Note: All filter-related functions (store dropdown, genre dropdown, query filters, etc.) 
+        // are now in /static/js/filters.js
 
         // Multi-select functionality
         let selectMode = false;

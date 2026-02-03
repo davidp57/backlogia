@@ -42,6 +42,21 @@ All your games from every store, displayed in one place. Smart deduplication ens
 - **Flexible sorting** — Sort by name, rating, playtime, or release date
 - **Store indicators** — See at a glance which platforms you own each game on
 
+### Smart Filters
+
+Quickly find games that match your mood with 18 predefined filters organized into categories:
+
+- **Gameplay Filters** — Unplayed, Played, Started, Well-Played (5+ hours), Heavily-Played (20+ hours)
+- **Rating Filters** — Highly-Rated (90+), Well-Rated (75+), Below-Average (<70), Unrated, Hidden Gems, Critic Favorites, Community Favorites
+- **Date Filters** — Recently Added (30 days), Older Library (180+ days), Recent Releases (90 days), Recently Updated, Classics (pre-2000)
+- **Content Filters** — NSFW, Safe
+
+**Features:**
+- **Result count badges** — See how many games match each filter before applying it
+- **Global Filters Mode** — Enable "Apply filters globally" to keep your selected filters active across all pages (Library, Discover, Collections, Random)
+- **Keyboard navigation** — Use arrow keys to navigate filters, Esc to close dropdowns, Enter/Space to toggle filters
+- **Accessibility** — Full ARIA label support and screen reader compatibility
+
 ### Rich Game Details
 
 Every game is enriched with metadata from IGDB (Internet Game Database), giving you consistent information across all stores.

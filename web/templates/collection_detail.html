@@ -9,6 +9,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/favicons/apple-touch-icon.png">
     <link rel="manifest" href="/static/favicons/site.webmanifest">
+    <link rel="stylesheet" href="/static/css/filters.css">
     <style>
         * {
             margin: 0;
@@ -482,13 +483,15 @@
     <nav class="top-nav">
         <a href="/" class="nav-brand">Backlogia</a>
         <div class="nav-links">
-            <a href="/" class="nav-link">Discover</a>
+            <a href="/discover" class="nav-link">Discover</a>
             <a href="/library" class="nav-link">Library</a>
             <a href="/collections" class="nav-link active">Collections</a>
             <a href="/random" class="nav-link random">Random</a>
             <a href="/settings" class="nav-link">Settings</a>
         </div>
     </nav>
+
+    {% include '_filter_bar.html' %}
 
     <div class="container">
         <div id="status-message" class="status-message"></div>
@@ -706,6 +709,25 @@
             }
         });
     </script>
+    
+    <script src="/static/js/filters.js"></script>
+    <script>
+        // Initialize current filter state for filters.js
+        window.currentStores = [{% for store in current_stores %}'{{ store }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+        window.currentGenres = [{% for genre in current_genres %}'{{ genre }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+        window.currentQueries = [{% for query in current_queries %}'{{ query }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+        window.currentSearch = '';
+        window.currentSort = '';
+        window.currentOrder = '';
+        
+        // Query categories for exclusive selection
+        window.queryCategories = {
+            {% for category, filter_ids in query_categories.items() %}
+            '{{ category }}': [{% for filter_id in filter_ids %}'{{ filter_id }}'{% if not loop.last %}, {% endif %}{% endfor %}]{% if not loop.last %},{% endif %}
+            {% endfor %}
+        };
+    </script>
+    
     {% include '_footer.html' %}
 </body>
 </html>

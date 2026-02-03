@@ -1,0 +1,189 @@
+{# Filter bar component - can be included in any page that supports filtering #}
+<div class="filters">
+    {% set store_icons = {'steam': 'steam-100.png', 'epic': 'epic-100.png', 'gog': 'gog-48.png', 'itch': 'itch-90.png', 'humble': 'humble-96.png', 'battlenet': 'battlenet-100.png', 'amazon': 'amazon-120.png', 'ea': 'ea-256.png', 'xbox': 'xbox-100.png', 'ubisoft': 'ubisoft-96.png', 'local': 'local-96.png'} %}
+    <div class="store-dropdown" id="store-dropdown" role="group" aria-label="Store filter">
+        <button type="button" class="store-dropdown-btn {% if current_stores %}active{% endif %}" onclick="toggleStoreDropdown()" aria-haspopup="true" aria-expanded="false" aria-label="Filter by store">
+            <span class="btn-text">
+                {% if current_stores %}
+                    {% if current_stores|length == 1 %}
+                        {{ current_stores[0]|capitalize }}
+                    {% else %}
+                        {{ current_stores|length }} Stores
+                    {% endif %}
+                {% else %}
+                    All Stores
+                {% endif %}
+            </span>
+            <span class="arrow">&#9662;</span>
+        </button>
+        <div class="store-dropdown-menu">
+            {% for store, count in store_counts.items() %}
+            <label class="store-option">
+                <input type="checkbox" name="stores" value="{{ store }}" {% if store in current_stores %}checked{% endif %}>
+                <span class="checkbox"></span>
+                <img src="/static/images/{{ store_icons.get(store, 'steam-100.png') }}" alt="{{ store }}" class="store-icon">
+                <span class="store-label">{{ store|capitalize }}</span>
+                <span class="store-count">{{ count }}</span>
+            </label>
+            {% endfor %}
+            <div class="store-dropdown-actions">
+                <button type="button" class="clear-btn" onclick="clearStoreFilter()">Clear</button>
+                <button type="button" class="apply-btn" onclick="applyStoreFilter()">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    {% if genre_counts %}
+    <div class="store-dropdown" id="genre-dropdown" role="group" aria-label="Genre filter">
+        <button type="button" class="store-dropdown-btn {% if current_genres %}active{% endif %}" onclick="toggleGenreDropdown()" aria-haspopup="true" aria-expanded="false" aria-label="Filter by genre or tag">
+            <span class="btn-text">
+                {% if current_genres %}
+                    {% if current_genres|length == 1 %}
+                        {{ current_genres[0] }}
+                    {% else %}
+                        {{ current_genres|length }} Tags
+                    {% endif %}
+                {% else %}
+                    All Tags
+                {% endif %}
+            </span>
+            <span class="arrow">&#9662;</span>
+        </button>
+        <div class="store-dropdown-menu genre-dropdown-menu">
+            <div class="genre-search">
+                <input type="text" placeholder="Search tags..." id="genre-search-input" oninput="filterGenreOptions()">
+            </div>
+            <div class="genre-options-list">
+                {% for genre, count in genre_counts.items() %}
+                <label class="store-option genre-option">
+                    <input type="checkbox" name="genres" value="{{ genre }}" {% if genre in current_genres %}checked{% endif %}>
+                    <span class="checkbox"></span>
+                    <span class="store-label">{{ genre }}</span>
+                    <span class="store-count">{{ count }}</span>
+                </label>
+                {% endfor %}
+            </div>
+            <div class="store-dropdown-actions">
+                <button type="button" class="clear-btn" onclick="clearGenreFilter()">Clear</button>
+                <button type="button" class="apply-btn" onclick="applyGenreFilter()">Apply</button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quick Filters Dropdown -->
+    <div class="dropdown" style="position: relative;" role="group" aria-label="Quick filters">
+        <button class="dropdown-btn" onclick="toggleDropdown('queries-dropdown')" aria-haspopup="true" aria-expanded="false" aria-label="Select quick filters">
+            Quick Filters
+            {% if current_queries %}
+            <span class="filter-count">{{ current_queries|length }}</span>
+            {% endif %}
+            <span class="dropdown-arrow">&#9662;</span>
+        </button>
+        <div id="queries-dropdown" class="dropdown-content" style="display: none;">
+            {% for category, filter_ids in query_categories.items() %}
+            <div class="dropdown-category">
+                <div class="category-header">{{ category }}</div>
+                {% for filter_id in filter_ids %}
+                <div class="dropdown-item" title="{{ query_descriptions[filter_id] }}">
+                    <input type="checkbox" 
+                           id="query-{{ filter_id }}" 
+                           {% if filter_id in current_queries %}checked{% endif %}
+                           onchange="toggleQueryFilterFromDropdown('{{ filter_id }}')">
+                    <label for="query-{{ filter_id }}">
+                        {{ query_display_names[filter_id] }}
+                        {% if query_filter_counts and filter_id in query_filter_counts and query_filter_counts[filter_id] > 0 %}
+                        <span class="filter-result-count">{{ query_filter_counts[filter_id] }}</span>
+                        {% endif %}
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if show_search|default(True) %}
+    <div class="search-box">
+        <form action="" method="get" id="search-form" onsubmit="saveSearchPreferences()" role="search">
+            {% for store in current_stores %}<input type="hidden" name="stores" value="{{ store }}">{% endfor %}
+            {% for genre in current_genres %}<input type="hidden" name="genres" value="{{ genre }}">{% endfor %}
+            {% for query in current_queries %}<input type="hidden" name="queries" value="{{ query }}">{% endfor %}
+            <input type="hidden" name="sort" value="{{ current_sort }}">
+            <input type="hidden" name="order" value="{{ current_order }}">
+            <input type="text" name="search" placeholder="Search games..." value="{{ current_search }}" aria-label="Search for games by title">
+        </form>
+    </div>
+    {% endif %}
+
+    {% if show_sort|default(True) %}
+    <!-- Sort Dropdown -->
+    <div class="dropdown" style="position: relative;" role="group" aria-label="Sort options">
+        <button class="dropdown-btn" onclick="toggleDropdown('sort-dropdown')" aria-haspopup="true" aria-expanded="false" aria-label="Select sort order">
+            {% if current_sort == 'name' and current_order == 'asc' %}Name (A-Z)
+            {% elif current_sort == 'name' and current_order == 'desc' %}Name (Z-A)
+            {% elif current_sort == 'average_rating' %}Average Rating (High-Low)
+            {% elif current_sort == 'critics_score' %}Steam Rating (High-Low)
+            {% elif current_sort == 'metacritic_score' %}Metacritic Score (High-Low)
+            {% elif current_sort == 'metacritic_user_score' %}Metacritic User Score (High-Low)
+            {% elif current_sort == 'total_rating' %}IGDB Rating (High-Low)
+            {% elif current_sort == 'igdb_rating' %}IGDB User Rating (High-Low)
+            {% elif current_sort == 'aggregated_rating' %}IGDB Critic Rating (High-Low)
+            {% elif current_sort == 'playtime_hours' %}Most Played
+            {% elif current_sort == 'release_date' and current_order == 'desc' %}Release Date (Newest)
+            {% elif current_sort == 'release_date' and current_order == 'asc' %}Release Date (Oldest)
+            {% elif current_sort == 'added_at' and current_order == 'desc' %}Recently Added
+            {% elif current_sort == 'added_at' and current_order == 'asc' %}Oldest in Library
+            {% endif %}
+            <span class="dropdown-arrow">&#9662;</span>
+        </button>
+        <div id="sort-dropdown" class="dropdown-content" style="display: none; min-width: 260px;">
+            <div class="dropdown-item" onclick="applySort('name-asc')">
+                <label style="cursor: pointer;">Name (A-Z)</label>
+            </div>
+            <div class="dropdown-item" onclick="applySort('name-desc')">
+                <label style="cursor: pointer;">Name (Z-A)</label>
+            </div>
+            <div class="dropdown-item" onclick="applySort('added_at-desc')">
+                <label style="cursor: pointer;">Recently Added</label>
+            </div>
+            <div class="dropdown-item" onclick="applySort('added_at-asc')">
+                <label style="cursor: pointer;">Oldest in Library</label>
+            </div>
+            <div class="dropdown-item" onclick="applySort('release_date-desc')">
+                <label style="cursor: pointer;">Release Date (Newest)</label>
+            </div>
+            <div class="dropdown-item" onclick="applySort('release_date-asc')">
+                <label style="cursor: pointer;">Release Date (Oldest)</label>
+            </div>
+            <div class="dropdown-item" onclick="applySort('playtime_hours-desc')">
+                <label style="cursor: pointer;">Most Played</label>
+            </div>
+            <div class="dropdown-item" onclick="applySort('average_rating-desc')">
+                <label style="cursor: pointer;">Average Rating (High-Low)</label>
+            </div>
+            <div class="dropdown-item" onclick="applySort('critics_score-desc')">
+                <label style="cursor: pointer;">Steam Rating (High-Low)</label>
+            </div>
+            <div class="dropdown-item" onclick="applySort('total_rating-desc')">
+                <label style="cursor: pointer;">IGDB Rating (High-Low)</label>
+            </div>
+            <div class="dropdown-item" onclick="applySort('igdb_rating-desc')">
+                <label style="cursor: pointer;">IGDB User Rating (High-Low)</label>
+            </div>
+            <div class="dropdown-item" onclick="applySort('aggregated_rating-desc')">
+                <label style="cursor: pointer;">IGDB Critic Rating (High-Low)</label>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if show_actions|default(True) %}
+    <button class="clear-filters-btn" onclick="clearAllFilters()" style="margin-left: auto;" aria-label="Reset all active filters">
+        <svg style="width: 16px; height: 16px; margin-right: 6px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+        Reset all filters
+    </button>
+    {% endif %}
+</div>

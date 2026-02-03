@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Games - Backlogia</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/favicons/apple-touch-icon.png">
+    <link rel="manifest" href="/static/favicons/site.webmanifest">
+    <link rel="stylesheet" href="/static/css/filters.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            color: #e4e4e4;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: linear-gradient(180deg, rgba(13, 13, 26, 0.95) 0%, rgba(13, 13, 26, 0) 100%);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-link {
+            color: #888;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: #667eea;
+        }
+
+        .nav-link.active {
+            color: #667eea;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 120px 40px 60px;
+        }
+
+        /* Page Header */
+        .page-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .page-title {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+        }
+
+        .page-subtitle {
+            font-size: 1.1rem;
+            color: #888;
+        }
+
+        .refresh-btn {
+            margin-top: 25px;
+            padding: 12px 30px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Game Grid */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        /* Featured Card (from discover.html) */
+        .featured-card {
+            position: relative;
+            background: rgba(26, 26, 46, 0.6);
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+            height: 450px;
+        }
+
+        .featured-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .featured-card-media {
+            position: relative;
+            height: 220px;
+            overflow: hidden;
+        }
+
+        .featured-card-bg {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .featured-card-gradient {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent 0%, rgba(26, 26, 46, 0.9) 100%);
+        }
+
+        .featured-card-ratings {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .rating {
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .rating.total {
+            background: rgba(102, 126, 234, 0.3);
+            color: #667eea;
+        }
+
+        .rating.user {
+            background: rgba(118, 75, 162, 0.3);
+            color: #a78bfa;
+        }
+
+        .rating.critic {
+            background: rgba(255, 184, 0, 0.3);
+            color: #ffb800;
+        }
+
+        .featured-card-content {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .featured-card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 10px;
+            line-height: 1.3;
+        }
+
+        .featured-card-genres {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .featured-card-genre {
+            padding: 4px 10px;
+            background: rgba(102, 126, 234, 0.2);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: #667eea;
+        }
+
+        .featured-card-desc {
+            font-size: 0.9rem;
+            color: #aaa;
+            line-height: 1.5;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+
+        .featured-card-screenshots {
+            display: none;
+        }
+
+        /* Expanded Card Overlay (from discover.html) */
+        .expanded-card-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .expanded-card-overlay.active {
+            display: flex;
+        }
+
+        .expanded-card {
+            position: relative;
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90vh;
+            background: rgba(26, 26, 46, 0.95);
+            border-radius: 16px;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8);
+        }
+
+        .expanded-card-left {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .expanded-card-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: blur(20px);
+            opacity: 0.4;
+        }
+
+        .expanded-card-cover-container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 40px;
+        }
+
+        .expanded-card-cover {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .expanded-card-right {
+            padding: 40px;
+            overflow-y: auto;
+            max-height: 90vh;
+        }
+
+        .expanded-card-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            z-index: 10;
+        }
+
+        .expanded-card-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .expanded-card-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .expanded-card-ratings {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .expanded-card-rating-item {
+            text-align: center;
+        }
+
+        .expanded-card-rating-score {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .expanded-card-rating-score.high {
+            color: #4ade80;
+        }
+
+        .expanded-card-rating-score.medium {
+            color: #fbbf24;
+        }
+
+        .expanded-card-rating-label {
+            font-size: 0.8rem;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        .expanded-card-genres {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .expanded-card-genre {
+            padding: 6px 14px;
+            background: rgba(102, 126, 234, 0.2);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #667eea;
+        }
+
+        .expanded-card-description {
+            font-size: 1rem;
+            color: #ccc;
+            line-height: 1.7;
+            margin-bottom: 30px;
+        }
+
+        .expanded-card-screenshots-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .expanded-card-screenshots {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .expanded-card-screenshot {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .expanded-card-screenshot:hover {
+            transform: scale(1.05);
+        }
+
+        .expanded-card-link {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 8px;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .expanded-card-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Lightbox (from discover.html) */
+        .lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lightbox.active {
+            display: flex;
+        }
+
+        .lightbox-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        .lightbox-img {
+            max-width: 100%;
+            max-height: 90vh;
+            object-fit: contain;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            z-index: 10;
+        }
+
+        .lightbox-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .lightbox-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .lightbox-arrow:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .lightbox-arrow-left {
+            left: 20px;
+        }
+
+        .lightbox-arrow-right {
+            right: 20px;
+        }
+
+        .lightbox-counter {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 16px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #888;
+        }
+
+        .empty-state h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .expanded-card {
+                grid-template-columns: 1fr;
+            }
+
+            .expanded-card-left {
+                min-height: 300px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav {
+                padding: 15px 20px;
+            }
+
+            .container {
+                padding: 100px 20px 40px;
+            }
+
+            .page-title {
+                font-size: 2rem;
+            }
+
+            .games-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                gap: 20px;
+            }
+
+            .featured-card {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <a href="/discover" class="nav-brand">Backlogia</a>
+        <div class="nav-links">
+            <a href="/discover" class="nav-link">Discover</a>
+            <a href="/library" class="nav-link">Library</a>
+            <a href="/collections" class="nav-link">Collections</a>
+            <a href="/random" class="nav-link active">Random</a>
+            <a href="/settings" class="nav-link">Settings</a>
+        </div>
+    </nav>
+
+    {% include '_filter_bar.html' %}
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">Random Games</h1>
+            <p class="page-subtitle">{{ games|length }} random game{{ 's' if games|length != 1 else '' }} from your library</p>
+            <button class="refresh-btn" onclick="refreshRandomGames()">🎲 Shuffle Again</button>
+        </div>
+
+        {% if games %}
+        <!-- Games Grid -->
+        <div class="games-grid">
+            {% for game in games %}
+            {% set screenshots = parse_json(game.igdb_screenshots) %}
+            {% set genres = parse_json(game.genres) %}
+            {% set cover = game.cover_url_override or game.igdb_cover_url or game.cover_image %}
+            {% set bg = screenshots[0] if screenshots else cover %}
+            <div class="featured-card" data-game-id="{{ game.id }}" onclick="openExpandedCardFromEvent(event, this)">
+                <div class="featured-card-media">
+                    {% if bg %}
+                    <img src="{{ bg }}" alt="" class="featured-card-bg">
+                    {% endif %}
+                    <div class="featured-card-gradient"></div>
+                    {% if game.total_rating or game.igdb_rating or game.aggregated_rating %}
+                    <div class="featured-card-ratings" title="Total | User | Critic">
+                        {% if game.total_rating %}<span class="rating total">{{ game.total_rating|round|int }}</span>{% endif %}
+                        {% if game.igdb_rating %}<span class="rating user">{{ game.igdb_rating|round|int }}</span>{% endif %}
+                        {% if game.aggregated_rating %}<span class="rating critic">{{ game.aggregated_rating|round|int }}</span>{% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="featured-card-content">
+                    <h3 class="featured-card-title">{{ game.name }}</h3>
+                    {% if genres %}
+                    <div class="featured-card-genres">
+                        {% for genre in genres[:2] %}
+                        <span class="featured-card-genre">{{ genre }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% set desc = game.igdb_summary or game.description %}
+                    {% if desc %}
+                    <p class="featured-card-desc">{{ desc }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <h2>No games found</h2>
+            <p>Try adjusting your filters to see more results.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Expanded Card Overlay -->
+    <div class="expanded-card-overlay" id="expanded-overlay" onclick="closeExpandedCard(event)">
+        <div class="expanded-card" onclick="event.stopPropagation()">
+            <button class="expanded-card-close" onclick="closeExpandedCard()">&times;</button>
+            <div class="expanded-card-left">
+                <img src="" alt="" class="expanded-card-bg" id="expanded-bg">
+                <div class="expanded-card-cover-container">
+                    <img src="" alt="" class="expanded-card-cover" id="expanded-cover">
+                </div>
+            </div>
+            <div class="expanded-card-right">
+                <h2 class="expanded-card-title" id="expanded-title">Game Title</h2>
+                <div class="expanded-card-ratings" id="expanded-ratings"></div>
+                <div class="expanded-card-genres" id="expanded-genres"></div>
+                <p class="expanded-card-description" id="expanded-description">Description</p>
+                <h3 class="expanded-card-screenshots-title">Screenshots</h3>
+                <div class="expanded-card-screenshots" id="expanded-screenshots"></div>
+                <a href="#" class="expanded-card-link" id="expanded-link">View Full Details</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+        <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+        <button class="lightbox-arrow lightbox-arrow-left" onclick="event.stopPropagation(); prevScreenshot()">&lsaquo;</button>
+        <div class="lightbox-content" onclick="event.stopPropagation()">
+            <img src="" alt="Screenshot" class="lightbox-img" id="lightbox-img">
+        </div>
+        <button class="lightbox-arrow lightbox-arrow-right" onclick="event.stopPropagation(); nextScreenshot()">&rsaquo;</button>
+        <div class="lightbox-counter" id="lightbox-counter">1 / 1</div>
+    </div>
+
+    <script>
+        // Game data store for expanded cards
+        const gameDataStore = {};
+        {% for game in games %}
+        gameDataStore[{{ game.id }}] = {
+            id: {{ game.id }},
+            name: {{ game.name|tojson }},
+            igdb_cover_url: {{ game.igdb_cover_url|tojson }},
+            cover_image: {{ game.cover_image|tojson }},
+            cover_url_override: {{ game.cover_url_override|tojson }},
+            igdb_summary: {{ game.igdb_summary|tojson }},
+            description: {{ game.description|tojson }},
+            total_rating: {{ game.total_rating|tojson }},
+            igdb_rating: {{ game.igdb_rating|tojson }},
+            aggregated_rating: {{ game.aggregated_rating|tojson }},
+            genres: {{ parse_json(game.genres)|tojson }},
+            igdb_screenshots: {{ parse_json(game.igdb_screenshots)|tojson }}
+        };
+        {% endfor %}
+
+        // Refresh page with new random games
+        function refreshRandomGames() {
+            window.location.reload();
+        }
+
+        // Expanded Card Functions
+        let currentGame = null;
+
+        function openExpandedCardFromEvent(e, element) {
+            const gameId = parseInt(element.dataset.gameId, 10);
+            const game = gameDataStore[gameId];
+            if (game) {
+                openExpandedCard(game);
+            }
+        }
+
+        function openExpandedCard(game) {
+            currentGame = game;
+            const overlay = document.getElementById('expanded-overlay');
+            const screenshots = game.igdb_screenshots || [];
+            const genres = game.genres || [];
+            const cover = game.igdb_cover_url || game.cover_image || '';
+            const bg = screenshots[0] || cover;
+            const desc = game.igdb_summary || game.description || 'No description available.';
+
+            document.getElementById('expanded-bg').src = bg ? bg.replace('t_screenshot_big', 't_1080p') : '';
+            document.getElementById('expanded-cover').src = cover;
+            document.getElementById('expanded-title').textContent = game.name;
+            document.getElementById('expanded-description').textContent = desc;
+            document.getElementById('expanded-link').href = '/game/' + game.id;
+
+            // Ratings
+            let ratingsHtml = '';
+            if (game.total_rating) {
+                const ratingClass = game.total_rating >= 80 ? 'high' : 'medium';
+                ratingsHtml += `<div class="expanded-card-rating-item">
+                    <div class="expanded-card-rating-score ${ratingClass}">${Math.round(game.total_rating)}</div>
+                    <div class="expanded-card-rating-label">Overall</div>
+                </div>`;
+            }
+            if (game.igdb_rating) {
+                const ratingClass = game.igdb_rating >= 80 ? 'high' : 'medium';
+                ratingsHtml += `<div class="expanded-card-rating-item">
+                    <div class="expanded-card-rating-score ${ratingClass}">${Math.round(game.igdb_rating)}</div>
+                    <div class="expanded-card-rating-label">User</div>
+                </div>`;
+            }
+            if (game.aggregated_rating) {
+                const ratingClass = game.aggregated_rating >= 80 ? 'high' : 'medium';
+                ratingsHtml += `<div class="expanded-card-rating-item">
+                    <div class="expanded-card-rating-score ${ratingClass}">${Math.round(game.aggregated_rating)}</div>
+                    <div class="expanded-card-rating-label">Critic</div>
+                </div>`;
+            }
+            document.getElementById('expanded-ratings').innerHTML = ratingsHtml;
+
+            // Genres
+            let genresHtml = '';
+            genres.forEach(genre => {
+                genresHtml += `<span class="expanded-card-genre">${genre}</span>`;
+            });
+            document.getElementById('expanded-genres').innerHTML = genresHtml;
+
+            // Screenshots
+            let screenshotsHtml = '';
+            screenshots.forEach((ss, index) => {
+                const fullRes = ss.replace('t_screenshot_big', 't_1080p');
+                screenshotsHtml += `<img src="${ss}" alt="Screenshot ${index + 1}" class="expanded-card-screenshot" onclick="openLightbox(${JSON.stringify(screenshots)}, ${index})">`;
+            });
+            document.getElementById('expanded-screenshots').innerHTML = screenshotsHtml || '<p style="color: #666;">No screenshots available</p>';
+
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeExpandedCard(event) {
+            if (event && event.target !== document.getElementById('expanded-overlay')) return;
+            document.getElementById('expanded-overlay').classList.remove('active');
+            document.body.style.overflow = '';
+            currentGame = null;
+        }
+
+        // Lightbox Functions
+        let currentScreenshots = [];
+        let currentScreenshotIndex = 0;
+
+        function openLightbox(screenshots, index) {
+            currentScreenshots = screenshots.map(ss => ss.replace('t_screenshot_big', 't_1080p'));
+            currentScreenshotIndex = index;
+            updateLightbox();
+            document.getElementById('lightbox').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('active');
+            if (!document.getElementById('expanded-overlay').classList.contains('active')) {
+                document.body.style.overflow = '';
+            }
+        }
+
+        function updateLightbox() {
+            document.getElementById('lightbox-img').src = currentScreenshots[currentScreenshotIndex];
+            document.getElementById('lightbox-counter').textContent = `${currentScreenshotIndex + 1} / ${currentScreenshots.length}`;
+        }
+
+        function nextScreenshot() {
+            currentScreenshotIndex = (currentScreenshotIndex + 1) % currentScreenshots.length;
+            updateLightbox();
+        }
+
+        function prevScreenshot() {
+            currentScreenshotIndex = (currentScreenshotIndex - 1 + currentScreenshots.length) % currentScreenshots.length;
+            updateLightbox();
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if (document.getElementById('lightbox').classList.contains('active')) {
+                    closeLightbox();
+                } else if (document.getElementById('expanded-overlay').classList.contains('active')) {
+                    closeExpandedCard();
+                }
+            }
+            if (document.getElementById('lightbox').classList.contains('active')) {
+                if (e.key === 'ArrowRight') nextScreenshot();
+                if (e.key === 'ArrowLeft') prevScreenshot();
+            }
+        });
+    </script>
+
+    <script src="/static/js/filters.js"></script>
+    <script>
+        // Initialize current filter state for filters.js
+        window.currentStores = [{% for store in current_stores %}'{{ store }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+        window.currentGenres = [{% for genre in current_genres %}'{{ genre }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+        window.currentQueries = [{% for query in current_queries %}'{{ query }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+        window.currentSearch = '';
+        window.currentSort = '';
+        window.currentOrder = '';
+        
+        // Query categories for exclusive selection
+        window.queryCategories = {
+            {% for category, filter_ids in query_categories.items() %}
+            '{{ category }}': [{% for filter_id in filter_ids %}'{{ filter_id }}'{% if not loop.last %}, {% endif %}{% endfor %}]{% if not loop.last %},{% endif %}
+            {% endfor %}
+        };
+    </script>
+</body>
+</html>
