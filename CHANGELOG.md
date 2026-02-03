@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `LOCAL_GAMES_PATHS` setting is now editable through the web interface and stored in the database
 - Settings template updated to show an input field for local games paths instead of read-only display
-- Docker users can still use `LOCAL_GAMES_DIR_1`, `LOCAL_GAMES_DIR_2`, etc. environment variables (these take precedence)
+- Docker users can still use `LOCAL_GAMES_DIR_1`, `LOCAL_GAMES_DIR_2`, etc. environment variables to derive display-only host paths; the effective local games configuration is controlled by the `LOCAL_GAMES_PATHS` environment variable and its corresponding database setting
 
 ### Technical Details
 - Modified `web/routes/settings.py` to handle saving and loading `LOCAL_GAMES_PATHS` from database
