@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Desktop Application Mode**: Backlogia can now run as a standalone desktop application
+  - PyWebView-based native window wrapper for Windows, macOS, and Linux
+  - Automatic server startup and port management
+  - Elegant loading screen with animated gradient design
+  - **Single instance lock** - Prevents multiple instances from running simultaneously
+  - **System tray icon** - Optional tray menu for quick access (requires pystray)
+- Desktop executable packaging with PyInstaller
+  - One-folder distribution with all dependencies bundled
+  - Custom application icon
+  - Windows GUI mode (no console window)
+  - Persistent data storage in user directories (`%APPDATA%\Backlogia` on Windows)
+- Automated build script (`build.py`) for creating desktop executables
+- Loading screen route (`/loading`) for smooth app startup experience
+- Enhanced bookmarklet UI detection for desktop vs browser mode
 - **Predefined query filters system**: 18 quick filters organized in 4 categories for better library organization:
   - **Gameplay** (5 filters): Unplayed, Played, Started, Well-Played, Heavily-Played
   - **Ratings** (7 filters): Highly-Rated, Well-Rated, Below-Average, Unrated, Hidden Gems, Critic Favorites, Community Favorites
@@ -30,6 +44,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Documentation**: Complete technical documentation in `.copilot-docs/` covering filter system architecture, SQL reference, and database schema
 
 ### Changed
+- Settings page now shows different bookmarklet instructions for desktop app users
+- Application data directory logic updated to support both dev and frozen (PyInstaller) modes
+- Log files now stored in `%APPDATA%\Backlogia\logs\` when running as desktop app
 - **Filter behavior**: Removed "Apply filters globally" checkbox—filters are now always global for simpler UX
 - **Filter application**: Auto-apply with 300ms debounce using event delegation for better reliability
 - **Random page**: Converted from redirect to full HTML page with game grid and filter integration
@@ -43,6 +60,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Recently Updated filter now works for all stores (uses `last_modified` field instead of Epic-specific `game_update_at`)
 
 ### Technical Details
+- Added `desktop.py` launcher with threading-based server management
+- Added PyInstaller configuration (`backlogia.spec`)
+- Added development dependencies: `pywebview`, `pyinstaller`
+- Server startup now waits for port availability before showing window
+- Loading screen served via FastAPI endpoint for better compatibility
 - **New files**:
   - `web/utils/filters.py`: Filter definitions (PREDEFINED_QUERIES, QUERY_DISPLAY_NAMES, QUERY_CATEGORIES, QUERY_DESCRIPTIONS)
   - `web/templates/_filter_bar.html`: Reusable filter bar component
@@ -59,3 +81,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `.copilot-docs/database-schema.md`: Database schema documentation
 - **Modified routes**: `library.py`, `discover.py`, `collections.py`, `settings.py` to support `queries` parameter
 - **Database**: Added `popularity_cache` table and `ensure_predefined_query_indexes()` in `database.py`
+
+## [0.1.0] - Previous Version
+
+### Added
+- Initial release with web-based game library management
+- Support for multiple game stores (Steam, GOG, Epic, etc.)
+- IGDB integration for game metadata
+- Collections and custom organization
+- Bookmarklet for quick game additions

@@ -1,7 +1,6 @@
 # igdb_sync.py
 # Matches games in our database to IGDB entries and fetches ratings/metadata
 
-import sqlite3
 import requests
 import time
 import json

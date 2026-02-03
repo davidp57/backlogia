@@ -2,7 +2,7 @@
 
 **Your entire game library, finally in one place.**
 
-Stop jumping between Steam, Epic, GOG, Xbox, Amazon, and a dozen other launchers just to see what you own. Backlogia aggregates all your games into a single, beautifully organized library with rich metadata, ratings, and discovery features—all running locally on your machine.
+Stop jumping between Steam, Epic, GOG, Amazon, and a dozen other launchers just to see what you own. Backlogia aggregates all your games into a single, beautifully organized library with rich metadata, ratings, and discovery features—all running locally on your machine.
 
 ![Library View](docs/images/library.png)
 
@@ -19,14 +19,14 @@ Stop jumping between Steam, Epic, GOG, Xbox, Amazon, and a dozen other launchers
   <img src="web/static/images/humble-96.png" alt="Humble Bundle" width="48" height="48" style="margin: 0 10px;">
   <img src="web/static/images/battlenet-100.png" alt="Battle.net" width="48" height="48" style="margin: 0 10px;">
   <img src="web/static/images/ea-256.png" alt="EA" width="48" height="48" style="margin: 0 10px;">
-  <img src="web/static/images/xbox-100.png" alt="Xbox" width="48" height="48" style="margin: 0 10px;">
   <img src="web/static/images/ubisoft-96.png" alt="Ubisoft" width="48" height="48" style="margin: 0 10px;">
-  <img src="web/static/images/local-96.png" alt="Local Folder" width="48" height="48" style="margin: 0 10px;">
 </p>
 
 <p align="center">
-  <strong>Steam</strong> &nbsp;•&nbsp; <strong>Epic Games</strong> &nbsp;•&nbsp; <strong>GOG</strong> &nbsp;•&nbsp; <strong>Amazon Games</strong> &nbsp;•&nbsp; <strong>itch.io</strong> &nbsp;•&nbsp; <strong>Humble Bundle</strong> &nbsp;•&nbsp; <strong>Battle.net</strong> &nbsp;•&nbsp; <strong>EA</strong> &nbsp;•&nbsp; <strong>Xbox / Game Pass</strong> &nbsp;•&nbsp; <strong>Ubisoft</strong> &nbsp;•&nbsp; <strong>Local Folder</strong>
+  <strong>Steam</strong> &nbsp;•&nbsp; <strong>Epic Games</strong> &nbsp;•&nbsp; <strong>GOG</strong> &nbsp;•&nbsp; <strong>Amazon Games</strong> &nbsp;•&nbsp; <strong>itch.io</strong> &nbsp;•&nbsp; <strong>Humble Bundle</strong> &nbsp;•&nbsp; <strong>Battle.net</strong> &nbsp;•&nbsp; <strong>EA</strong> &nbsp;•&nbsp; <strong>Ubisoft</strong>
 </p>
+
+Please vote for which stores you would like to see supported next [here](https://github.com/sam1am/backlogia/discussions/1).
 
 ---
 
@@ -41,21 +41,6 @@ All your games from every store, displayed in one place. Smart deduplication ens
 - **Multi-store filtering** — Filter by store, genre, or search by name
 - **Flexible sorting** — Sort by name, rating, playtime, or release date
 - **Store indicators** — See at a glance which platforms you own each game on
-
-### Smart Filters
-
-Quickly find games that match your mood with 18 predefined filters organized into categories:
-
-- **Gameplay Filters** — Unplayed, Played, Started, Well-Played (5+ hours), Heavily-Played (20+ hours)
-- **Rating Filters** — Highly-Rated (90+), Well-Rated (75+), Below-Average (<70), Unrated, Hidden Gems, Critic Favorites, Community Favorites
-- **Date Filters** — Recently Added (30 days), Older Library (180+ days), Recent Releases (90 days), Recently Updated, Classics (pre-2000)
-- **Content Filters** — NSFW, Safe
-
-**Features:**
-- **Result count badges** — See how many games match each filter before applying it
-- **Global Filters Mode** — Enable "Apply filters globally" to keep your selected filters active across all pages (Library, Discover, Collections, Random)
-- **Keyboard navigation** — Use arrow keys to navigate filters, Esc to close dropdowns, Enter/Space to toggle filters
-- **Accessibility** — Full ARIA label support and screen reader compatibility
 
 ### Rich Game Details
 
@@ -104,55 +89,46 @@ Connect your accounts and sync your library with a single click.
 
 ---
 
-## Setup
+## Installation
 
-### Prerequisites
+### Option 1: Desktop Application (Recommended for Windows)
 
-- **Docker & Docker Compose** (for containerized installation)
-- **Python 3.11+** (for local installation only)
-- API keys for the stores you want to sync (see [Configuration](#configuration))
+The easiest way to use Backlogia is with the standalone desktop application.
 
-### Option 1: Pre-built Image (Recommended)
+1. **Download the latest release**
+   - Go to the [Releases page](https://github.com/sam1am/backlogia/releases)
+   - Download `Backlogia-Windows.zip` for Windows
+   - Download `Backlogia-macOS.zip` for macOS (if available)
+   - Download `Backlogia-Linux.tar.gz` for Linux (if available)
 
-The easiest way to run Backlogia—no cloning or building required.
+2. **Extract and run**
+   - Extract the archive to a folder of your choice
+   - Run `Backlogia.exe` (Windows) or the appropriate executable
+   - The application will open in a native window with a loading screen
+   - Your game library data is stored in `%APPDATA%\Backlogia` (Windows) or equivalent user directory
 
-1. **Create a directory for Backlogia**
-   ```bash
-   mkdir backlogia && cd backlogia
-   ```
+3. **Configure your stores**
+   - Go to Settings to connect your game store accounts
+   - See [Configuration](#configuration) for details
 
-2. **Download the configuration files**
-   ```bash
-   curl -O https://raw.githubusercontent.com/sam1am/backlogia/main/.env.example
-   curl -O https://raw.githubusercontent.com/sam1am/backlogia/main/docker-compose.ghcr.yml
-   ```
+#### System Requirements
 
-3. **Create your environment file**
-   ```bash
-   cp .env.example .env
-   ```
+**Windows:**
+- Windows 10 or later
+- Microsoft Edge WebView2 Runtime (usually pre-installed on Windows 11)
+  - If missing, download from [Microsoft](https://developer.microsoft.com/microsoft-edge/webview2/)
 
-4. **Edit `.env` with your settings** (see [Configuration](#configuration))
+**macOS:**
+- macOS 10.15 (Catalina) or later
+- WebKit (built-in)
 
-5. **Start the container**
-   ```bash
-   docker compose -f docker-compose.ghcr.yml up -d
-   ```
+**Linux:**
+- Ubuntu 20.04+ / Fedora 35+ or equivalent
+- WebKitGTK 2.0: `sudo apt install gir1.2-webkit2-4.0` (Ubuntu/Debian)
 
-6. **Access Backlogia** at [http://localhost:5050](http://localhost:5050)
+### Option 2: Docker
 
-#### Updating (Pre-built Image)
-
-```bash
-docker compose -f docker-compose.ghcr.yml pull
-docker compose -f docker-compose.ghcr.yml up -d
-```
-
----
-
-### Option 2: Build from Source (Docker)
-
-Build the image locally from the repository.
+For running Backlogia as a server (accessible from multiple devices):
 
 1. **Clone the repository**
    ```bash
@@ -165,7 +141,7 @@ Build the image locally from the repository.
    cp .env.example .env
    ```
 
-3. **Edit `.env` with your settings** (see [Configuration](#configuration))
+3. **Edit `.env` with your API credentials** (see [Configuration](#configuration))
 
 4. **Start the container**
    ```bash
@@ -174,17 +150,7 @@ Build the image locally from the repository.
 
 5. **Access Backlogia** at [http://localhost:5050](http://localhost:5050)
 
-#### Updating (Build from Source)
-
-```bash
-git pull
-docker compose down
-docker compose up -d --build
-```
-
----
-
-### Docker Volumes
+#### Docker Volumes
 
 | Volume | Purpose |
 |--------|---------|
@@ -192,58 +158,24 @@ docker compose up -d --build
 | `./data/legendary:/root/.config/legendary` | Epic Games authentication cache |
 | `./data/nile:/root/.config/nile` | Amazon Games authentication cache |
 | `${GOG_DB_DIR}:/gog:ro` | GOG Galaxy database (read-only) |
-| `${LOCAL_GAMES_DIR_N}:/local-games-N:ro` | Local games folders 1-5 (read-only, add more in docker-compose.yml if needed) |
 
----
+#### Updating
 
-### HTTPS Access (Optional)
+To update Backlogia to the latest version:
 
-Enable HTTPS access via a Caddy reverse proxy. This is useful for:
-- Using the bookmarklet from HTTPS sites (avoids mixed-content blocking)
-- Accessing Backlogia from other devices on your network
-
-**Enable HTTPS:**
-
-Add to your `.env` file:
 ```bash
-COMPOSE_PROFILES=https
+git pull
+docker compose down
+docker compose up -d --build
 ```
 
-Then restart:
-```bash
-docker compose down && docker compose up -d --build
-```
+### Option 3: Python/pip (For Developers)
 
-**Access URLs:**
-
-| URL | Scope |
-|-----|-------|
-| `https://backlogia.localhost` | Local machine only |
-| `https://backlogia.local` | Any device on your network (requires mDNS) |
-
-**Network Access (backlogia.local):**
-
-On **macOS**, Docker runs in a VM and can't broadcast mDNS directly. Run this helper script in a separate terminal:
-```bash
-./scripts/advertise-mdns.sh
-```
-
-On **Linux** hosts, mDNS is advertised automatically via Avahi.
-
-**Trusting the Certificate:**
-
-Caddy generates a self-signed certificate. Your browser will show a warning on first visit. You can click past it. To trust it permanently on macOS:
-```bash
-sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ./data/caddy_data/pki/authorities/local/root.crt
-```
-
----
-
-### Option 3: Local Installation
+For development or if you prefer running from source:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/sam1am/backlogia.git
+   git clone https://github.com/yourusername/backlogia.git
    cd backlogia
    ```
 
@@ -263,21 +195,23 @@ sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keyc
    cp .env.example .env
    ```
 
-5. **Edit `.env` with your settings** (see [Configuration](#configuration))
+5. **Edit `.env` with your API credentials** (see [Configuration](#configuration))
 
-6. **Initialize the database**
+6. **Run the desktop launcher**
    ```bash
-   python scripts/build_database.py
+   python desktop.py
    ```
 
-7. **Run the application**
+   Or run as a web server:
    ```bash
-   python web/app.py
+   python -m uvicorn web.main:app --host 127.0.0.1 --port 5050
    ```
 
-8. **Access Backlogia** at [http://localhost:5050](http://localhost:5050)
+7. **Access Backlogia** in the native window or at [http://localhost:5050](http://localhost:5050)
 
-#### Updating (Local Installation)
+#### Updating
+
+To update Backlogia to the latest version:
 
 ```bash
 git pull
@@ -285,6 +219,51 @@ pip install -r requirements.txt
 ```
 
 Then restart the application.
+
+### Building the Desktop Application
+
+To build the standalone executable yourself:
+
+1. **Install build dependencies**
+   ```bash
+   pip install -r requirements-build.txt
+   ```
+
+2. **Run the build script**
+   ```bash
+   python build.py
+   ```
+
+3. **The executable will be in `dist/Backlogia/`**
+   ```bash
+   dist\Backlogia\Backlogia.exe  # Windows
+   ```
+
+---
+
+## Troubleshooting
+
+### Desktop Application Issues
+
+**Windows: "Edge WebView2 not found"**
+- Download and install [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)
+
+**All ports in use error**
+- Close some applications and try again
+- The launcher tries ports 8000-8099 automatically
+
+**Server failed to start**
+- Check that all dependencies are installed: `pip install -r requirements.txt`
+- Run `python desktop.py` from the terminal to see error messages
+
+**Linux: "webkit2gtk not found"**
+- Ubuntu/Debian: `sudo apt install gir1.2-webkit2-4.0 python3-gi`
+- Fedora: `sudo dnf install webkit2gtk3 python3-gobject`
+
+**Application window is blank**
+- Wait a few seconds for the server to fully start
+- Check console output for errors
+- Try running in web server mode to diagnose: `python -m uvicorn web.main:app`
 
 ---
 
@@ -304,82 +283,19 @@ Configure all store connections through the **Settings** page in Backlogia. Each
 | **Humble Bundle** | Session cookie from browser (instructions in Settings) |
 | **Battle.net** | Session cookie from browser (instructions in Settings) |
 | **Amazon** | OAuth flow in Settings page |
-| **EA** | Bearer token via bookmarklet (instructions in Settings) |
-| **Xbox / Game Pass** | XSTS token via bookmarklet or browser DevTools (instructions in Settings). Game Pass catalog syncs without authentication. |
+| **EA** | Bearer token via JavaScript snippet (instructions in Settings) |
 | **Ubisoft** | Bookmarklet import from account.ubisoft.com (instructions in Settings) |
-| **Local Folder** | Configure paths in `.env` file (see [Local Games](#local-games) below) |
-
-### Local Games
-
-Import games from local folders on your machine. Each subfolder is treated as a game and matched to IGDB for metadata.
-
-**Setup:**
-
-1. Add your game folder paths to `.env` (up to 5 by default):
-   ```bash
-   LOCAL_GAMES_DIR_1=/path/to/games
-   LOCAL_GAMES_DIR_2=/mnt/storage/more-games
-   # Add more in docker-compose.yml if you need more than 5
-   ```
-
-2. Restart the container (paths are mounted automatically):
-   ```bash
-   docker compose down && docker compose up -d
-   ```
-
-3. Click "Sync Local" in Settings to import games
-
-**Folder Structure:**
-```
-/path/to/games/
-├── The Witcher 3/          → Imported as "The Witcher 3"
-├── DOOM 2016/              → Imported as "DOOM 2016"
-└── Hollow Knight/          → Imported as "Hollow Knight"
-```
-
-**Override File (game.json):**
-
-For better IGDB matching or custom names, create a `game.json` file inside any game folder:
-
-```json
-{
-  "name": "The Witcher 3: Wild Hunt",
-  "igdb_id": 1942
-}
-```
-
-All fields are optional:
-
-| Field | Description |
-|-------|-------------|
-| `name` | Override the game name (used for display and IGDB matching) |
-| `igdb_id` | Manually specify the IGDB game ID for exact matching |
-| `description` | Custom description |
-| `developers` | Array of developer names, e.g. `["CD Projekt Red"]` |
-| `genres` | Array of genres, e.g. `["RPG", "Action"]` |
-| `release_date` | Release date in ISO format, e.g. `"2015-05-19"` |
-| `cover_image` | URL to a custom cover image |
-
-**Example game.json:**
-```json
-{
-  "name": "DOOM (2016)",
-  "igdb_id": 7351,
-  "developers": ["id Software"],
-  "genres": ["FPS", "Action"]
-}
-```
-
-After syncing local games, run "Sync Missing Metadata" to fetch cover images, ratings, and other data from IGDB.
 
 ---
 
 ## Tech Stack
 
-- **Backend**: Flask (Python)
+- **Backend**: FastAPI (Python)
+- **Desktop**: PyWebView (native window wrapper)
 - **Database**: SQLite
 - **Frontend**: Jinja2 templates, vanilla JavaScript
 - **Metadata**: IGDB API integration
+- **Packaging**: PyInstaller
 - **Deployment**: Docker + Docker Compose
 
 ---
@@ -391,8 +307,6 @@ Backlogia is built on the shoulders of these excellent open-source projects:
 - **[Legendary](https://github.com/derrod/legendary)** — Epic Games Store integration
 - **[Nile](https://github.com/imLinguin/nile)** — Amazon Games integration
 - **[PlayniteExtensions](https://github.com/Jeshibu/PlayniteExtensions)** — EA library integration method
-
-Backlogia was built with assistance from Claude and other AI models. 
 
 ---
 

@@ -886,12 +886,38 @@
 
             <div class="form-group">
                 <label>Installation</label>
+                
+                {% if is_desktop_app %}
+                <!-- Desktop app version: Copy/paste only -->
+                <div style="margin-top: 10px; padding: 12px; background: rgba(134, 50, 138, 0.1); border-radius: 6px; border-left: 3px solid #86328a;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                        <button id="copy-bookmarklet-btn" class="btn btn-primary" onclick="copyBookmarkletCode()">
+                            Copy Bookmarklet Code
+                        </button>
+                        <span style="color: #888; font-size: 0.85rem;">Copy the code to create in your browser</span>
+                    </div>
+                    <details style="margin-top: 8px;">
+                        <summary style="cursor: pointer; color: #86328a; font-size: 0.85rem; user-select: none;">How to create the bookmarklet</summary>
+                        <ol style="margin: 8px 0 0 0; padding-left: 20px; color: #ccc; font-size: 0.85rem; line-height: 1.6;">
+                            <li>Click "Copy Bookmarklet Code" above</li>
+                            <li>Open your browser and show the bookmarks bar (Ctrl+Shift+B in most browsers)</li>
+                            <li>Right-click the bookmarks bar and select "Add page" or "Add bookmark"</li>
+                            <li>Name: <code style="background: #2a2a3e; padding: 2px 6px; border-radius: 3px;">Backlogia Helper</code></li>
+                            <li>URL/Location: Paste the copied code (starts with <code style="background: #2a2a3e; padding: 2px 6px; border-radius: 3px;">javascript:...</code>)</li>
+                            <li>Save the bookmark</li>
+                        </ol>
+                    </details>
+                </div>
+                {% else %}
+                <!-- Browser version: Drag and drop -->
                 <div style="display: flex; align-items: center; gap: 15px; margin-top: 10px;">
                     <a href="javascript:void(0);" id="backlogia-bookmarklet" class="btn btn-primary" style="cursor: grab; text-decoration: none;" onclick="bookmarkletClickHandler(event)">
                         Backlogia Helper
                     </a>
                     <span style="color: #888; font-size: 0.85rem;">Drag this to your bookmarks bar</span>
                 </div>
+                {% endif %}
+                
                 <p style="margin-top: 12px; color: #888; font-size: 0.85rem;">
                     Used by Steam, EA, and Ubisoft to extract credentials and import games. See each provider section below for instructions.
                 </p>
@@ -2121,6 +2147,27 @@ LOCAL_GAMES_DIR_2=/another/path/to/games</pre>
             alert("Don't click here. Drag this to your bookmarks bar and run it from there.");
         }
 
+        // Copy bookmarklet code to clipboard
+        function copyBookmarkletCode() {
+            // Generate the code (desktop app mode)
+            const localUrl = window.location.origin;
+            const code = generateBookmarkletCode(localUrl);
+            
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = document.getElementById('copy-bookmarklet-btn');
+                const originalText = btn.textContent;
+                btn.textContent = '✓ Copied!';
+                btn.style.background = 'linear-gradient(90deg, #4caf50, #2e7d32)';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '';
+                }, 2000);
+            }).catch(err => {
+                alert('Failed to copy: ' + err);
+            });
+        }
+
         // Generate the bookmarklet code
         // Steam and EA code runs inline (CSP blocks external scripts on those sites)
         // Ubisoft loads external script (needs API access to Backlogia)
@@ -2132,10 +2179,12 @@ LOCAL_GAMES_DIR_2=/another/path/to/games</pre>
         // Initialize bookmarklet on page load using current page's origin
         document.addEventListener('DOMContentLoaded', function() {
             const bookmarkletLink = document.getElementById('backlogia-bookmarklet');
-            const localUrl = window.location.origin;
-
-            const code = generateBookmarkletCode(localUrl);
-            bookmarkletLink.href = code;
+            // Only set href if the element exists (browser mode)
+            if (bookmarkletLink) {
+                const localUrl = window.location.origin;
+                const code = generateBookmarkletCode(localUrl);
+                bookmarkletLink.href = code;
+            }
         });
     </script>
     {% include '_footer.html' %}

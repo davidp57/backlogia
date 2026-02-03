@@ -25,6 +25,7 @@ from .routes.library import router as library_router
 from .routes.discover import router as discover_router
 from .routes.settings import router as settings_router
 from .routes.jobs import router as jobs_router
+from .routes.loading import router as loading_router
 
 
 def init_database():

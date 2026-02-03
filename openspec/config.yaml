@@ -1,68 +1,20 @@
 schema: spec-driven
 
-# Project context
-context: |
-  Project: Backlogia - Unified game library management application
-  
-  Domain: Gaming - Multi-platform game library aggregator
-  Purpose: Aggregates games from multiple stores (Steam, Epic, GOG, Xbox, Amazon, EA, Battle.net, Ubisoft, itch.io, Humble Bundle, local folders) into a single unified library with rich metadata, discovery features, and collection management.
-  
-  Tech stack:
-    - Backend: Python 3.11+, FastAPI, Uvicorn
-    - Database: SQLite
-    - Templates: Jinja2
-    - Frontend: HTML/CSS/JavaScript (templates + static files)
-    - Dependencies: legendary-gl (Epic), requests, python-dotenv, beautifulsoup4
-    - External APIs: IGDB (Internet Game Database) for metadata, ProtonDB, Metacritic
-    - Deployment: Docker & Docker Compose
-  
-  Key features:
-    - Multi-store game library synchronization
-    - Metadata enrichment from IGDB
-    - Custom collections
-    - Game discovery (popular, highly rated, hidden gems, random picks)
-    - Playtime tracking (Steam)
-    - Smart deduplication across platforms
-  
-  Architecture:
-    - web/routes/: API and page routes (library, discover, collections, settings, sync, auth, jobs)
-    - web/services/: Business logic (IGDB sync, Metacritic sync, ProtonDB sync, database builder, job management)
-    - web/sources/: Store integrations (Steam, Epic, GOG, Xbox, Amazon, EA, etc.)
-    - web/templates/: Jinja2 HTML templates
-    - web/static/: CSS, JavaScript, images, favicons
-    - web/utils/: Helper functions and filters
-  
-  Conventions:
-    - All code in English (functions, variables, comments, docstrings)
-    - ASCII only in code (no emojis in print statements, use [OK], [FAIL], [WARN])
-    - Use Pydantic models for configuration validation
-    - Store credentials securely
-    - Configuration via environment variables and YAML files
-    - Follow conventional commits style
-    - Unit tests must be kept up to date with code changes
-    - Documentation in English, stored in .copilot-docs/
-  
-  Development environment:
-    - OS: Windows
-    - Shell: PowerShell
-    - IDE: VS Code
-    - Python: Virtual environment (venv)
-    - Always activate venv before running tests or Python commands
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+# Example:
+#   context: |
+#     Tech stack: TypeScript, React, Node.js
+#     We use conventional commits
+#     Domain: e-commerce platform
 
-# Per-artifact rules
-rules:
-  proposal:
-    - Keep proposals focused and under 1000 words
-    - Always include "Goals", "Non-goals", and "Implementation approach" sections
-    - Consider impact on existing store integrations
-    - Address security implications for credential storage
-  tasks:
-    - Break tasks into chunks of max 2-3 hours
-    - Include testing requirements for each task
-    - Specify affected modules (routes, services, sources)
-    - Update CHANGELOG.md after implementation
-  spec:
-    - Define clear API contracts for new routes
-    - Specify database schema changes if applicable
-    - Document integration points with external APIs
-    - Include error handling requirements
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
