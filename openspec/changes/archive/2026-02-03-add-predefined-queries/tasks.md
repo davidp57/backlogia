@@ -110,5 +110,5 @@
 - [x] 12.3 Document filter SQL conditions for transparency
 - [x] 12.4 Update README.md if needed to mention predefined filters
 - [x] 12.5 Commit changes with conventional commit message
-- [ ] 12.6 Test in Docker environment before deployment
-- [ ] 12.7 Deploy to production and monitor query performance
+- [x] 12.6 Test in Docker environment before deployment
+- [x] 12.7 Deploy to production and monitor query performance
