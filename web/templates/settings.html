@@ -1111,6 +1111,59 @@
                     </button>
                 </div>
             </div>
+
+            <div class="sync-section">
+                <div class="sync-section-title">Game News (Steam)</div>
+                <div class="sync-grid">
+                    <button class="sync-btn" data-sync-type="news" onclick="syncNews('new')">
+                        <div class="icon" style="background: #1b2838;">N</div>
+                        <div class="text">
+                            <span>Sync Steam News</span>
+                            <small>Fetch news for Steam games (24h cache)</small>
+                        </div>
+                    </button>
+                    <button class="sync-btn" data-sync-type="news" onclick="syncNews('all')">
+                        <div class="icon" style="background: #1b2838;">N</div>
+                        <div class="text">
+                            <span>Force Resync News</span>
+                            <small>Re-fetch all news (ignores cache)</small>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="sync-section">
+                <div class="sync-section-title">Development Status (EA/Released)</div>
+                <div class="sync-grid">
+                    <button class="sync-btn" data-sync-type="status" onclick="syncStatus('new')">
+                        <div class="icon" style="background: #4CAF50;">S</div>
+                        <div class="text">
+                            <span>Sync Development Status</span>
+                            <small>Detect Early Access status (7-day cache)</small>
+                        </div>
+                    </button>
+                    <button class="sync-btn" data-sync-type="status" onclick="syncStatus('all')">
+                        <div class="icon" style="background: #4CAF50;">S</div>
+                        <div class="text">
+                            <span>Force Resync Status</span>
+                            <small>Re-check all games (ignores cache)</small>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="sync-section">
+                <div class="sync-section-title">Game Updates Tracking</div>
+                <div class="sync-grid">
+                    <button class="sync-btn" data-sync-type="updates" onclick="syncUpdates()">
+                        <div class="icon" style="background: #FF5722;">U</div>
+                        <div class="text">
+                            <span>Track Game Updates</span>
+                            <small>Detect version updates and EA releases</small>
+                        </div>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Provider Settings -->
@@ -1672,16 +1725,58 @@ LOCAL_GAMES_DIR_2=/another/path/to/games</pre>
             const labels = {
                 'store_sync': 'Store Sync',
                 'igdb_sync': 'IGDB Metadata Sync',
-                'metacritic_sync': 'Metacritic Scores Sync'
+                'metacritic_sync': 'Metacritic Scores Sync',
+                'protondb_sync': 'ProtonDB Compatibility Sync',
+                'news_sync': 'News Sync',
+                'status_sync': 'Development Status Sync'
             };
             return labels[type] || type;
         }
 
         function dismissJob(jobId) {
-            dismissedJobs.push(jobId);
-            localStorage.setItem('dismissedJobs', JSON.stringify(dismissedJobs));
-            // Re-render the job list
-            checkActiveJobs();
+            // Get the job to check its status
+            const jobElement = document.querySelector(`[data-job-id="${jobId}"]`);
+            if (!jobElement) {
+                // Job not in DOM, just dismiss locally
+                dismissedJobs.push(jobId);
+                localStorage.setItem('dismissedJobs', JSON.stringify(dismissedJobs));
+                checkActiveJobs();
+                return;
+            }
+            
+            const statusElement = jobElement.querySelector('.job-item-status');
+            const status = statusElement ? statusElement.textContent.trim() : '';
+            
+            // If job is running or pending, cancel it via API
+            if (status === 'running' || status === 'pending') {
+                fetch(`/api/jobs/${jobId}/cancel`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showStatus('Job cancelled', 'info');
+                    } else {
+                        showStatus(data.message || 'Failed to cancel job', 'error');
+                    }
+                    // Remove from UI
+                    dismissedJobs.push(jobId);
+                    localStorage.setItem('dismissedJobs', JSON.stringify(dismissedJobs));
+                    checkActiveJobs();
+                })
+                .catch(error => {
+                    showStatus('Error cancelling job: ' + error.message, 'error');
+                    // Still dismiss from UI
+                    dismissedJobs.push(jobId);
+                    localStorage.setItem('dismissedJobs', JSON.stringify(dismissedJobs));
+                    checkActiveJobs();
+                });
+            } else {
+                // Job already completed/failed, just dismiss from UI
+                dismissedJobs.push(jobId);
+                localStorage.setItem('dismissedJobs', JSON.stringify(dismissedJobs));
+                checkActiveJobs();
+            }
         }
 
         function renderJobItem(job) {
@@ -1731,6 +1826,29 @@ LOCAL_GAMES_DIR_2=/another/path/to/games</pre>
                     return elapsed < 60000; // Show for 60 seconds
                 }
                 return false;
+            });
+
+            // Check which job types are still running
+            const runningJobTypes = new Set();
+            relevantJobs.forEach(job => {
+                if (job.status === 'pending' || job.status === 'running') {
+                    runningJobTypes.add(job.type);
+                }
+            });
+
+            // Re-enable sync buttons for types that are no longer running
+            ['news_sync', 'status_sync'].forEach(jobType => {
+                const syncType = jobType.replace('_sync', ''); // 'news_sync' -> 'news'
+                if (!runningJobTypes.has(jobType)) {
+                    // No active jobs of this type, re-enable buttons
+                    document.querySelectorAll(`[data-sync-type="${syncType}"]`).forEach(btn => {
+                        btn.disabled = false;
+                        if (btn.dataset.originalContent) {
+                            btn.innerHTML = btn.dataset.originalContent;
+                            delete btn.dataset.originalContent;
+                        }
+                    });
+                }
             });
 
             if (relevantJobs.length === 0) {
@@ -2174,6 +2292,143 @@ LOCAL_GAMES_DIR_2=/another/path/to/games</pre>
         function generateBookmarkletCode(localUrl) {
             const code = `javascript:(function(){var h=location.hostname;if(h.includes("steamcommunity.com")){try{var d=document.body.innerHTML.match(/g_rgProfileData\\s*=\\s*(\\{[^}]+\\})/);if(!d)return alert("Steam profile data not found!");var p=JSON.parse(d[1].replace(/\\\\'/g,"'"));var s=p.steamid;if(!s)return alert("Steam ID not found!");var o=document.createElement("div");o.innerHTML='<div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#1b2838,#2a475e);padding:20px 25px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:999999;font-family:-apple-system,BlinkMacSystemFont,sans-serif;border:1px solid #66c0f4;min-width:280px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="color:#66c0f4;font-size:12px;text-transform:uppercase;letter-spacing:1px">Steam ID</span><button onclick="this.closest(\\'div\\').parentElement.remove()" style="background:none;border:none;color:#8f98a0;cursor:pointer;font-size:18px;padding:0;line-height:1">&times;</button></div><div style="background:#171a21;padding:12px 15px;border-radius:6px;margin-bottom:15px"><code style="color:#fff;font-size:16px;font-family:monospace">'+s+'</code></div><button id=_scb style="width:100%;padding:10px 15px;background:linear-gradient(90deg,#47bfff,#1a9fff);border:none;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;font-size:14px">Copy to Clipboard</button><div style="margin-top:12px;padding-top:12px;border-top:1px solid #2a475e;color:#8f98a0;font-size:11px"><strong style="color:#c7d5e0">'+p.personaname+'</strong></div></div>';document.body.appendChild(o);o.querySelector("#_scb").onclick=function(){navigator.clipboard.writeText(s).then(function(){this.textContent="Copied!";this.style.background="linear-gradient(90deg,#5ba32b,#4a8c24)"}.bind(this))}}catch(e){alert("Error: "+e.message)}}else if(h.includes("ea.com")){(async function(){try{var r=await fetch("https://accounts.ea.com/connect/auth?client_id=ORIGIN_JS_SDK&response_type=token&redirect_uri=nucleus:rest&prompt=none",{credentials:"include"});var j=await r.json();if(j.access_token){var t=j.access_token;var o=document.createElement("div");o.innerHTML='<div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#1a1a2e,#16213e);padding:20px 25px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:999999;font-family:-apple-system,BlinkMacSystemFont,sans-serif;border:1px solid #ff4747;min-width:320px;max-width:400px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="color:#ff4747;font-size:12px;text-transform:uppercase;letter-spacing:1px">EA Bearer Token</span><button onclick="this.closest(\\'div\\').parentElement.remove()" style="background:none;border:none;color:#888;cursor:pointer;font-size:18px">&times;</button></div><div style="background:#0d0d1a;padding:12px 15px;border-radius:6px;margin-bottom:15px;word-break:break-all;max-height:150px;overflow-y:auto"><code style="color:#e4e4e4;font-size:11px;font-family:monospace">'+t.substring(0,50)+'...</code></div><button id=_eacb style="width:100%;padding:10px 15px;background:linear-gradient(90deg,#ff4747,#cc3333);border:none;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;font-size:14px">Copy Token</button><div style="margin-top:12px;color:#888;font-size:11px">Token expires in ~1 hour</div></div>';document.body.appendChild(o);o.querySelector("#_eacb").onclick=function(){navigator.clipboard.writeText(t).then(function(){this.textContent="Copied!";this.style.background="linear-gradient(90deg,#4caf50,#2e7d32)"}.bind(this))}}else{alert("EA Auth Error: "+(j.error||"Not logged in"))}}catch(e){alert("Error: "+e.message)}})()}else if(h.includes("xbox.com")||h.includes("xboxlive.com")){(function(){try{var t=null;var c=document.cookie.split(";");for(var i=0;i<c.length;i++){var ck=c[i].trim();if(ck.indexOf("XBXXtk")===0){try{var v=decodeURIComponent(ck.split("=").slice(1).join("="));var j=JSON.parse(v);if(j.tokenData&&j.tokenData.token){t=j.tokenData.token;break}}catch(e){}}}if(!t){var scripts=document.querySelectorAll("script:not([src])");for(var i=0;i<scripts.length;i++){var m=scripts[i].textContent.match(/["'](XBL3\\.0\\s+x=[^"']+)["']/);if(m){t=m[1];break}}}var o=document.createElement("div");o.innerHTML='<div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#1a1a2e,#16213e);padding:20px 25px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:999999;font-family:-apple-system,BlinkMacSystemFont,sans-serif;border:1px solid #107C10;min-width:320px;max-width:400px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="color:#107C10;font-size:12px;text-transform:uppercase;letter-spacing:1px">Xbox Token</span><button onclick="this.closest(\\'div\\').parentElement.remove()" style="background:none;border:none;color:#888;cursor:pointer;font-size:18px">&times;</button></div><div id=__xbcontent__></div></div>';document.body.appendChild(o);var cnt=o.querySelector("#__xbcontent__");if(t){cnt.innerHTML='<div style="background:#0d0d1a;padding:12px 15px;border-radius:6px;margin-bottom:15px;word-break:break-all;max-height:150px;overflow-y:auto"><code style="color:#e4e4e4;font-size:11px;font-family:monospace">'+t.substring(0,60)+'...</code></div><button id=_xbcb style="width:100%;padding:10px 15px;background:linear-gradient(90deg,#107C10,#0e6b0e);border:none;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;font-size:14px">Copy Token</button><div style="margin-top:12px;color:#888;font-size:11px">Token expires periodically. Paste in Backlogia settings.</div>';o.querySelector("#_xbcb").onclick=function(){navigator.clipboard.writeText(t).then(function(){this.textContent="Copied!";this.style.background="linear-gradient(90deg,#4caf50,#2e7d32)"}.bind(this))}}else{cnt.innerHTML='<p style="color:#f0ad4e;margin-bottom:12px">Could not find token automatically.</p><p style="color:#ccc;font-size:12px">Open DevTools (F12) → Network tab, reload the page, and look for requests with Authorization header starting with XBL3.0</p>'}}catch(e){alert("Error: "+e.message)}})()}else if(h.includes("account.ubisoft.com")){window.__BACKLOGIA_URL__="${localUrl}";var sc=document.createElement("script");sc.src="${localUrl}/static/js/bookmarklet.js?t="+Date.now();document.body.appendChild(sc)}else{window.__BACKLOGIA_URL__="${localUrl}";var sc=document.createElement("script");sc.src="${localUrl}/static/js/bookmarklet.js?t="+Date.now();document.body.appendChild(sc)}})();`;
             return code;
+        }
+
+        // Sync News (async with job tracking)
+        function syncNews(mode) {
+            const btn = event.target.closest('.sync-btn');
+            const syncType = 'news';
+            
+            // Disable all news sync buttons
+            document.querySelectorAll(`[data-sync-type="${syncType}"]`).forEach(b => {
+                b.disabled = true;
+                b.dataset.originalContent = b.innerHTML;
+            });
+            
+            btn.innerHTML = '<span class="spinner"></span> Starting sync...';
+
+            fetch(`/api/sync/news/${mode}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.job_id) {
+                    btn.innerHTML = '<span class="spinner"></span> Syncing...';
+                    showStatus('News sync job started', 'success');
+                    // Start polling for this job
+                    checkActiveJobs();
+                } else {
+                    // Re-enable all news sync buttons on error
+                    document.querySelectorAll(`[data-sync-type="${syncType}"]`).forEach(b => {
+                        b.disabled = false;
+                        if (b.dataset.originalContent) {
+                            b.innerHTML = b.dataset.originalContent;
+                        }
+                    });
+                    showStatus(data.message || 'Failed to start news sync', 'error');
+                }
+            })
+            .catch(error => {
+                // Re-enable all news sync buttons on error
+                document.querySelectorAll(`[data-sync-type="${syncType}"]`).forEach(b => {
+                    b.disabled = false;
+                    if (b.dataset.originalContent) {
+                        b.innerHTML = b.dataset.originalContent;
+                    }
+                });
+                showStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        // Sync Status (async with job tracking)
+        function syncStatus(mode) {
+            const btn = event.target.closest('.sync-btn');
+            const syncType = 'status';
+            
+            // Disable all status sync buttons
+            document.querySelectorAll(`[data-sync-type="${syncType}"]`).forEach(b => {
+                b.disabled = true;
+                b.dataset.originalContent = b.innerHTML;
+            });
+            
+            btn.innerHTML = '<span class="spinner"></span> Starting sync...';
+
+            fetch(`/api/sync/status/${mode}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.job_id) {
+                    btn.innerHTML = '<span class="spinner"></span> Syncing...';
+                    showStatus('Status sync job started', 'success');
+                    // Start polling for this job
+                    checkActiveJobs();
+                } else {
+                    // Re-enable all status sync buttons on error
+                    document.querySelectorAll(`[data-sync-type="${syncType}"]`).forEach(b => {
+                        b.disabled = false;
+                        if (b.dataset.originalContent) {
+                            b.innerHTML = b.dataset.originalContent;
+                        }
+                    });
+                    showStatus(data.message || 'Failed to start status sync', 'error');
+                }
+            })
+            .catch(error => {
+                // Re-enable all status sync buttons on error
+                document.querySelectorAll(`[data-sync-type="${syncType}"]`).forEach(b => {
+                    b.disabled = false;
+                    if (b.dataset.originalContent) {
+                        b.innerHTML = b.dataset.originalContent;
+                    }
+                });
+                showStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        function syncUpdates() {
+            const btn = event.target.closest('.sync-btn');
+            const syncType = 'updates';
+            
+            // Disable all update tracking buttons
+            document.querySelectorAll(`[data-sync-type="${syncType}"]`).forEach(b => {
+                b.disabled = true;
+                b.dataset.originalContent = b.innerHTML;
+            });
+            
+            btn.innerHTML = '<span class="spinner"></span> Starting update tracking...';
+
+            fetch('/api/sync/updates', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.job_id) {
+                    btn.innerHTML = '<span class="spinner"></span> Tracking updates...';
+                    showStatus('Update tracking job started', 'success');
+                    // Start polling for this job
+                    checkActiveJobs();
+                } else {
+                    // Re-enable all update tracking buttons on error
+                    document.querySelectorAll(`[data-sync-type="${syncType}"]`).forEach(b => {
+                        b.disabled = false;
+                        if (b.dataset.originalContent) {
+                            b.innerHTML = b.dataset.originalContent;
+                        }
+                    });
+                    showStatus(data.message || 'Failed to start update tracking', 'error');
+                }
+            })
+            .catch(error => {
+                // Re-enable all update tracking buttons on error
+                document.querySelectorAll(`[data-sync-type="${syncType}"]`).forEach(b => {
+                    b.disabled = false;
+                    if (b.dataset.originalContent) {
+                        b.innerHTML = b.dataset.originalContent;
+                    }
+                });
+                showStatus('Network error: ' + error.message, 'error');
+            });
         }
 
         // Initialize bookmarklet on page load using current page's origin

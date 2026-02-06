@@ -6,6 +6,7 @@ import json
 from datetime import datetime
 
 from ..config import DATABASE_PATH
+from .status_sync import track_update_timestamp
 
 
 def create_database():
@@ -148,6 +149,16 @@ def import_steam_games(conn):
                     json.dumps(game),
                     datetime.now().isoformat()
                 ))
+                
+                # Track update timestamps (for depot updates)
+                if appid:
+                    cursor.execute("SELECT id FROM games WHERE store = 'steam' AND store_id = ?", (str(appid),))
+                    result = cursor.fetchone()
+                    if result:
+                        game_id = result[0]
+                        store_data = {'last_modified': game.get('last_modified')} if game.get('last_modified') else {}
+                        track_update_timestamp(conn, game_id, 'steam', store_data)
+                
                 count += 1
             except Exception as e:
                 print(f"  Error importing {game.get('name')}: {e}")
@@ -212,6 +223,17 @@ def import_epic_games(conn):
                     json.dumps(game),
                     datetime.now().isoformat()
                 ))
+                
+                # Track update timestamps (for depot updates)
+                app_name = game.get("app_name")
+                if app_name:
+                    cursor.execute("SELECT id FROM games WHERE store = 'epic' AND store_id = ?", (app_name,))
+                    result = cursor.fetchone()
+                    if result:
+                        game_id = result[0]
+                        store_data = {'last_modified': game.get('last_modified')}
+                        track_update_timestamp(conn, game_id, 'epic', store_data)
+                
                 count += 1
             except Exception as e:
                 print(f"  Error importing {game.get('name')}: {e}")

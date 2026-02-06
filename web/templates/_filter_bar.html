@@ -134,6 +134,7 @@
             {% elif current_sort == 'release_date' and current_order == 'asc' %}Release Date (Oldest)
             {% elif current_sort == 'added_at' and current_order == 'desc' %}Recently Added
             {% elif current_sort == 'added_at' and current_order == 'asc' %}Oldest in Library
+            {% elif current_sort == 'last_modified' and current_order == 'desc' %}Last Updated
             {% endif %}
             <span class="dropdown-arrow">&#9662;</span>
         </button>
@@ -149,6 +150,9 @@
             </div>
             <div class="dropdown-item" onclick="applySort('added_at-asc')">
                 <label style="cursor: pointer;">Oldest in Library</label>
+            </div>
+            <div class="dropdown-item" onclick="applySort('last_modified-desc')">
+                <label style="cursor: pointer;">Last Updated</label>
             </div>
             <div class="dropdown-item" onclick="applySort('release_date-desc')">
                 <label style="cursor: pointer;">Release Date (Newest)</label>

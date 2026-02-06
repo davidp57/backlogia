@@ -67,10 +67,10 @@ def library(
         params.append(f"%{search}%")
 
     # Sorting
-    valid_sorts = ["name", "store", "playtime_hours", "critics_score", "release_date", "added_at", "total_rating", "igdb_rating", "aggregated_rating", "average_rating", "metacritic_score", "metacritic_user_score"]
+    valid_sorts = ["name", "store", "playtime_hours", "critics_score", "release_date", "added_at", "last_modified", "total_rating", "igdb_rating", "aggregated_rating", "average_rating", "metacritic_score", "metacritic_user_score"]
     if sort in valid_sorts:
         order_dir = "DESC" if order == "desc" else "ASC"
-        if sort in ["playtime_hours", "critics_score", "total_rating", "igdb_rating", "aggregated_rating", "average_rating", "metacritic_score", "metacritic_user_score", "release_date", "added_at"]:
+        if sort in ["playtime_hours", "critics_score", "total_rating", "igdb_rating", "aggregated_rating", "average_rating", "metacritic_score", "metacritic_user_score", "release_date", "added_at", "last_modified"]:
             query += f" ORDER BY {sort} {order_dir} NULLS LAST"
         else:
             query += f" ORDER BY {sort} COLLATE NOCASE {order_dir}"
@@ -78,8 +78,25 @@ def library(
     cursor.execute(query, params)
     games = cursor.fetchall()
 
+    # Check for recent updates (< 30 days) for each game
+    # Build a set of game IDs that have recent updates
+    cursor.execute("""
+        SELECT DISTINCT game_id
+        FROM game_depot_updates
+        WHERE update_timestamp >= datetime('now', '-30 days')
+    """)
+    recent_update_ids = {row[0] for row in cursor.fetchall()}
+    
+    # Get last update date for each game from update history
+    cursor.execute("""
+        SELECT game_id, MAX(update_timestamp) as last_update
+        FROM game_depot_updates
+        GROUP BY game_id
+    """)
+    last_update_dates = {row[0]: row[1] for row in cursor.fetchall()}
+
     # Group games by IGDB ID (combines multi-store ownership)
-    grouped_games = group_games_by_igdb(games)
+    grouped_games = group_games_by_igdb(games, recent_update_ids=recent_update_ids, last_update_dates=last_update_dates)
 
     # Sort grouped games by primary game's sort field
     # Separate games with null sort values so nulls are always last

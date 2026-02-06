@@ -35,7 +35,14 @@ PREDEFINED_QUERIES = {
     "older-library": "added_at < DATE('now', '-6 months')",
     "recent-releases": "release_date >= DATE('now', '-1 year')",
     "recently-updated": "last_modified >= DATE('now', '-30 days')",
+    "recent-updates-detected": "id IN (SELECT game_id FROM game_depot_updates WHERE update_timestamp >= datetime('now', '-30 days'))",
     "classics": "(release_date <= DATE('now', '-10 years') AND total_rating >= 80)",
+    
+    # Development Status
+    "early-access": "development_status = 'early_access'",
+    "leaving-early-access": "(development_status = 'early_access' AND last_modified >= DATE('now', '-90 days'))",
+    "in-development": "development_status IN ('alpha', 'beta', 'early_access')",
+    "released": "development_status = 'released'",
     
     # Content
     "nsfw": "nsfw = 1",
@@ -59,8 +66,13 @@ QUERY_DISPLAY_NAMES = {
     "recently-added": "Recently Added",
     "older-library": "Older Library",
     "recent-releases": "Recent Releases",
-    "recently-updated": "Recently Updated (Epic only)",
+    "recently-updated": "Recently Updated",
+    "recent-updates-detected": "Recent Updates",
     "classics": "Classics",
+    "early-access": "Early Access",
+    "leaving-early-access": "Leaving Early Access",
+    "in-development": "In Development",
+    "released": "Released",
     "nsfw": "NSFW",
     "safe": "Safe Content"
 }
@@ -70,7 +82,8 @@ QUERY_CATEGORIES = {
     "Gameplay": ["unplayed", "played", "started", "well-played", "heavily-played"],
     "Ratings": ["highly-rated", "well-rated", "below-average", "unrated", "hidden-gems", 
                 "critic-favorites", "community-favorites"],
-    "Dates": ["recently-added", "older-library", "recent-releases", "recently-updated", "classics"],
+    "Dates": ["recently-added", "older-library", "recent-releases", "recently-updated", "recent-updates-detected", "classics"],
+    "Development Status": ["early-access", "leaving-early-access", "in-development", "released"],
     "Content": ["nsfw", "safe"]
 }
 
@@ -91,8 +104,13 @@ QUERY_DESCRIPTIONS = {
     "recently-added": "Games added in the last 30 days",
     "older-library": "Games added 6+ months ago",
     "recent-releases": "Games released in the last year",
-    "recently-updated": "Games updated in the last 30 days (Epic only)",
+    "recently-updated": "Games updated in the last 30 days",
+    "recent-updates-detected": "Games with detected version updates in the last 30 days",
     "classics": "Games released 10+ years ago with 80+ rating",
+    "early-access": "Games in Early Access",
+    "leaving-early-access": "Early Access games updated in the last 90 days (may be near release)",
+    "in-development": "Games in Alpha, Beta, or Early Access",
+    "released": "Fully released games",
     "nsfw": "Adult content games",
     "safe": "Non-adult content games"
 }

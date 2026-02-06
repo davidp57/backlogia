@@ -679,10 +679,70 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
+        .status-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 0.55rem;
+            padding: 3px 7px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            z-index: 5;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            cursor: help;
+        }
+
+        .status-badge.early_access {
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .status-badge.alpha,
+        .status-badge.beta {
+            background: linear-gradient(90deg, #FF9800, #F57C00);
+            color: white;
+        }
+
+        .status-badge.released {
+            background: linear-gradient(90deg, #2196F3, #1976D2);
+            color: white;
+        }
+
+        .update-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            font-size: 0.55rem;
+            padding: 3px 7px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            z-index: 5;
+            background: linear-gradient(90deg, #FF5722, #F4511E);
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            cursor: help;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
         .game-stats {
             display: flex;
             gap: 8px;
             align-items: center;
+        }
+
+        .last-update-date {
+            font-size: 0.7rem;
+            color: #999;
+            margin-top: 2px;
         }
 
         .no-games {
@@ -1282,9 +1342,27 @@
                     {% if grouped_game.is_streaming %}
                     <span class="streaming-pill">Streaming</span>
                     {% endif %}
+                    {% if grouped_game.has_recent_update %}
+                    <span class="update-badge" title="Updated within the last 30 days!">New!</span>
+                    {% endif %}
+                    {% if game.development_status %}
+                    <span class="status-badge {{ game.development_status }}" title="Development Status: {{ game.development_status|replace('_', ' ')|title }}">
+                        {% if game.development_status == 'early_access' %}EA
+                        {% elif game.development_status == 'alpha' %}α
+                        {% elif game.development_status == 'beta' %}β
+                        {% elif game.development_status == 'released' %}✓
+                        {% else %}{{ game.development_status[:1]|upper }}
+                        {% endif %}
+                    </span>
+                    {% endif %}
                 </div>
                 <div class="game-info">
                     <div class="game-title">{{ game.name or 'Unknown Game' }}</div>
+                    {% if grouped_game.last_update_date %}
+                    <div class="last-update-date" title="Last updated: {{ grouped_game.last_update_date }}">
+                        Updated {{ grouped_game.last_update_date[:10] }}
+                    </div>
+                    {% endif %}
                     <div class="game-meta">
                         <div class="store-icons" title="Owned on: {{ grouped_game.stores|join(', ')|capitalize }}">
                             {% for store in grouped_game.stores %}

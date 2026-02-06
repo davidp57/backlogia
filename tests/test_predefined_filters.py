@@ -37,6 +37,8 @@ class TestFilterDefinitions:
             # Dates
             "recently-added", "older-library", "recent-releases", 
             "recently-updated", "classics",
+            # Development Status
+            "early-access", "leaving-early-access", "in-development", "released",
             # Content
             "nsfw", "safe"
         ]
@@ -62,7 +64,7 @@ class TestFilterDefinitions:
 
     def test_category_organization(self):
         """Ensure all filters are organized into categories"""
-        expected_categories = ["Gameplay", "Ratings", "Dates", "Content"]
+        expected_categories = ["Gameplay", "Ratings", "Dates", "Development Status", "Content"]
         
         assert set(QUERY_CATEGORIES.keys()) == set(expected_categories), \
             f"Categories should be {expected_categories}"
@@ -83,7 +85,8 @@ class TestFilterDefinitions:
         expected_sizes = {
             "Gameplay": 5,
             "Ratings": 7,
-            "Dates": 5,
+            "Dates": 6,
+            "Development Status": 4,
             "Content": 2
         }
         
@@ -98,15 +101,20 @@ class TestSQLGeneration:
 
     def test_sql_clauses_are_valid_format(self):
         """Ensure SQL clauses don't contain dangerous patterns"""
-        dangerous_patterns = ["DROP", "DELETE", "INSERT", "UPDATE", "ALTER", "--", ";"]
-        
+        # Note: 'UPDATE' is allowed if it's part of a table/column name (like game_depot_updates)
+        dangerous_patterns = ["DROP", "DELETE", "INSERT", "ALTER", "--", ";"]
+
         for filter_id, sql in PREDEFINED_QUERIES.items():
             sql_upper = sql.upper()
             for pattern in dangerous_patterns:
                 assert pattern not in sql_upper, \
                     f"Filter '{filter_id}' contains potentially dangerous SQL: {pattern}"
-
-    def test_playtime_filters(self):
+            
+            # Special check: UPDATE keyword should only appear in table names
+            if "UPDATE" in sql_upper:
+                # Allow 'game_depot_updates' and 'update_timestamp' but not standalone UPDATE
+                assert "GAME_DEPOT_UPDATE" in sql_upper or "UPDATE_TIMESTAMP" in sql_upper, \
+                    f"Filter '{filter_id}' contains UPDATE statement (not allowed)"
         """Test gameplay filter SQL conditions"""
         assert "playtime_hours" in PREDEFINED_QUERIES["unplayed"]
         assert "playtime_hours" in PREDEFINED_QUERIES["played"]

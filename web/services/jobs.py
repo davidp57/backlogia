@@ -23,6 +23,14 @@ class JobType(str, Enum):
     IGDB_SYNC = "igdb_sync"
     METACRITIC_SYNC = "metacritic_sync"
     PROTONDB_SYNC = "protondb_sync"
+    NEWS_SYNC = "news_sync"
+    STATUS_SYNC = "status_sync"
+    UPDATE_TRACKING = "update_tracking"
+
+
+# Thread-safe set for tracking cancelled jobs
+_cancelled_jobs: set = set()
+_cancelled_jobs_lock = threading.Lock()
 
 
 def ensure_jobs_table():
@@ -40,11 +48,20 @@ def ensure_jobs_table():
             message TEXT,
             result TEXT,
             error TEXT,
+            cancelled BOOLEAN DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             completed_at TIMESTAMP
         )
     """)
+    
+    # Add cancelled column to existing tables if it doesn't exist
+    try:
+        cursor.execute("ALTER TABLE jobs ADD COLUMN cancelled BOOLEAN DEFAULT 0")
+        conn.commit()
+    except sqlite3.OperationalError:
+        # Column already exists
+        pass
 
     conn.commit()
     conn.close()
@@ -117,6 +134,56 @@ def fail_job(job_id: str, error: str):
 
     conn.commit()
     conn.close()
+
+
+def cancel_job(job_id: str):
+    """Cancel a running job."""
+    with _cancelled_jobs_lock:
+        _cancelled_jobs.add(job_id)
+    
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE jobs
+        SET status = ?, cancelled = 1, error = ?, updated_at = ?, completed_at = ?
+        WHERE id = ? AND status IN (?, ?)
+    """, (
+        JobStatus.FAILED.value,
+        "Cancelled by user",
+        datetime.now().isoformat(),
+        datetime.now().isoformat(),
+        job_id,
+        JobStatus.PENDING.value,
+        JobStatus.RUNNING.value
+    ))
+
+    affected = cursor.rowcount
+    conn.commit()
+    conn.close()
+    
+    return affected > 0
+
+
+def is_job_cancelled(job_id: str) -> bool:
+    """Check if a job has been cancelled."""
+    with _cancelled_jobs_lock:
+        if job_id in _cancelled_jobs:
+            return True
+    
+    # Double-check in database
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT cancelled FROM jobs WHERE id = ?", (job_id,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if row and row[0]:
+        with _cancelled_jobs_lock:
+            _cancelled_jobs.add(job_id)
+        return True
+    
+    return False
 
 
 def get_job(job_id: str) -> Optional[dict]:
@@ -192,30 +259,91 @@ def cleanup_old_jobs(hours: int = 24):
 
 
 def cleanup_orphaned_jobs():
-    """Mark any running/pending jobs as failed (called on server startup)."""
+    """Resume or cleanup interrupted jobs from previous session."""
     ensure_jobs_table()
 
     conn = sqlite3.connect(DATABASE_PATH)
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
+    # Find all jobs that were running when server stopped
     cursor.execute("""
-        UPDATE jobs
-        SET status = ?, error = ?, completed_at = ?
+        SELECT id, type FROM jobs
         WHERE status IN (?, ?)
-    """, (
-        JobStatus.FAILED.value,
-        "Server restarted - job interrupted",
-        datetime.now().isoformat(),
-        JobStatus.PENDING.value,
-        JobStatus.RUNNING.value
-    ))
+        ORDER BY created_at
+    """, (JobStatus.PENDING.value, JobStatus.RUNNING.value))
 
-    affected = cursor.rowcount
-    conn.commit()
+    orphaned_jobs = cursor.fetchall()
     conn.close()
 
-    if affected > 0:
-        print(f"Cleaned up {affected} orphaned job(s) from previous session")
+    if not orphaned_jobs:
+        return
+
+    resumable_types = {JobType.NEWS_SYNC.value, JobType.STATUS_SYNC.value}
+    resumed = 0
+    failed = 0
+
+    for job_row in orphaned_jobs:
+        job_id = job_row['id']
+        job_type = job_row['type']
+
+        # Resume NEWS_SYNC and STATUS_SYNC jobs automatically
+        if job_type in resumable_types:
+            # Reset to PENDING and update message
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE jobs
+                SET status = ?, message = ?, updated_at = ?
+                WHERE id = ?
+            """, (
+                JobStatus.PENDING.value,
+                "Resuming after restart (cache will skip completed items)...",
+                datetime.now().isoformat(),
+                job_id
+            ))
+            conn.commit()
+            conn.close()
+
+            # Relaunch the job with force=False (respects cache)
+            try:
+                if job_type == JobType.NEWS_SYNC.value:
+                    from ..services.news_sync import sync_news_job
+                    run_job_async(job_id, lambda jid: sync_news_job(jid, force=False, max_items=10))
+                    print(f"[JOBS] Resumed NEWS_SYNC job {job_id}")
+                    resumed += 1
+                elif job_type == JobType.STATUS_SYNC.value:
+                    from ..services.status_sync import sync_all_statuses_job
+                    run_job_async(job_id, lambda jid: sync_all_statuses_job(jid, store='steam', force=False))
+                    print(f"[JOBS] Resumed STATUS_SYNC job {job_id}")
+                    resumed += 1
+            except Exception as e:
+                print(f"[JOBS] Failed to resume job {job_id}: {e}")
+                fail_job(job_id, f"Resume failed: {e}")
+                failed += 1
+        else:
+            # Other job types: mark as failed (too complex to resume)
+            update_job = sqlite3.connect(DATABASE_PATH)
+            cursor = update_job.cursor()
+            cursor.execute("""
+                UPDATE jobs
+                SET status = ?, error = ?, completed_at = ?, updated_at = ?
+                WHERE id = ?
+            """, (
+                JobStatus.FAILED.value,
+                "Server restarted - job type cannot auto-resume",
+                datetime.now().isoformat(),
+                datetime.now().isoformat(),
+                job_id
+            ))
+            update_job.commit()
+            update_job.close()
+            failed += 1
+
+    if resumed > 0:
+        print(f"[JOBS] Auto-resumed {resumed} interrupted job(s)")
+    if failed > 0:
+        print(f"[JOBS] Marked {failed} non-resumable job(s) as failed")
 
 
 # Thread-safe job runner

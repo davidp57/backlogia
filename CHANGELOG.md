@@ -42,6 +42,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Recently Updated filter edge cases (4 tests)
 - **Editable local games paths in Settings**: Configure local game folder paths through web UI without editing .env files
 - **Documentation**: Complete technical documentation in `.copilot-docs/` covering filter system architecture, SQL reference, and database schema
+- **Game News & Status Tracking**: Comprehensive system for tracking game development status and news
+  - **Steam News Feed**: Fetch and display recent news articles for Steam games with rate-limited API client (200 req/5min)
+  - **Development Status Tracking**: Automatic detection of Early Access, Alpha, Beta, and Released status across Steam, Epic, and GOG
+  - **Game Update History**: Track depot updates via `last_modified` timestamps with automatic change detection
+  - **New Status Filters** (4 filters): Early Access, Leaving Early Access, In Development, Released
+  - **Database Schema**: Two new tables (`game_news`, `game_depot_updates`) with indexed columns + 3 new columns on `games` table
+  - **Game Detail View**: Collapsible News and Update History sections with auto-fetching via API
+  - **Library View**: Compact status badges on game cards (EA/α/β/✓) with store-specific colors and tooltips
+  - **Sync Endpoints**: REST API endpoints for news sync (`/api/sync/news/{mode}`) and status sync (`/api/sync/status/{mode}`)
+  - **Settings Integration**: Dedicated "Game News & Status Tracking" section with manual sync buttons and cache controls
+  - **Multi-Store Support**: News (Steam only), Status detection (Steam/Epic/GOG), Update tracking (Steam/Epic with Epic native support via Legendary CLI)
+  - **Performance**: 24-hour news cache, 7-day status cache, ThreadPoolExecutor parallel processing (5 workers), URL-based deduplication
+  - **Smart Caching**: Incremental sync with skip logic to minimize redundant API calls while allowing forced full resync
 
 ### Changed
 - Settings page now shows different bookmarklet instructions for desktop app users

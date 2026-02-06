@@ -33,6 +33,9 @@ def large_db():
             added_at TIMESTAMP,
             release_date TEXT,
             last_modified TIMESTAMP,
+            development_status TEXT,
+            game_version TEXT,
+            status_last_synced TIMESTAMP,
             nsfw BOOLEAN DEFAULT 0,
             hidden BOOLEAN DEFAULT 0,
             cover_url TEXT
@@ -46,6 +49,20 @@ def large_db():
     cursor.execute("CREATE INDEX idx_games_release_date ON games(release_date)")
     cursor.execute("CREATE INDEX idx_games_nsfw ON games(nsfw)")
     cursor.execute("CREATE INDEX idx_games_last_modified ON games(last_modified)")
+    cursor.execute("CREATE INDEX idx_games_development_status ON games(development_status)")
+    
+    # Create game_depot_updates table
+    cursor.execute("""
+        CREATE TABLE game_depot_updates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_id INTEGER NOT NULL,
+            depot_id TEXT,
+            manifest_id TEXT,
+            update_timestamp TIMESTAMP,
+            fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
+        )
+    """)
     
     # Insert 10,000 games
     print("\nGenerating 10,000 test games...")

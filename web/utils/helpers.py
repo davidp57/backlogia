@@ -62,8 +62,20 @@ def get_store_url(store, store_id, extra_data=None):
     return None
 
 
-def group_games_by_igdb(games):
-    """Group games by IGDB ID, keeping separate entries for games without IGDB match."""
+def group_games_by_igdb(games, recent_update_ids=None, last_update_dates=None):
+    """
+    Group games by IGDB ID, keeping separate entries for games without IGDB match.
+    
+    Args:
+        games: List of game records
+        recent_update_ids: Optional set of game IDs with recent updates
+        last_update_dates: Optional dict mapping game_id to last update timestamp
+    """
+    if recent_update_ids is None:
+        recent_update_ids = set()
+    if last_update_dates is None:
+        last_update_dates = {}
+    
     grouped = {}
     no_igdb_games = []
 
@@ -80,6 +92,12 @@ def group_games_by_igdb(games):
                 is_streaming = data.get("is_streaming", False)
             except (json.JSONDecodeError, TypeError):
                 pass
+        
+        # Check if this game has recent updates
+        has_recent_update = game_dict["id"] in recent_update_ids
+        
+        # Get last update date from history
+        last_update_date = last_update_dates.get(game_dict["id"])
 
         if igdb_id:
             if igdb_id not in grouped:
@@ -88,7 +106,9 @@ def group_games_by_igdb(games):
                     "stores": [game_dict["store"]],
                     "game_ids": [game_dict["id"]],
                     "store_data": {game_dict["store"]: game_dict},
-                    "is_streaming": is_streaming
+                    "is_streaming": is_streaming,
+                    "has_recent_update": has_recent_update,
+                    "last_update_date": last_update_date
                 }
             else:
                 grouped[igdb_id]["stores"].append(game_dict["store"])
@@ -97,6 +117,14 @@ def group_games_by_igdb(games):
                 # Aggregate streaming flag - if any game has it, the group has it
                 if is_streaming:
                     grouped[igdb_id]["is_streaming"] = True
+                # Aggregate recent update flag - if any game has it, the group has it
+                if has_recent_update:
+                    grouped[igdb_id]["has_recent_update"] = True
+                # Use most recent update date
+                if last_update_date:
+                    current_date = grouped[igdb_id]["last_update_date"]
+                    if not current_date or last_update_date > current_date:
+                        grouped[igdb_id]["last_update_date"] = last_update_date
                 # Use the one with more data as primary (prefer one with playtime or better cover)
                 current_primary = grouped[igdb_id]["primary"]
                 if (game_dict.get("playtime_hours") and not current_primary.get("playtime_hours")) or \
@@ -108,7 +136,9 @@ def group_games_by_igdb(games):
                 "stores": [game_dict["store"]],
                 "game_ids": [game_dict["id"]],
                 "store_data": {game_dict["store"]: game_dict},
-                "is_streaming": is_streaming
+                "is_streaming": is_streaming,
+                "has_recent_update": has_recent_update,
+                "last_update_date": last_update_date
             })
 
     # Convert grouped dict to list and add non-IGDB games

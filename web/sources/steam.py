@@ -26,8 +26,12 @@ def _rate_limited_request(url, params=None):
             time.sleep(_MIN_REQUEST_INTERVAL - elapsed)
         _last_request_time = time.time()
 
+    headers = {
+        'User-Agent': 'Backlogia/1.0 (Game Library Manager; +https://github.com/sam1am/backlogia)'
+    }
+
     try:
-        response = requests.get(url, params=params, timeout=10)
+        response = requests.get(url, params=params, headers=headers, timeout=10)
         return response
     except requests.RequestException:
         return None
@@ -119,7 +123,11 @@ def get_steam_library(fetch_reviews=True, max_workers=5):
         "include_played_free_games": True
     }
 
-    response = requests.get(url, params=params)
+    headers = {
+        'User-Agent': 'Backlogia/1.0 (Game Library Manager; +https://github.com/sam1am/backlogia)'
+    }
+
+    response = requests.get(url, params=params, headers=headers)
     data = response.json()
 
     raw_games = data.get("response", {}).get("games", [])

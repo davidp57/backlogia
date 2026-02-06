@@ -31,6 +31,9 @@ def empty_db():
             added_at TIMESTAMP,
             release_date TEXT,
             last_modified TIMESTAMP,
+            development_status TEXT,
+            game_version TEXT,
+            status_last_synced TIMESTAMP,
             nsfw BOOLEAN DEFAULT 0,
             hidden BOOLEAN DEFAULT 0,
             cover_url TEXT
@@ -42,6 +45,18 @@ def empty_db():
         CREATE TABLE collections (
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL
+        )
+    """)
+    
+    cursor.execute("""
+        CREATE TABLE game_depot_updates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_id INTEGER NOT NULL,
+            depot_id TEXT,
+            manifest_id TEXT,
+            update_timestamp TIMESTAMP,
+            fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
         )
     """)
     

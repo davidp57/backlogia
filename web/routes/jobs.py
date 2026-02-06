@@ -3,7 +3,7 @@
 
 from fastapi import APIRouter, HTTPException
 
-from ..services.jobs import get_job, get_active_jobs, get_recent_jobs
+from ..services.jobs import get_job, get_active_jobs, get_recent_jobs, cancel_job
 
 router = APIRouter(tags=["Jobs"])
 
@@ -50,3 +50,33 @@ def get_job_status(job_id: str):
             "percentage": percentage
         }
     }
+
+
+@router.post("/api/jobs/{job_id}/cancel")
+def cancel_job_endpoint(job_id: str):
+    """Cancel a running or pending job."""
+    job = get_job(job_id)
+    
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    # Only cancel jobs that are active
+    if job["status"] not in ["pending", "running"]:
+        return {
+            "success": False,
+            "message": f"Cannot cancel job with status: {job['status']}"
+        }
+    
+    # Cancel the job
+    cancelled = cancel_job(job_id)
+    
+    if cancelled:
+        return {
+            "success": True,
+            "message": "Job cancelled successfully"
+        }
+    else:
+        return {
+            "success": False,
+            "message": "Job could not be cancelled (may have already completed)"
+        }

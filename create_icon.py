@@ -6,26 +6,17 @@ from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 
 def create_icon():
-    """Create a simple gradient icon with the letter 'B'."""
-    # Create a 256x256 image with transparent background
+    """Create a simple icon with the letter 'B' - light purple on blue background."""
+    # Create a 256x256 image
     size = 256
-    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    img = Image.new('RGBA', (size, size))
     draw = ImageDraw.Draw(img)
 
-    # Draw gradient background circle
+    # Draw blue background circle
     center = size // 2
     radius = size // 2 - 10
-
-    # Create gradient from purple to blue
-    for r in range(radius, 0, -1):
-        # Calculate color based on radius
-        ratio = r / radius
-        # Purple to blue gradient
-        red = int(102 + (26 - 102) * (1 - ratio))
-        green = int(126 + (33 - 126) * (1 - ratio))
-        blue = int(234 + (62 - 234) * (1 - ratio))
-        color = (red, green, blue, 255)
-        draw.ellipse([center - r, center - r, center + r, center + r], fill=color)
+    blue_bg = (30, 100, 200, 255)  # Nice blue
+    draw.ellipse([center - radius, center - radius, center + radius, center + radius], fill=blue_bg)
 
     # Draw letter 'B' in the center
     try:
@@ -43,9 +34,12 @@ def create_icon():
     text_x = (size - text_width) // 2
     text_y = (size - text_height) // 2 - 10
 
+    # Light purple color for the B
+    light_purple = (200, 150, 255, 255)
+    
     # Draw text with shadow
     draw.text((text_x + 3, text_y + 3), text, font=font, fill=(0, 0, 0, 100))
-    draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255, 255))
+    draw.text((text_x, text_y), text, font=font, fill=light_purple)
 
     # Save in multiple sizes for Windows .ico format
     output_path = Path(__file__).parent / "icon.ico"

@@ -100,6 +100,81 @@ def sync_store(store: StoreType):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/api/sync/news/{mode}")
+def sync_news_endpoint(mode: str):
+    """
+    Sync game news from Steam using background job.
+    Mode can be 'new' (skip recently synced), 'all' (force resync), or '{store}' (specific store).
+    """
+    from ..services.news_sync import sync_news_job
+
+    try:
+        # Parse mode
+        force = (mode == 'all')
+        store = 'steam' if mode in ['new', 'all'] else mode
+        
+        # Validate store
+        if store not in ['steam']:
+            return {
+                "success": False,
+                "message": f"News sync not available for {store}. Only Steam is supported."
+            }
+        
+        # Create and start job
+        job_message = f"Syncing news for Steam games ({mode} mode)"
+        job_id = create_job(JobType.NEWS_SYNC, job_message)
+        
+        # Run job in background
+        run_job_async(job_id, lambda jid: sync_news_job(jid, force=force, max_items=10))
+        
+        return {
+            "success": True,
+            "message": "News sync job started",
+            "job_id": job_id
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/api/sync/status/{mode}")
+def sync_status_endpoint(mode: str):
+    """
+    Sync game development status (Early Access, Released, etc.) using background job.
+    Mode can be 'new' (skip recently synced), 'all' (force resync), or '{store}' (specific store).
+    """
+    from ..services.status_sync import sync_all_statuses_job
+
+    try:
+        # Parse mode
+        force = (mode == 'all')
+        store_filter = None if mode in ['new', 'all'] else mode
+        
+        # Validate store if specified
+        if store_filter and store_filter not in ['steam', 'epic', 'gog']:
+            return {
+                "success": False,
+                "message": f"Status sync not available for {store_filter}. Supported: steam, epic, gog"
+            }
+        
+        # Create and start job
+        store_label = store_filter or "all stores"
+        job_message = f"Syncing status for {store_label} ({mode} mode)"
+        job_id = create_job(JobType.STATUS_SYNC, job_message)
+        
+        # Run job in background
+        run_job_async(job_id, lambda jid: sync_all_statuses_job(jid, store=store_filter, force=force))
+        
+        return {
+            "success": True,
+            "message": "Status sync job started",
+            "job_id": job_id
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/api/sync/igdb/{mode}")
 def sync_igdb(mode: str):
     """Sync IGDB metadata. Mode can be 'new'/'missing' (unmatched only) or 'all' (resync everything)."""
@@ -536,5 +611,35 @@ def import_gog_games(request: GOGImportRequest):
             "count": count
         }
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/api/sync/updates")
+def sync_game_updates(limit: Optional[int] = None):
+    """
+    Sync game updates by checking for changes in metadata.
+    
+    This checks all games in the library for:
+    - Changes in last_modified timestamp (version updates)
+    - Changes in development status (Early Access → Released)
+    
+    Args:
+        limit: Optional limit on number of games to check (for testing)
+    """
+    from ..services.update_tracker import sync_updates_job
+    
+    try:
+        job_id = create_job(JobType.UPDATE_TRACKING, "Tracking game updates...")
+        
+        # Run job async
+        run_job_async(job_id, lambda jid: sync_updates_job(jid, limit=limit))
+        
+        return {
+            "success": True,
+            "job_id": job_id,
+            "message": "Update tracking job started"
+        }
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
