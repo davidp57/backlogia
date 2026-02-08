@@ -11,7 +11,7 @@ from fastapi.templating import Jinja2Templates
 
 from ..dependencies import get_db
 from ..utils.filters import EXCLUDE_HIDDEN_FILTER
-from ..utils.helpers import parse_json_field, get_query_filter_counts, get_query_filter_counts
+from ..utils.helpers import parse_json_field
 
 router = APIRouter()
 templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")

@@ -11,7 +11,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from ..dependencies import get_db
-from ..utils.helpers import parse_json_field, group_games_by_igdb, get_query_filter_counts
+from ..utils.helpers import parse_json_field, group_games_by_igdb
 
 router = APIRouter()
 templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
