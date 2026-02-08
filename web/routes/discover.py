@@ -143,7 +143,7 @@ def discover(
         genre_conditions = []
         for genre in genres:
             genre_conditions.append("LOWER(genres) LIKE ?")
-            params.append(f'%"{genre.lower()}%')
+            params.append(f'%"{genre.lower()}"%')
         query += " AND (" + " OR ".join(genre_conditions) + ")"
     
     if queries:

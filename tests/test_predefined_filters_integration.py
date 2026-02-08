@@ -606,5 +606,169 @@ class TestCollectionFilters:
         assert len(results) == 2, f"Expected 2 games matching both filters, got {len(results)}"
 
 
+class TestGenreFilters:
+    """Test genre filtering with proper LIKE pattern (including closing quote)"""
+    
+    @pytest.fixture
+    def genre_db(self):
+        """Create a test database with games having various genre combinations"""
+        conn = sqlite3.connect(":memory:")
+        cursor = conn.cursor()
+        
+        # Create games table with genres field
+        cursor.execute("""
+            CREATE TABLE games (
+                id INTEGER PRIMARY KEY,
+                name TEXT NOT NULL,
+                store TEXT,
+                genres TEXT,
+                playtime_hours REAL,
+                total_rating REAL,
+                added_at TIMESTAMP,
+                release_date TEXT,
+                nsfw BOOLEAN DEFAULT 0,
+                hidden BOOLEAN DEFAULT 0,
+                cover_url TEXT
+            )
+        """)
+        
+        now = datetime.now()
+        
+        # Test games with different genre patterns
+        # Genres are stored as JSON arrays like: ["Action", "Adventure"]
+        test_games = [
+            # Games with "Action" genre
+            (1, "Action Game 1", "steam", '["Action", "Shooter"]', 10.0, 85.0, 
+             now.isoformat(), "2023-01-01", 0, 0, "cover1.jpg"),
+            (2, "Action Game 2", "steam", '["Action", "RPG"]', 5.0, 80.0, 
+             now.isoformat(), "2023-02-01", 0, 0, "cover2.jpg"),
+            
+            # Games with "Adventure" genre (should NOT match "Action")
+            (3, "Adventure Game", "gog", '["Adventure", "Puzzle"]', 8.0, 75.0, 
+             now.isoformat(), "2022-06-01", 0, 0, "cover3.jpg"),
+            
+            # Game with substring "action" in a longer word (should NOT match without proper quotes)
+            (4, "Reaction Game", "steam", '["Reaction-Based", "Puzzle"]', 3.0, 70.0, 
+             now.isoformat(), "2022-03-01", 0, 0, "cover4.jpg"),
+            
+            # Games with "RPG" genre
+            (5, "RPG Game 1", "epic", '["RPG", "Strategy"]', 15.0, 90.0, 
+             now.isoformat(), "2021-12-01", 0, 0, "cover5.jpg"),
+            (6, "RPG Game 2", "gog", '["RPG", "Action"]', 12.0, 88.0, 
+             now.isoformat(), "2022-05-01", 0, 0, "cover6.jpg"),
+            
+            # Game without genres
+            (7, "No Genre Game", "steam", None, 2.0, 60.0, 
+             now.isoformat(), "2023-05-01", 0, 0, "cover7.jpg"),
+        ]
+        
+        cursor.executemany("""
+            INSERT INTO games 
+            (id, name, store, genres, playtime_hours, total_rating, 
+             added_at, release_date, nsfw, hidden, cover_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, test_games)
+        
+        conn.commit()
+        yield conn
+        conn.close()
+    
+    def test_action_genre_filter(self, genre_db):
+        """Test filtering for 'Action' genre matches only games with Action in genres"""
+        cursor = genre_db.cursor()
+        
+        # This simulates the pattern used in library.py, discover.py, collections.py
+        # Pattern: %"action"% (with proper closing quote)
+        genre_pattern = '%"action"%'
+        
+        query = "SELECT * FROM games WHERE LOWER(genres) LIKE ?"
+        cursor.execute(query, (genre_pattern,))
+        results = cursor.fetchall()
+        
+        # Should match only games 1, 2, 6 (games with "Action" genre)
+        assert len(results) == 3, f"Expected 3 games with Action genre, got {len(results)}"
+        game_names = [row[1] for row in results]
+        assert "Action Game 1" in game_names
+        assert "Action Game 2" in game_names
+        assert "RPG Game 2" in game_names  # Has both RPG and Action
+        
+        # Should NOT match "Adventure Game" or "Reaction Game"
+        assert "Adventure Game" not in game_names
+        assert "Reaction Game" not in game_names
+    
+    def test_rpg_genre_filter(self, genre_db):
+        """Test filtering for 'RPG' genre"""
+        cursor = genre_db.cursor()
+        
+        genre_pattern = '%"rpg"%'
+        
+        query = "SELECT * FROM games WHERE LOWER(genres) LIKE ?"
+        cursor.execute(query, (genre_pattern,))
+        results = cursor.fetchall()
+        
+        # Should match games 2, 5, 6 (games with "RPG" genre)
+        assert len(results) == 3, f"Expected 3 games with RPG genre, got {len(results)}"
+        game_names = [row[1] for row in results]
+        assert "Action Game 2" in game_names
+        assert "RPG Game 1" in game_names
+        assert "RPG Game 2" in game_names
+    
+    def test_adventure_genre_filter(self, genre_db):
+        """Test filtering for 'Adventure' genre does not match 'Action'"""
+        cursor = genre_db.cursor()
+        
+        genre_pattern = '%"adventure"%'
+        
+        query = "SELECT * FROM games WHERE LOWER(genres) LIKE ?"
+        cursor.execute(query, (genre_pattern,))
+        results = cursor.fetchall()
+        
+        # Should match only game 3 (Adventure Game)
+        assert len(results) == 1, f"Expected 1 game with Adventure genre, got {len(results)}"
+        game_names = [row[1] for row in results]
+        assert "Adventure Game" in game_names
+        
+        # Specifically should NOT match games with "Action" genre
+        assert "Action Game 1" not in game_names
+        assert "Action Game 2" not in game_names
+    
+    def test_nonexistent_genre_filter(self, genre_db):
+        """Test filtering for a genre that doesn't exist returns no results"""
+        cursor = genre_db.cursor()
+        
+        genre_pattern = '%"horror"%'
+        
+        query = "SELECT * FROM games WHERE LOWER(genres) LIKE ?"
+        cursor.execute(query, (genre_pattern,))
+        results = cursor.fetchall()
+        
+        # Should match no games
+        assert len(results) == 0, f"Expected 0 games with Horror genre, got {len(results)}"
+    
+    def test_multiple_genre_filters(self, genre_db):
+        """Test combining multiple genre filters (OR logic)"""
+        cursor = genre_db.cursor()
+        
+        # This simulates filtering for games with Action OR RPG
+        query = """
+            SELECT * FROM games 
+            WHERE (LOWER(genres) LIKE ? OR LOWER(genres) LIKE ?)
+        """
+        cursor.execute(query, ('%"action"%', '%"rpg"%'))
+        results = cursor.fetchall()
+        
+        # Should match games 1, 2, 5, 6 (games with Action or RPG)
+        assert len(results) == 4, f"Expected 4 games with Action or RPG, got {len(results)}"
+        game_names = [row[1] for row in results]
+        assert "Action Game 1" in game_names
+        assert "Action Game 2" in game_names
+        assert "RPG Game 1" in game_names
+        assert "RPG Game 2" in game_names
+        
+        # Should NOT match Adventure or Reaction games
+        assert "Adventure Game" not in game_names
+        assert "Reaction Game" not in game_names
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
