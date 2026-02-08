@@ -8,7 +8,7 @@ legendary-gl
 # (uses system SQLite)
 
 # Web interface
-fastapi
+fastapi>=0.89.0
 uvicorn[standard]
 python-multipart
 jinja2
