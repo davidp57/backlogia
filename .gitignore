@@ -3,6 +3,10 @@ game_library.db
 # Copilot documentation
 .copilot-docs/
 
+# OpenSpec workflow and GitHub configs
+.github/
+openspec/
+
 # Docker
 data/
 .empty/
