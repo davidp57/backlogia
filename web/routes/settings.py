@@ -27,7 +27,7 @@ def settings_page(
     from ..services.settings import (
         get_setting, STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET,
         ITCH_API_KEY, HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH,
-        EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD
+        EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD, USE_STEAM_CLIENT
     )
     from ..sources.local import discover_local_game_paths
 
@@ -45,6 +45,7 @@ def settings_page(
     settings = {
         "steam_id": get_setting(STEAM_ID, ""),
         "steam_api_key": get_setting(STEAM_API_KEY, ""),
+        "use_steam_client": get_setting(USE_STEAM_CLIENT, "false").lower() == "true",
         "igdb_client_id": get_setting(IGDB_CLIENT_ID, ""),
         "igdb_client_secret": get_setting(IGDB_CLIENT_SECRET, ""),
         "igdb_match_threshold": get_setting(IGDB_MATCH_THRESHOLD, "50"),
@@ -81,6 +82,7 @@ def settings_page(
 def save_settings(
     steam_id: str = Form(default=""),
     steam_api_key: str = Form(default=""),
+    use_steam_client: str = Form(default="off"),
     igdb_client_id: str = Form(default=""),
     igdb_client_secret: str = Form(default=""),
     igdb_match_threshold: str = Form(default="50"),
@@ -95,12 +97,13 @@ def save_settings(
     from ..services.settings import (
         set_setting, STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET,
         ITCH_API_KEY, HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH,
-        EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD
+        EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD, USE_STEAM_CLIENT
     )
 
     # Save all form values (LOCAL_GAMES_PATHS is read-only from .env)
     set_setting(STEAM_ID, steam_id.strip())
     set_setting(STEAM_API_KEY, steam_api_key.strip())
+    set_setting(USE_STEAM_CLIENT, "true" if use_steam_client == "on" else "false")
     set_setting(IGDB_CLIENT_ID, igdb_client_id.strip())
     set_setting(IGDB_CLIENT_SECRET, igdb_client_secret.strip())
     set_setting(IGDB_MATCH_THRESHOLD, igdb_match_threshold.strip())

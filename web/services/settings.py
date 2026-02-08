@@ -21,6 +21,9 @@ EA_BEARER_TOKEN = "ea_bearer_token"
 XBOX_XSTS_TOKEN = "xbox_xsts_token"
 LOCAL_GAMES_PATHS = "local_games_paths"
 IGDB_MATCH_THRESHOLD = "igdb_match_threshold"
+USE_STEAM_CLIENT = "use_steam_client"
+STEAM_USERNAME = "steam_username"
+STEAM_PASSWORD = "steam_password"
 
 # Map setting keys to environment variable names
 ENV_VAR_MAP = {
@@ -36,6 +39,9 @@ ENV_VAR_MAP = {
     XBOX_XSTS_TOKEN: "XBOX_XSTS_TOKEN",
     LOCAL_GAMES_PATHS: "LOCAL_GAMES_PATHS",
     IGDB_MATCH_THRESHOLD: "IGDB_MATCH_THRESHOLD",
+    USE_STEAM_CLIENT: "USE_STEAM_CLIENT",
+    STEAM_USERNAME: "STEAM_USERNAME",
+    STEAM_PASSWORD: "STEAM_PASSWORD",
 }
 
 

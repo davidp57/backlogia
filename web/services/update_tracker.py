@@ -6,7 +6,17 @@ import sqlite3
 import requests
 import time
 from datetime import datetime
-from typing import Optional, Dict
+from typing import Optional, Dict, List
+
+from ..config import USE_STEAM_CLIENT
+
+# Import Steam Client (optional - graceful degradation if not available)
+try:
+    from .steam_worker import get_steam_worker
+    STEAM_CLIENT_AVAILABLE = True
+except ImportError:
+    STEAM_CLIENT_AVAILABLE = False
+    print("[UPDATE] Steam Worker not available, using HTTP API only")
 
 
 class UpdateTracker:
@@ -65,6 +75,28 @@ class UpdateTracker:
         
         new_last_modified = metadata.get('last_modified')
         new_status = metadata.get('development_status')
+        steam_metadata = metadata.get('steam_metadata', {})
+        
+        # Merge Steam metadata into extra_data if available
+        if steam_metadata and store == 'steam':
+            import json
+            try:
+                # Get existing extra_data
+                cursor.execute("SELECT extra_data FROM games WHERE id = ?", (game_id,))
+                result = cursor.fetchone()
+                existing_extra = json.loads(result[0]) if result and result[0] else {}
+                
+                # Merge with new Steam metadata
+                existing_extra.update(steam_metadata)
+                
+                # Update extra_data in DB
+                cursor.execute("""
+                    UPDATE games
+                    SET extra_data = ?
+                    WHERE id = ?
+                """, (json.dumps(existing_extra), game_id))
+            except Exception as e:
+                print(f"[UPDATE] Error updating extra_data: {e}")
         
         # Detect last_modified change (version update)
         if new_last_modified:
@@ -200,9 +232,126 @@ class SteamUpdateTracker:
     
     APP_DETAILS_URL = "https://store.steampowered.com/api/appdetails"
     
+    def __init__(self):
+        """Initialize Steam tracker with optional Steam Client support."""
+        self.use_steam_client = USE_STEAM_CLIENT and STEAM_CLIENT_AVAILABLE
+        self.steam_worker = None
+        self.connection_attempted = False
+        
+        if self.use_steam_client:
+            try:
+                self.steam_worker = get_steam_worker()
+                print("[UPDATE] Steam Worker enabled for update tracking")
+            except Exception as e:
+                print(f"[UPDATE] Steam Worker initialization failed: {e}")
+                self.use_steam_client = False
+    
     def fetch_metadata(self, store_id: str) -> Optional[Dict]:
         """
         Fetch current metadata for a Steam game.
+        
+        Args:
+            store_id: Steam appid
+        
+        Returns:
+            Dict with 'last_modified' and 'development_status' keys, or None
+        """
+        # Try Steam Worker first if enabled
+        if self.use_steam_client and self.steam_worker:
+            metadata = self._fetch_via_steam_worker(store_id)
+            if metadata:
+                return metadata
+            # If Steam Worker fails, fall back to HTTP API
+            print(f"[UPDATE] Steam Worker failed for {store_id}, falling back to HTTP API")
+        
+        # Fallback to HTTP API
+        return self._fetch_via_http_api(store_id)
+    
+    def _fetch_via_steam_worker(self, store_id: str) -> Optional[Dict]:
+        """
+        Fetch metadata using Steam Worker process (fast).
+        
+        Args:
+            store_id: Steam appid
+        
+        Returns:
+            Dict with 'last_modified' and 'development_status' keys, or None
+        """
+        if not self.steam_worker:
+            return None
+            
+        try:
+            app_id = int(store_id)
+            
+            # Try to connect on first use
+            if not self.connection_attempted:
+                print("[UPDATE] Attempting Steam Worker connection...")
+                self.connection_attempted = True
+                if not self.steam_worker.connect():
+                    print("[UPDATE] Steam Worker connection failed")
+                    return None
+            
+            # Check if worker is alive
+            if not self.steam_worker.is_alive():
+                print("[UPDATE] Steam Worker process died")
+                return None
+            
+            # Get product info via worker
+            product_info = self.steam_worker.get_product_info([app_id])
+            
+            if app_id not in product_info:
+                return None
+            
+            info = product_info[app_id]
+            change_number = info.get('change_number', 0)
+            last_change_timestamp = info.get('last_change', 0)  # Unix timestamp
+            
+            # IMPORTANT: Use last_change (real update timestamp) for comparison
+            # This allows proper update detection based on actual modification date
+            if last_change_timestamp:
+                last_modified = datetime.fromtimestamp(last_change_timestamp).isoformat()
+            else:
+                last_modified = None
+            
+            # Check for Early Access
+            development_status = 'released'
+            common = info.get('common', {})
+            
+            # Check common Early Access indicators
+            controller_support = common.get('controller_support', '')
+            if 'early' in controller_support.lower() or common.get('steam_release_date', 0) == 0:
+                development_status = 'early_access'
+            
+            # Build enriched metadata for extra_data
+            steam_metadata = {
+                'steam_deck_status': info.get('steam_deck_status'),
+                'developer': info.get('developer'),
+                'publisher': info.get('publisher'),
+                'review_score': info.get('review_score'),
+                'review_percentage': info.get('review_percentage'),
+                'steam_release_date': info.get('steam_release_date'),
+                'controller_support': info.get('controller_support'),
+                'languages_with_audio': info.get('languages_with_audio', []),
+                'languages_subtitles_only': info.get('languages_subtitles_only', []),
+            }
+            # Remove None values
+            steam_metadata = {k: v for k, v in steam_metadata.items() if v is not None}
+            
+            return {
+                'last_modified': last_modified,
+                'development_status': development_status,
+                'change_number': change_number,
+                'steam_metadata': steam_metadata,  # New: enriched Steam data
+                'source': 'steam_worker'
+            }
+            
+        except Exception as e:
+            print(f"[UPDATE] Steam Worker error for {store_id}: {e}")
+            return None
+    
+    def _fetch_via_http_api(self, store_id: str) -> Optional[Dict]:
+        """
+        Fetch metadata using HTTP API (fallback, slower with rate limits).
         
         Args:
             store_id: Steam appid

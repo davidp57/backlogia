@@ -35,3 +35,23 @@ def get_data_dir():
 
 # Database path - can be overridden by environment variable
 DATABASE_PATH = Path(os.environ.get("DATABASE_PATH", get_data_dir() / "game_library.db"))
+
+# Feature flags - Steam Client integration
+# Will be dynamically checked from settings at runtime
+def get_use_steam_client():
+    """Get USE_STEAM_CLIENT setting from DB or env var."""
+    # Check env var first (for Docker)
+    env_value = os.environ.get("USE_STEAM_CLIENT", "").strip().lower()
+    if env_value in ("true", "1", "yes"):
+        return True
+    if env_value in ("false", "0", "no"):
+        return False
+    
+    # Fall back to database setting
+    try:
+        from .services.settings import get_setting, USE_STEAM_CLIENT as USE_STEAM_CLIENT_KEY
+        return get_setting(USE_STEAM_CLIENT_KEY, "false").lower() in ("true", "1", "yes")
+    except Exception:
+        return False
+
+USE_STEAM_CLIENT = get_use_steam_client()

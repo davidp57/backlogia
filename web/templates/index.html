@@ -678,6 +678,28 @@
             z-index: 5;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
+        
+        .steam-deck-badge {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            font-size: 0.8rem;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            z-index: 5;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .steam-deck-badge.verified {
+            background: linear-gradient(90deg, #76c442, #5ea632);
+            color: white;
+        }
+        
+        .steam-deck-badge.playable {
+            background: linear-gradient(90deg, #ff9800, #e68900);
+            color: white;
+        }
 
         .status-badge {
             position: absolute;
@@ -1354,6 +1376,13 @@
                         {% else %}{{ game.development_status[:1]|upper }}
                         {% endif %}
                     </span>
+                    {% endif %}
+                    {% set extra = parse_json(game.extra_data) or {} %}
+                    {% set steam_deck_status = extra.get('steam_deck_status') %}
+                    {% if steam_deck_status == '1' %}
+                    <span class="steam-deck-badge verified" title="Steam Deck Verified">✓</span>
+                    {% elif steam_deck_status == '2' %}
+                    <span class="steam-deck-badge playable" title="Steam Deck Playable">⚠</span>
                     {% endif %}
                 </div>
                 <div class="game-info">

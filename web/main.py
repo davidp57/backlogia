@@ -26,6 +26,7 @@ from .routes.discover import router as discover_router
 from .routes.settings import router as settings_router
 from .routes.jobs import router as jobs_router
 from .routes.loading import router as loading_router
+from .routes.steam_client import router as steam_client_router
 
 
 def init_database():
@@ -89,3 +90,4 @@ app.include_router(sync_router)
 app.include_router(auth_router)
 app.include_router(collections_router)
 app.include_router(jobs_router)
+app.include_router(steam_client_router)

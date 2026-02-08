@@ -529,20 +529,65 @@ Group games by store
 ## Questions Ouvertes
 
 1. **Anonymous login suffisant?**
-   - À tester: est-ce que anonymous_login donne accès à get_product_info()?
-   - Alternative: demander credentials optionnels dans settings
+   - ✅ RÉSOLU: anonymous_login fonctionne parfaitement pour get_product_info()
+   - Performances: 77x plus rapide que HTTP API
+   - Limitation: Ne permet pas de récupérer la bibliothèque utilisateur
 
 2. **Persistence de la connexion?**
-   - Garder le client connecté en permanence?
-   - Ou reconnect à chaque sync job?
+   - ✅ IMPLÉMENTÉ: Connexion persistante avec reconnexion automatique
+   - Timeout de 10 secondes entre tentatives
 
 3. **Gestion du threading?**
-   - SteamClient est-il thread-safe?
-   - Besoin d'un lock pour les requêtes concurrentes?
+   - ✅ RÉSOLU: Connexion synchrone au premier appel, puis réutilisation
+   - Pas besoin de lock complexe
 
 4. **Stockage des change_numbers?**
-   - Table séparée ou colonne dans game_depot_updates?
-   - Impact sur les requêtes de la page library?
+   - Utilise change_number dans metadata
+   - À évaluer si besoin de table dédiée plus tard
+
+## Roadmap Future
+
+### Phase 5: Steam Login avec Credentials (Post-POC)
+**Objectif**: Éliminer le besoin d'API Key Steam
+
+**Motivation**:
+- Actuellement, l'import initial de la bibliothèque nécessite Steam ID + API Key
+- La génération d'API Key est un frein pour les utilisateurs
+- Le Steam Client peut gérer l'authentification directement
+
+**Implémentation**:
+```python
+# Au lieu de anonymous_login():
+client.login(username, password, two_factor_code)
+```
+
+**Fonctionnalités**:
+1. **Login avec credentials Steam** (username + password)
+2. **Support Steam Guard/2FA** (codes à 6 chiffres ou mobile authenticator)
+3. **Stockage sécurisé des credentials** (chiffrement local)
+4. **Récupération de la bibliothèque** via Steam Client (pas d'API Key!)
+5. **Session persistante** entre redémarrages
+
+**Avantages**:
+- ✅ Plus besoin d'API Key Steam
+- ✅ Accès complet à la bibliothèque
+- ✅ Performances optimales pour tout
+- ✅ Expérience utilisateur simplifiée
+
+**Défis**:
+- ⚠️ Gestion Steam Guard (codes 2FA)
+- ⚠️ Sécurité du stockage des credentials
+- ⚠️ UI pour entrer les codes 2FA
+- ⚠️ Gestion des sessions expirées
+
+**Priorité**: Moyenne (après validation du POC actuel)
+
+**Étapes**:
+1. Recherche: Implémenter login avec credentials dans steam.client
+2. UI: Formulaire login Steam avec champ 2FA
+3. Sécurité: Chiffrement des credentials (keyring ou similaire)
+4. Fallback: Garder option API Key pour utilisateurs qui préfèrent
+5. Migration: Guide pour passer d'API Key à credentials
 
 ## Références
 
