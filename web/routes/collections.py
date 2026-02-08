@@ -153,7 +153,7 @@ def collection_detail(
     if queries:
         valid_queries = [q for q in queries if q in PREDEFINED_QUERIES]
         for query_id in valid_queries:
-            query += f" AND {PREDEFINED_QUERIES[query_id].replace('playtime_hours', 'g.playtime_hours').replace('total_rating', 'g.total_rating').replace('added_at', 'g.added_at').replace('release_date', 'g.release_date').replace('nsfw', 'g.nsfw')}"
+            query += f" AND {PREDEFINED_QUERIES[query_id].replace('playtime_hours', 'g.playtime_hours').replace('total_rating', 'g.total_rating').replace('added_at', 'g.added_at').replace('release_date', 'g.release_date').replace('nsfw', 'g.nsfw').replace('aggregated_rating', 'g.aggregated_rating').replace('igdb_rating', 'g.igdb_rating').replace('igdb_rating_count', 'g.igdb_rating_count').replace('last_modified', 'g.last_modified')}"
 
     query += " ORDER BY cg.added_at DESC"
     cursor.execute(query, params)

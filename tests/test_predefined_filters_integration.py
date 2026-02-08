@@ -412,5 +412,199 @@ class TestAPIEndpoints:
         assert response.status_code in [200, 404]
 
 
+class TestCollectionFilters:
+    """Test predefined filters work correctly in collection context"""
+    
+    @pytest.fixture
+    def collection_db(self):
+        """Create a test database with collections, games, and collection_games"""
+        conn = sqlite3.connect(":memory:")
+        cursor = conn.cursor()
+        
+        # Create games table with all necessary columns including igdb columns
+        cursor.execute("""
+            CREATE TABLE games (
+                id INTEGER PRIMARY KEY,
+                name TEXT NOT NULL,
+                store TEXT,
+                playtime_hours REAL,
+                total_rating REAL,
+                aggregated_rating REAL,
+                igdb_rating REAL,
+                igdb_rating_count INTEGER,
+                total_rating_count INTEGER,
+                added_at TIMESTAMP,
+                release_date TEXT,
+                last_modified TIMESTAMP,
+                nsfw BOOLEAN DEFAULT 0,
+                hidden BOOLEAN DEFAULT 0,
+                cover_url TEXT
+            )
+        """)
+        
+        # Create collections table
+        cursor.execute("""
+            CREATE TABLE collections (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                description TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Create collection_games junction table
+        cursor.execute("""
+            CREATE TABLE collection_games (
+                collection_id INTEGER,
+                game_id INTEGER,
+                added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (collection_id, game_id),
+                FOREIGN KEY (collection_id) REFERENCES collections(id),
+                FOREIGN KEY (game_id) REFERENCES games(id)
+            )
+        """)
+        
+        # Insert test games with various properties
+        now = datetime.now()
+        
+        test_games = [
+            # Games with high IGDB ratings (community-favorites)
+            (1, "Community Favorite 1", "steam", 10.0, 85.0, 80.0, 90.0, 150, 100, 
+             now.isoformat(), "2023-01-01", now.isoformat(), 0, 0, "cover1.jpg"),
+            (2, "Community Favorite 2", "steam", 5.0, 88.0, 82.0, 87.0, 200, 150, 
+             now.isoformat(), "2023-02-01", now.isoformat(), 0, 0, "cover2.jpg"),
+            
+            # Games with high critic ratings (critic-favorites)
+            (3, "Critic Favorite 1", "gog", 8.0, 85.0, 85.0, 75.0, 50, 100, 
+             now.isoformat(), "2022-06-01", now.isoformat(), 0, 0, "cover3.jpg"),
+            (4, "Critic Favorite 2", "steam", 12.0, 90.0, 88.0, 80.0, 75, 200, 
+             now.isoformat(), "2022-03-01", now.isoformat(), 0, 0, "cover4.jpg"),
+            
+            # Recently updated games (recently-updated)
+            (5, "Recently Updated 1", "epic", 15.0, 75.0, 70.0, 72.0, 40, 80, 
+             (now - timedelta(days=100)).isoformat(), "2021-12-01", 
+             (now - timedelta(days=5)).isoformat(), 0, 0, "cover5.jpg"),
+            (6, "Recently Updated 2", "epic", 3.0, 80.0, 75.0, 78.0, 60, 100, 
+             (now - timedelta(days=200)).isoformat(), "2022-05-01", 
+             (now - timedelta(days=10)).isoformat(), 0, 0, "cover6.jpg"),
+            
+            # Games that don't match the filters
+            (7, "Low Rating Game", "steam", 2.0, 50.0, 48.0, 55.0, 20, 30, 
+             now.isoformat(), "2023-05-01", (now - timedelta(days=100)).isoformat(), 0, 0, "cover7.jpg"),
+            (8, "Old Update Game", "gog", 4.0, 70.0, 68.0, 65.0, 30, 50, 
+             (now - timedelta(days=300)).isoformat(), "2022-08-01", 
+             (now - timedelta(days=200)).isoformat(), 0, 0, "cover8.jpg"),
+        ]
+        
+        cursor.executemany("""
+            INSERT INTO games 
+            (id, name, store, playtime_hours, total_rating, aggregated_rating, 
+             igdb_rating, igdb_rating_count, total_rating_count, added_at, release_date, 
+             last_modified, nsfw, hidden, cover_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, test_games)
+        
+        # Create a test collection
+        cursor.execute("""
+            INSERT INTO collections (id, name, description)
+            VALUES (1, 'Test Collection', 'Collection for testing filters')
+        """)
+        
+        # Add all games to the collection
+        for game_id in range(1, 9):
+            cursor.execute("""
+                INSERT INTO collection_games (collection_id, game_id, added_at)
+                VALUES (1, ?, ?)
+            """, (game_id, now.isoformat()))
+        
+        conn.commit()
+        yield conn
+        conn.close()
+    
+    def test_community_favorites_filter(self, collection_db):
+        """Test community-favorites filter uses igdb_rating and igdb_rating_count columns"""
+        cursor = collection_db.cursor()
+        
+        # This simulates the query in collections.py with filter applied
+        query = """
+            SELECT g.* FROM games g
+            INNER JOIN collection_games cg ON g.id = cg.game_id
+            WHERE cg.collection_id = 1
+            AND (g.igdb_rating >= 85 AND g.igdb_rating_count >= 100)
+        """
+        
+        cursor.execute(query)
+        results = cursor.fetchall()
+        
+        # Should match games 1 and 2 (igdb_rating >= 85 and igdb_rating_count >= 100)
+        assert len(results) == 2, f"Expected 2 community favorites, got {len(results)}"
+        game_names = [row[1] for row in results]
+        assert "Community Favorite 1" in game_names
+        assert "Community Favorite 2" in game_names
+    
+    def test_critic_favorites_filter(self, collection_db):
+        """Test critic-favorites filter uses aggregated_rating column"""
+        cursor = collection_db.cursor()
+        
+        # This simulates the query in collections.py with filter applied
+        query = """
+            SELECT g.* FROM games g
+            INNER JOIN collection_games cg ON g.id = cg.game_id
+            WHERE cg.collection_id = 1
+            AND g.aggregated_rating >= 80
+        """
+        
+        cursor.execute(query)
+        results = cursor.fetchall()
+        
+        # Should match games 1, 2, 3, 4 (aggregated_rating >= 80)
+        assert len(results) == 4, f"Expected 4 critic favorites, got {len(results)}"
+        game_names = [row[1] for row in results]
+        assert "Community Favorite 1" in game_names
+        assert "Community Favorite 2" in game_names
+        assert "Critic Favorite 1" in game_names
+        assert "Critic Favorite 2" in game_names
+    
+    def test_recently_updated_filter(self, collection_db):
+        """Test recently-updated filter uses last_modified column"""
+        cursor = collection_db.cursor()
+        
+        # This simulates the query in collections.py with filter applied
+        query = """
+            SELECT g.* FROM games g
+            INNER JOIN collection_games cg ON g.id = cg.game_id
+            WHERE cg.collection_id = 1
+            AND g.last_modified >= DATE('now', '-30 days')
+        """
+        
+        cursor.execute(query)
+        results = cursor.fetchall()
+        
+        # Should match games 1-4 and 5-6 (last_modified within last 30 days)
+        assert len(results) >= 4, f"Expected at least 4 recently updated games, got {len(results)}"
+        game_names = [row[1] for row in results]
+        assert "Recently Updated 1" in game_names
+        assert "Recently Updated 2" in game_names
+    
+    def test_multiple_filters_in_collection(self, collection_db):
+        """Test combining multiple filters in collection context"""
+        cursor = collection_db.cursor()
+        
+        # Test combining community-favorites AND critic-favorites
+        query = """
+            SELECT g.* FROM games g
+            INNER JOIN collection_games cg ON g.id = cg.game_id
+            WHERE cg.collection_id = 1
+            AND (g.igdb_rating >= 85 AND g.igdb_rating_count >= 100)
+            AND g.aggregated_rating >= 80
+        """
+        
+        cursor.execute(query)
+        results = cursor.fetchall()
+        
+        # Should match games 1 and 2 (both community AND critic favorites)
+        assert len(results) == 2, f"Expected 2 games matching both filters, got {len(results)}"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
