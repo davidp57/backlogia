@@ -1,6 +1,7 @@
 # routes/settings.py
 # Settings page routes
 
+import os
 import sqlite3
 from pathlib import Path
 
@@ -22,13 +23,15 @@ def settings_page(
 ):
     """Settings page for configuring API credentials."""
     # Import here to avoid circular imports
-    import os
     from ..services.settings import (
         get_setting, STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET,
         ITCH_API_KEY, HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH,
         EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD, LOCAL_GAMES_PATHS
     )
     from ..sources.local import discover_local_game_paths
+
+    # Detect if running in Docker
+    is_docker = os.path.exists("/.dockerenv")
 
     # Get configured host paths (for display) - these are the original paths from .env
     # Only show paths that have corresponding valid mount points with games
@@ -73,7 +76,8 @@ def settings_page(
             "request": request,
             "settings": settings,
             "success": success_flag,
-            "hidden_count": hidden_count
+            "hidden_count": hidden_count,
+            "is_docker": is_docker
         }
     )
 
@@ -100,6 +104,9 @@ def save_settings(
         EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD, LOCAL_GAMES_PATHS
     )
 
+    # Detect if running in Docker
+    is_docker = os.path.exists("/.dockerenv")
+
     # Save all form values
     set_setting(STEAM_ID, steam_id.strip())
     set_setting(STEAM_API_KEY, steam_api_key.strip())
@@ -111,6 +118,9 @@ def save_settings(
     set_setting(BATTLENET_SESSION_COOKIE, battlenet_session_cookie.strip())
     set_setting(GOG_DB_PATH, gog_db_path.strip())
     set_setting(EA_BEARER_TOKEN, ea_bearer_token.strip())
-    set_setting(LOCAL_GAMES_PATHS, local_games_paths.strip())
+    
+    # Only save LOCAL_GAMES_PATHS if not in Docker mode
+    if not is_docker:
+        set_setting(LOCAL_GAMES_PATHS, local_games_paths.strip())
 
     return RedirectResponse(url="/settings?success=1", status_code=303)
