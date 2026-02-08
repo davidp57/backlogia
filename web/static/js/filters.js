@@ -354,33 +354,5 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Save current filters
     saveCurrentFilters();
-    
-    // Use event delegation for store checkboxes (more reliable)
-    const storeDropdown = document.getElementById('store-dropdown');
-    if (storeDropdown) {
-        storeDropdown.addEventListener('change', function(event) {
-            if (event.target.type === 'checkbox' && event.target.name === 'stores') {
-                // Small delay to allow multiple quick selections
-                clearTimeout(window.storeFilterTimeout);
-                window.storeFilterTimeout = setTimeout(() => {
-                    applyStoreFilter();
-                }, 300);
-            }
-        });
-    }
-    
-    // Use event delegation for genre checkboxes (more reliable)
-    const genreDropdown = document.getElementById('genre-dropdown');
-    if (genreDropdown) {
-        genreDropdown.addEventListener('change', function(event) {
-            if (event.target.type === 'checkbox' && event.target.name === 'genres') {
-                // Small delay to allow multiple quick selections
-                clearTimeout(window.genreFilterTimeout);
-                window.genreFilterTimeout = setTimeout(() => {
-                    applyGenreFilter();
-                }, 300);
-            }
-        });
-    }
 });
 
