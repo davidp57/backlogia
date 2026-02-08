@@ -1,6 +1,7 @@
 # routes/discover.py
 # Discover page routes
 
+import json
 import sqlite3
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -118,11 +119,10 @@ def discover(
     genre_counts = {}
     for row in cursor.fetchall():
         try:
-            import json
             genres_list = json.loads(row[0])
             for genre in genres_list:
                 genre_counts[genre] = genre_counts.get(genre, 0) + 1
-        except:
+        except (json.JSONDecodeError, TypeError):
             pass
     genre_counts = dict(sorted(genre_counts.items(), key=lambda x: x[1], reverse=True))
 
