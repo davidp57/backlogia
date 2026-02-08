@@ -26,7 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Empty library handling (7 tests)
   - Performance with 10,000 games (6 tests)
   - Recently Updated filter edge cases (4 tests)
-- **Editable local games paths in Settings**: Configure local game folder paths through web UI without editing .env files
 - **Documentation**: Complete technical documentation in `.copilot-docs/` covering filter system architecture, SQL reference, and database schema
 
 ### Changed
@@ -34,7 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Filter application**: Auto-apply with 300ms debounce using event delegation for better reliability
 - **Random page**: Converted from redirect to full HTML page with game grid and filter integration
 - **Filter bar**: Custom dropdowns with dark theme styling and count badges
-- **Settings**: `LOCAL_GAMES_PATHS` now editable via web interface, stored in database (environment variables still take precedence for Docker)
 - **Custom dropdowns**: Replaced native select elements with styled dropdowns for consistent dark theme
 
 ### Fixed
