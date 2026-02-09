@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="web/static/favicons/Backlogia_logo.png" alt="Backlogia" width="128" height="128">
+</p>
+
 # Backlogia
 
 **Your entire game library, finally in one place.**
@@ -217,10 +221,19 @@ On **Linux** hosts, mDNS is advertised automatically via Avahi.
 
 **Trusting the Certificate:**
 
-Caddy generates a self-signed certificate. Your browser will show a warning on first visit. You can click past it. To trust it permanently on macOS:
+Caddy generates a self-signed certificate using its own internal CA. Browsers will show a security warning until you trust this CA. Trusting it is **required** for PWA install support (service workers need a valid certificate).
+
+Run the included script to trust the certificate automatically:
 ```bash
-sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ./data/caddy_data/pki/authorities/local/root.crt
+./scripts/trust-caddy-cert.sh
 ```
+
+This adds Caddy's root CA to your system trust store. Restart your browser afterward. The script supports macOS, Linux, and Windows (via Git Bash).
+
+You can also trust it manually:
+- **macOS**: `sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ./data/caddy_data/caddy/pki/authorities/local/root.crt`
+- **Linux**: Copy `./data/caddy_data/caddy/pki/authorities/local/root.crt` to `/usr/local/share/ca-certificates/` and run `sudo update-ca-certificates`
+- **Windows (PowerShell, run as Administrator)**: `certutil -addstore -f Root .\data\caddy_data\caddy\pki\authorities\local\root.crt`
 
 ---
 

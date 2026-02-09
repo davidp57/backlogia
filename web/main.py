@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -65,6 +66,16 @@ app.add_middleware(
 
 # Initialize database on startup
 init_database()
+
+# Serve the service worker from root scope for PWA support
+sw_path = Path(__file__).parent / "static" / "sw.js"
+
+
+@app.get("/sw.js", include_in_schema=False)
+async def service_worker():
+    return FileResponse(sw_path, media_type="application/javascript",
+                        headers={"Service-Worker-Allowed": "/"})
+
 
 # Mount static files
 static_path = Path(__file__).parent / "static"

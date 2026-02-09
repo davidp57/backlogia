@@ -1,4 +1,5 @@
 game_library.db
+.DS_Store
 
 # Copilot documentation
 .copilot-docs/
