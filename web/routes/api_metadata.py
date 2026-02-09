@@ -46,6 +46,28 @@ class BulkAddToCollectionRequest(BaseModel):
     collection_id: int
 
 
+class UpdatePriorityRequest(BaseModel):
+    priority: Optional[str] = None  # 'high', 'medium', 'low', or None
+
+
+class UpdatePersonalRatingRequest(BaseModel):
+    rating: int  # 0-10
+
+
+class BulkSetPriorityRequest(BaseModel):
+    game_ids: list[int]
+    priority: Optional[str] = None
+
+
+class BulkSetPersonalRatingRequest(BaseModel):
+    game_ids: list[int]
+    rating: int
+
+
+class ManualPlaytimeTagRequest(BaseModel):
+    label_name: str
+
+
 @router.post("/api/game/{game_id}/igdb")
 def update_igdb(game_id: int, body: UpdateIgdbRequest, conn: sqlite3.Connection = Depends(get_db)):
     """Update IGDB ID for a game."""
@@ -459,32 +481,32 @@ def bulk_nsfw_games(body: BulkGameIdsRequest, conn: sqlite3.Connection = Depends
 
 @router.post("/api/games/bulk/add-to-collection")
 def bulk_add_to_collection(body: BulkAddToCollectionRequest, conn: sqlite3.Connection = Depends(get_db)):
-    """Add multiple games to a collection at once."""
+    """Add multiple games to a collection/label at once."""
     game_ids = body.game_ids
-    collection_id = body.collection_id
+    collection_id = body.collection_id  # Now refers to label_id
 
     if not game_ids:
         raise HTTPException(status_code=400, detail="No games selected")
 
     cursor = conn.cursor()
 
-    # Check if collection exists
-    cursor.execute("SELECT id FROM collections WHERE id = ?", (collection_id,))
+    # Check if label exists
+    cursor.execute("SELECT id FROM labels WHERE id = ?", (collection_id,))
     if not cursor.fetchone():
-        raise HTTPException(status_code=404, detail="Collection not found")
+        raise HTTPException(status_code=404, detail="Label not found")
 
-    # Add games to collection (ignore duplicates)
+    # Add games to label (ignore duplicates)
     added = 0
     for game_id in game_ids:
         cursor.execute(
-            "INSERT OR IGNORE INTO collection_games (collection_id, game_id) VALUES (?, ?)",
+            "INSERT OR IGNORE INTO game_labels (label_id, game_id) VALUES (?, ?)",
             (collection_id, game_id)
         )
         added += cursor.rowcount
 
-    # Update collection's updated_at
+    # Update label's updated_at
     cursor.execute(
-        "UPDATE collections SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        "UPDATE labels SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
         (collection_id,)
     )
     conn.commit()
@@ -505,8 +527,8 @@ def delete_game(game_id: int, conn: sqlite3.Connection = Depends(get_db)):
 
     game_name = row[0]
 
-    # Remove from collections first (foreign key constraint)
-    cursor.execute("DELETE FROM collection_games WHERE game_id = ?", (game_id,))
+    # Remove from labels first (foreign key constraint)
+    cursor.execute("DELETE FROM game_labels WHERE game_id = ?", (game_id,))
 
     # Delete the game
     cursor.execute("DELETE FROM games WHERE id = ?", (game_id,))
@@ -526,8 +548,8 @@ def bulk_delete_games(body: BulkGameIdsRequest, conn: sqlite3.Connection = Depen
 
     placeholders = ",".join("?" * len(game_ids))
 
-    # Remove from collections first
-    cursor.execute(f"DELETE FROM collection_games WHERE game_id IN ({placeholders})", game_ids)
+    # Remove from game_labels first (updated for labels system)
+    cursor.execute(f"DELETE FROM game_labels WHERE game_id IN ({placeholders})", game_ids)
 
     # Delete the games
     cursor.execute(f"DELETE FROM games WHERE id IN ({placeholders})", game_ids)
@@ -536,3 +558,157 @@ def bulk_delete_games(body: BulkGameIdsRequest, conn: sqlite3.Connection = Depen
     conn.commit()
 
     return {"success": True, "deleted": deleted}
+
+
+# ============================================================================
+# Priority and Personal Rating Endpoints
+# ============================================================================
+
+@router.post("/api/game/{game_id}/priority")
+def set_game_priority(game_id: int, body: UpdatePriorityRequest, conn: sqlite3.Connection = Depends(get_db)):
+    """Set priority for a game."""
+    priority = body.priority
+
+    # Validate priority value
+    if priority is not None and priority not in ('high', 'medium', 'low'):
+        raise HTTPException(status_code=400, detail="Priority must be 'high', 'medium', 'low', or null")
+
+    cursor = conn.cursor()
+
+    # Check if game exists
+    cursor.execute("SELECT name FROM games WHERE id = ?", (game_id,))
+    if not cursor.fetchone():
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    # Update priority
+    cursor.execute("UPDATE games SET priority = ? WHERE id = ?", (priority, game_id))
+    conn.commit()
+
+    return {"success": True, "priority": priority}
+
+
+@router.post("/api/game/{game_id}/personal-rating")
+def set_game_personal_rating(game_id: int, body: UpdatePersonalRatingRequest, conn: sqlite3.Connection = Depends(get_db)):
+    """Set personal rating (0-10) for a game."""
+    rating = body.rating
+
+    # Validate rating
+    if rating < 0 or rating > 10:
+        raise HTTPException(status_code=400, detail="Rating must be between 0 and 10")
+
+    cursor = conn.cursor()
+
+    # Check if game exists
+    cursor.execute("SELECT name FROM games WHERE id = ?", (game_id,))
+    if not cursor.fetchone():
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    # Update rating (0 means remove rating)
+    rating_value = rating if rating > 0 else None
+    cursor.execute("UPDATE games SET personal_rating = ? WHERE id = ?", (rating_value, game_id))
+    conn.commit()
+
+    return {"success": True, "rating": rating}
+
+
+@router.post("/api/games/bulk/set-priority")
+def bulk_set_priority(body: BulkSetPriorityRequest, conn: sqlite3.Connection = Depends(get_db)):
+    """Set priority for multiple games."""
+    game_ids = body.game_ids
+    priority = body.priority
+
+    if not game_ids:
+        raise HTTPException(status_code=400, detail="No games selected")
+
+    # Validate priority value
+    if priority is not None and priority not in ('high', 'medium', 'low'):
+        raise HTTPException(status_code=400, detail="Priority must be 'high', 'medium', 'low', or null")
+
+    cursor = conn.cursor()
+    placeholders = ",".join("?" * len(game_ids))
+
+    cursor.execute(f"UPDATE games SET priority = ? WHERE id IN ({placeholders})", [priority] + game_ids)
+    updated = cursor.rowcount
+
+    conn.commit()
+
+    return {"success": True, "updated": updated}
+
+
+@router.post("/api/games/bulk/set-personal-rating")
+def bulk_set_personal_rating(body: BulkSetPersonalRatingRequest, conn: sqlite3.Connection = Depends(get_db)):
+    """Set personal rating for multiple games."""
+    game_ids = body.game_ids
+    rating = body.rating
+
+    if not game_ids:
+        raise HTTPException(status_code=400, detail="No games selected")
+
+    # Validate rating
+    if rating < 0 or rating > 10:
+        raise HTTPException(status_code=400, detail="Rating must be between 0 and 10")
+
+    cursor = conn.cursor()
+
+    # 0 means remove rating
+    rating_value = rating if rating > 0 else None
+    placeholders = ",".join("?" * len(game_ids))
+
+    cursor.execute(f"UPDATE games SET personal_rating = ? WHERE id IN ({placeholders})", [rating_value] + game_ids)
+    updated = cursor.rowcount
+
+    conn.commit()
+
+    return {"success": True, "updated": updated}
+
+
+# ============================================================================
+# System Labels (Manual Playtime Tags) Endpoints
+# ============================================================================
+
+@router.post("/api/game/{game_id}/manual-playtime-tag")
+def set_manual_playtime_tag(game_id: int, body: ManualPlaytimeTagRequest, conn: sqlite3.Connection = Depends(get_db)):
+    """Manually set a playtime tag for non-Steam games or to override auto tags."""
+    label_name = body.label_name
+
+    cursor = conn.cursor()
+
+    # Check if game exists
+    cursor.execute("SELECT name FROM games WHERE id = ?", (game_id,))
+    if not cursor.fetchone():
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    # Remove all existing playtime system tags (auto or manual)
+    cursor.execute("""
+        DELETE FROM game_labels
+        WHERE game_id = ?
+        AND label_id IN (
+            SELECT id FROM labels WHERE system = 1 AND type = 'system_tag'
+        )
+    """, (game_id,))
+
+    # Add the selected tag as manual (auto=0)
+    cursor.execute("SELECT id FROM labels WHERE name = ? AND system = 1", (label_name,))
+    label = cursor.fetchone()
+
+    if not label:
+        raise HTTPException(status_code=404, detail=f"System label '{label_name}' not found")
+
+    cursor.execute("""
+        INSERT INTO game_labels (label_id, game_id, auto)
+        VALUES (?, ?, 0)
+    """, (label[0], game_id))
+
+    conn.commit()
+
+    return {"success": True, "message": f"Tag '{label_name}' applied"}
+
+
+@router.post("/api/labels/update-system-tags")
+def update_system_tags(conn: sqlite3.Connection = Depends(get_db)):
+    """Manually trigger system tag update for all Steam games."""
+    from ..services.system_labels import update_all_auto_labels
+
+    update_all_auto_labels(conn)
+
+    return {"success": True, "message": "System tags updated"}
