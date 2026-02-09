@@ -10,8 +10,8 @@ services:
       - ${BACKLOGIA_DATA_DIR:-.}/data:/data
       - ${BACKLOGIA_DATA_DIR:-.}/data/legendary:/root/.config/legendary
       - ${BACKLOGIA_DATA_DIR:-.}/data/nile:/root/.config/nile
-      - ${BACKLOGIA_DATA_DIR:-.}/logs}:/app/logs
-      - ${GOG_DB_DIR:-./.empty}:/gog:ro
+      - ${BACKLOGIA_DATA_DIR:-.}/logs:/app/logs
+      - ${GOG_DB_DIR:-.}:/gog:ro
       # Local game folders (up to 5 by default, add more if needed)
       - ${LOCAL_GAMES_DIR_1:-./.empty}:/local-games-1:ro
       - ${LOCAL_GAMES_DIR_2:-./.empty}:/local-games-2:ro

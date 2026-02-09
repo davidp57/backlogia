@@ -1,0 +1,43 @@
+# Docker Compose configuration for Synology NAS deployment
+# This file is OPTIONAL - the recommended method is to use Synology Container Manager UI
+#
+# This configuration is for advanced users who prefer using docker-compose via SSH
+# For most users, importing the image via Container Manager UI is simpler
+
+services:
+  backlogia:
+    image: backlogia:latest  # Image imported from GitHub Actions artifact
+    container_name: backlogia
+    ports:
+      - "5050:5050"
+    networks:
+      - backlogia-net
+    volumes:
+      # Persistent data - uses relative "./data" path by default
+      # Users can modify these paths via Synology Container Manager UI or by editing this file
+      - ./data:/data
+      - ./data/legendary:/root/.config/legendary
+      - ./data/nile:/root/.config/nile
+      - ./logs:/app/logs
+
+      # Optional volumes for local game directories (uncomment if needed)
+      # Replace with your actual game folder paths on the NAS
+      # - /volume1/games:/local-games-1:ro
+      # - /volume1/media/games:/local-games-2:ro
+      # - /volume2/games:/local-games-3:ro
+      # - /volume3/games:/local-games-4:ro
+      # - /volume4/games:/local-games-5:ro
+    environment:
+      # Core application settings
+      - DATABASE_PATH=/data/game_library.db
+      - PORT=5050
+      - DEBUG=false
+
+      # Note: API keys (Steam, IGDB, itch.io, Humble, Battle.net, etc.)
+      # are NOT required here. They are configured via the web Settings UI
+      # at http://[NAS-IP]:5050/settings and stored in the SQLite database.
+    restart: unless-stopped
+
+networks:
+  backlogia-net:
+    driver: bridge

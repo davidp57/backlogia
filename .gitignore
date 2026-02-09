@@ -3,9 +3,11 @@ game_library.db
 # Copilot documentation
 .copilot-docs/
 
-# OpenSpec workflow and GitHub configs
-.github/
+# OpenSpec workflow
 openspec/
+
+# Ignore specific GitHub config (but allow workflows)
+# .github/  # Commented out to allow GitHub Actions workflows
 
 # Docker
 data/

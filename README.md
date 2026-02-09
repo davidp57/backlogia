@@ -184,6 +184,28 @@ docker compose up -d --build
 
 ---
 
+### Option 3: Synology NAS Deployment
+
+Deploy Backlogia on your Synology NAS using Container Manager (Docker). Perfect for running 24/7 with centralized game library management.
+
+**Supported Architectures:** AMD64/x86_64 (Intel/AMD Synology models)
+
+**Features:**
+- No command line required (GUI-based setup)
+- Automatic builds via GitHub Actions
+- Persistent storage on NAS volumes
+- Web-based configuration (no `.env` file needed)
+
+**Quick Start:**
+1. Download the pre-built Docker image from [GitHub Actions](https://github.com/sam1am/backlogia/actions)
+2. Import image using Synology Container Manager
+3. Configure volumes and environment variables via GUI
+4. Access at `http://[NAS-IP]:5050`
+
+For detailed step-by-step instructions, see **[docs/synology-deployment.md](docs/synology-deployment.md)**
+
+---
+
 ### Docker Volumes
 
 | Volume | Purpose |
