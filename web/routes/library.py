@@ -32,6 +32,10 @@ def library(
     search: str = "",
     sort: str = "name",
     order: str = "asc",
+    exclude_streaming: bool = False,
+    collection: int = 0,
+    protondb_tier: str = "",
+    no_igdb: bool = False,
     conn: sqlite3.Connection = Depends(get_db)
 ):
     """Library page - list all games."""
@@ -60,6 +64,24 @@ def library(
         query += " AND name LIKE ?"
         params.append(f"%{search}%")
 
+    # Collection filter
+    if collection:
+        query += " AND id IN (SELECT game_id FROM collection_games WHERE collection_id = ?)"
+        params.append(collection)
+
+    # ProtonDB tier filter (hierarchy: platinum > gold > silver > bronze)
+    protondb_hierarchy = ["platinum", "gold", "silver", "bronze"]
+    if protondb_tier and protondb_tier in protondb_hierarchy:
+        tier_index = protondb_hierarchy.index(protondb_tier)
+        allowed_tiers = protondb_hierarchy[:tier_index + 1]
+        placeholders = ",".join("?" * len(allowed_tiers))
+        query += f" AND protondb_tier IN ({placeholders})"
+        params.extend(allowed_tiers)
+
+    # No IGDB data filter
+    if no_igdb:
+        query += " AND (igdb_id IS NULL OR igdb_id = 0)"
+
     # Sorting
     valid_sorts = ["name", "store", "playtime_hours", "critics_score", "release_date", "total_rating", "igdb_rating", "aggregated_rating", "average_rating", "metacritic_score", "metacritic_user_score"]
     if sort in valid_sorts:
@@ -74,6 +96,10 @@ def library(
 
     # Group games by IGDB ID (combines multi-store ownership)
     grouped_games = group_games_by_igdb(games)
+
+    # Post-grouping filter: exclude streaming-only games
+    if exclude_streaming:
+        grouped_games = [g for g in grouped_games if not g.get("only_streaming", False)]
 
     # Sort grouped games by primary game's sort field
     # Separate games with null sort values so nulls are always last
@@ -111,6 +137,16 @@ def library(
     cursor.execute("SELECT COUNT(*) FROM games WHERE hidden = 1")
     hidden_count = cursor.fetchone()[0]
 
+    # Get collections for the filter dropdown
+    cursor.execute("""
+        SELECT c.id, c.name, COUNT(cg.game_id) as game_count
+        FROM collections c
+        LEFT JOIN collection_games cg ON c.id = cg.collection_id
+        GROUP BY c.id
+        ORDER BY c.name
+    """)
+    collections = [{"id": row[0], "name": row[1], "game_count": row[2]} for row in cursor.fetchall()]
+
     # Get all unique genres with counts
     cursor.execute("SELECT genres FROM games WHERE genres IS NOT NULL AND genres != '[]'" + EXCLUDE_HIDDEN_FILTER)
     genre_rows = cursor.fetchall()
@@ -141,6 +177,11 @@ def library(
             "current_search": search,
             "current_sort": sort,
             "current_order": order,
+            "current_exclude_streaming": exclude_streaming,
+            "current_collection": collection,
+            "current_protondb_tier": protondb_tier,
+            "current_no_igdb": no_igdb,
+            "collections": collections,
             "parse_json": parse_json_field
         }
     )

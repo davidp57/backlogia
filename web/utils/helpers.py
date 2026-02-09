@@ -80,6 +80,8 @@ def group_games_by_igdb(games):
             except (json.JSONDecodeError, TypeError):
                 pass
 
+        has_non_streaming = not is_streaming
+
         if igdb_id:
             if igdb_id not in grouped:
                 grouped[igdb_id] = {
@@ -87,7 +89,8 @@ def group_games_by_igdb(games):
                     "stores": [game_dict["store"]],
                     "game_ids": [game_dict["id"]],
                     "store_data": {game_dict["store"]: game_dict},
-                    "is_streaming": is_streaming
+                    "is_streaming": is_streaming,
+                    "has_non_streaming": has_non_streaming
                 }
             else:
                 grouped[igdb_id]["stores"].append(game_dict["store"])
@@ -96,6 +99,9 @@ def group_games_by_igdb(games):
                 # Aggregate streaming flag - if any game has it, the group has it
                 if is_streaming:
                     grouped[igdb_id]["is_streaming"] = True
+                # Track if any copy is non-streaming (owned)
+                if has_non_streaming:
+                    grouped[igdb_id]["has_non_streaming"] = True
                 # Use the one with more data as primary (prefer one with playtime or better cover)
                 current_primary = grouped[igdb_id]["primary"]
                 if (game_dict.get("playtime_hours") and not current_primary.get("playtime_hours")) or \
@@ -107,9 +113,15 @@ def group_games_by_igdb(games):
                 "stores": [game_dict["store"]],
                 "game_ids": [game_dict["id"]],
                 "store_data": {game_dict["store"]: game_dict},
-                "is_streaming": is_streaming
+                "is_streaming": is_streaming,
+                "has_non_streaming": has_non_streaming
             })
 
     # Convert grouped dict to list and add non-IGDB games
     result = list(grouped.values()) + no_igdb_games
+
+    # Set only_streaming flag: True if game is streaming and has no non-streaming copies
+    for game in result:
+        game["only_streaming"] = game.get("is_streaming", False) and not game.get("has_non_streaming", False)
+
     return result
