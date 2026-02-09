@@ -1943,12 +1943,31 @@
 
         function togglePlaytimeMenu() {
             const dropdown = document.getElementById('playtime-dropdown');
-            const btn = event.target;
-            const rect = btn.getBoundingClientRect();
+            const priorityDropdown = document.getElementById('priority-dropdown');
+            const ratingDropdown = document.getElementById('rating-dropdown');
 
-            dropdown.style.left = rect.left + 'px';
-            dropdown.style.top = (rect.top - dropdown.offsetHeight - 10) + 'px';
-            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+            // Close other menus if open
+            priorityDropdown.style.display = 'none';
+            ratingDropdown.style.display = 'none';
+
+            // Toggle playtime menu
+            const isVisible = dropdown.style.display !== 'none';
+            dropdown.style.display = isVisible ? 'none' : 'block';
+
+            if (!isVisible) {
+                // Position dropdown near the button
+                const btn = document.querySelector('.action-btn.playtime');
+                const rect = btn.getBoundingClientRect();
+
+                // Show first to get actual height
+                dropdown.style.visibility = 'hidden';
+                dropdown.style.display = 'block';
+                const height = dropdown.offsetHeight;
+                dropdown.style.visibility = 'visible';
+
+                dropdown.style.top = (rect.top - height - 10) + 'px';
+                dropdown.style.left = rect.left + 'px';
+            }
         }
 
         async function bulkSetPlaytimeTag(tag) {
