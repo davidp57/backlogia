@@ -1794,6 +1794,7 @@
         // Multi-select functionality
         let selectMode = false;
         let selectedGames = new Set();
+        let lastSelectedCard = null;
 
         function toggleSelectMode() {
             selectMode = !selectMode;
@@ -1820,6 +1821,35 @@
             const card = checkbox.closest('.game-card');
             const gameIds = card.dataset.gameIds.split(',');
 
+            // Shift-click for range selection
+            if (event.shiftKey && lastSelectedCard && lastSelectedCard !== card) {
+                const allCards = Array.from(document.querySelectorAll('.game-card'));
+                const lastIndex = allCards.indexOf(lastSelectedCard);
+                const currentIndex = allCards.indexOf(card);
+
+                if (lastIndex !== -1 && currentIndex !== -1) {
+                    const start = Math.min(lastIndex, currentIndex);
+                    const end = Math.max(lastIndex, currentIndex);
+
+                    // Select all cards in range
+                    for (let i = start; i <= end; i++) {
+                        const rangeCard = allCards[i];
+                        const rangeCheckbox = rangeCard.querySelector('.game-checkbox');
+                        const rangeGameIds = rangeCard.dataset.gameIds.split(',');
+
+                        if (!rangeCheckbox.classList.contains('checked')) {
+                            rangeCheckbox.classList.add('checked');
+                            rangeCard.classList.add('selected');
+                            rangeGameIds.forEach(id => selectedGames.add(id));
+                        }
+                    }
+
+                    updateSelectionCount();
+                    return;
+                }
+            }
+
+            // Normal toggle
             if (checkbox.classList.contains('checked')) {
                 checkbox.classList.remove('checked');
                 card.classList.remove('selected');
@@ -1828,6 +1858,7 @@
                 checkbox.classList.add('checked');
                 card.classList.add('selected');
                 gameIds.forEach(id => selectedGames.add(id));
+                lastSelectedCard = card;
             }
 
             updateSelectionCount();
