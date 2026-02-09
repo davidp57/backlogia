@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Editable local games paths in Settings UI (non-Docker)**: Users running Backlogia locally can now configure game folder paths directly from the Settings page without needing to edit environment variables or .env files
+- **Docker deployment detection**: Automatically detects Docker environment and adapts UI accordingly
 - **Predefined query filters system**: 18 quick filters organized in 4 categories for better library organization:
   - **Gameplay** (5 filters): Unplayed, Played, Started, Well-Played, Heavily-Played
   - **Ratings** (7 filters): Highly-Rated, Well-Rated, Below-Average, Unrated, Hidden Gems, Critic Favorites, Community Favorites
@@ -29,6 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Documentation**: Complete technical documentation in `.copilot-docs/` covering filter system architecture, SQL reference, and database schema
 
 ### Changed
+- Settings UI now conditionally renders based on deployment mode:
+  - **Non-Docker**: Editable input field for `LOCAL_GAMES_PATHS` with database storage
+  - **Docker**: Read-only display with instructions for configuring via `.env` and `docker-compose.yml`
+- Docker deployments prevent `LOCAL_GAMES_PATHS` from being saved through the UI (paths must be volume-mounted)
+- Settings template updated with deployment-specific instructions and help text
 - **Filter behavior**: Removed "Apply filters globally" checkbox—filters are now always global for simpler UX
 - **Filter application**: Auto-apply with 300ms debounce using event delegation for better reliability
 - **Random page**: Converted from redirect to full HTML page with game grid and filter integration
@@ -41,6 +48,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Recently Updated filter now works for all stores (uses `last_modified` field instead of Epic-specific `game_update_at`)
 
 ### Technical Details
+- Modified `web/routes/settings.py` to detect Docker environment using `/.dockerenv` file
+- Added conditional rendering in `web/templates/settings.html` based on `is_docker` flag
+- POST handler skips `LOCAL_GAMES_PATHS` database save in Docker mode
+- Added `.copilot-docs/` to `.gitignore` for development documentation
 - **New files**:
   - `web/utils/filters.py`: Filter definitions (PREDEFINED_QUERIES, QUERY_DISPLAY_NAMES, QUERY_CATEGORIES, QUERY_DESCRIPTIONS)
   - `web/templates/_filter_bar.html`: Reusable filter bar component

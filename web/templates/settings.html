@@ -1555,6 +1555,8 @@
                     </div>
                     <div class="collapsible-content">
                         <div class="collapsible-content-inner">
+                            {% if is_docker %}
+                                <!-- Docker mode: Read-only display with instructions -->
                             <div class="form-group">
                                 <label>Configured Paths</label>
                                 {% if settings.local_games_paths %}
@@ -1595,6 +1597,42 @@ LOCAL_GAMES_DIR_2=/another/path/to/games</pre>
                                     Place <code>game.json</code> inside any game folder to override the detected name or specify an IGDB ID.
                                 </p>
                             </div>
+                            {% else %}
+                                <!-- Non-Docker mode: Editable input field -->
+                                <div class="form-group">
+                                    <label for="local_games_paths">Game Folder Paths (comma-separated)</label>
+                                    <input
+                                        type="text"
+                                        id="local_games_paths"
+                                        name="local_games_paths"
+                                        value="{{ settings.local_games_paths }}"
+                                        placeholder="D:\Games,E:\More Games"
+                                        style="font-family: monospace;"
+                                    >
+                                    <div class="help-text">
+                                        Enter one or more folder paths separated by commas. Each subfolder will be treated as a game.
+                                        <br>
+                                        Example: <code>D:\Games,E:\Steam Library</code>
+                                    </div>
+                                </div>
+                                <div class="instructions-box">
+                                    <p style="margin-bottom: 8px; color: #e4e4e4;"><strong>How it works:</strong></p>
+                                    <ol>
+                                        <li>Enter your game folder paths above (comma-separated)</li>
+                                        <li>Each subfolder in those paths is treated as a game</li>
+                                        <li>Games are matched to IGDB by folder name for metadata</li>
+                                        <li>Click "Save Settings" then sync via the "Sync Local" button</li>
+                                    </ol>
+                                    <p style="margin-top: 12px; color: #e4e4e4;"><strong>game.json override (optional):</strong></p>
+                                    <pre style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-top: 8px; color: #ccc; font-size: 0.8rem; overflow-x: auto;">{
+  "name": "Actual Game Name",
+  "igdb_id": 12345
+}</pre>
+                                    <p style="margin-top: 10px; color: #888; font-size: 0.85rem;">
+                                        Place <code>game.json</code> inside any game folder to override the detected name or specify an IGDB ID.
+                                    </p>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
