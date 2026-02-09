@@ -1167,7 +1167,7 @@
                     {% for store, count in store_counts.items() %}
                     <div class="store-stat {% if store not in store_icons_header %}no-icon{% endif %}">
                         {% if store in store_icons_header %}
-                        <img src="{{ url_for('static', path='images/' + store_icons_header[store]) }}" alt="{{ store }}" title="{{ store|capitalize }}">
+                        <img src="/static/images/{{ store_icons_header[store] }}" alt="{{ store }}" title="{{ store|capitalize }}">
                         {% else %}
                         <span class="store-name">{{ store }}</span>
                         {% endif %}
