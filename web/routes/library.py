@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from ..dependencies import get_db
-from ..utils.filters import EXCLUDE_HIDDEN_FILTER, EXCLUDE_DUPLICATES_FILTER, PREDEFINED_QUERIES, QUERY_DISPLAY_NAMES, QUERY_CATEGORIES, QUERY_DESCRIPTIONS
+from ..utils.filters import EXCLUDE_HIDDEN_FILTER, EXCLUDE_DUPLICATES_FILTER, PREDEFINED_QUERIES, QUERY_DISPLAY_NAMES, QUERY_CATEGORIES, QUERY_DESCRIPTIONS, build_query_filter_sql
 from ..utils.helpers import parse_json_field, get_store_url, group_games_by_igdb, get_query_filter_counts
 
 router = APIRouter()
@@ -59,9 +59,9 @@ def library(
     
     # Add predefined query filters
     if queries:
-        valid_queries = [q for q in queries if q in PREDEFINED_QUERIES]
-        for query_id in valid_queries:
-            query += f" AND {PREDEFINED_QUERIES[query_id]}"
+        filter_sql = build_query_filter_sql(queries)
+        if filter_sql:
+            query += f" AND {filter_sql}"
 
     if search:
         query += " AND name LIKE ?"
@@ -255,9 +255,9 @@ def random_game(
         query += " AND (" + " OR ".join(genre_conditions) + ")"
     
     if queries:
-        valid_queries = [q for q in queries if q in PREDEFINED_QUERIES]
-        for query_id in valid_queries:
-            query += f" AND {PREDEFINED_QUERIES[query_id]}"
+        filter_sql = build_query_filter_sql(queries)
+        if filter_sql:
+            query += f" AND {filter_sql}"
 
     query += f" ORDER BY RANDOM() LIMIT {count}"
     cursor.execute(query, params)

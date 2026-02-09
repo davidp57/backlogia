@@ -13,6 +13,7 @@ from pydantic import BaseModel
 
 from ..dependencies import get_db
 from ..utils.helpers import parse_json_field, group_games_by_igdb
+from ..utils.filters import build_query_filter_sql
 
 router = APIRouter()
 templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
@@ -91,7 +92,7 @@ def collection_detail(
     conn: sqlite3.Connection = Depends(get_db)
 ):
     """View a single collection with its games (with optional filters)."""
-    from ..utils.filters import PREDEFINED_QUERIES, QUERY_DISPLAY_NAMES, QUERY_CATEGORIES, QUERY_DESCRIPTIONS
+    from ..utils.filters import QUERY_DISPLAY_NAMES, QUERY_CATEGORIES, QUERY_DESCRIPTIONS
     
     cursor = conn.cursor()
 
@@ -151,9 +152,9 @@ def collection_detail(
         query += " AND (" + " OR ".join(genre_conditions) + ")"
     
     if queries:
-        valid_queries = [q for q in queries if q in PREDEFINED_QUERIES]
-        for query_id in valid_queries:
-            query += f" AND {PREDEFINED_QUERIES[query_id].replace('playtime_hours', 'g.playtime_hours').replace('total_rating', 'g.total_rating').replace('added_at', 'g.added_at').replace('release_date', 'g.release_date').replace('nsfw', 'g.nsfw').replace('aggregated_rating', 'g.aggregated_rating').replace('igdb_rating', 'g.igdb_rating').replace('igdb_rating_count', 'g.igdb_rating_count').replace('last_modified', 'g.last_modified')}"
+        filter_sql = build_query_filter_sql(queries, table_prefix="g.")
+        if filter_sql:
+            query += f" AND {filter_sql}"
 
     query += " ORDER BY cg.added_at DESC"
     cursor.execute(query, params)

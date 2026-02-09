@@ -126,6 +126,30 @@ function clearGenreFilter() {
     window.location.href = buildUrl(stores, [], queries, search, sort, order);
 }
 
+function getSelectedQueries() {
+    const checkboxes = document.querySelectorAll('#queries-dropdown input[type="checkbox"]:checked');
+    return Array.from(checkboxes).map(cb => cb.value);
+}
+
+function applyQueryFilter() {
+    const stores = getSelectedStores();
+    const genres = getSelectedGenres();
+    const queries = getSelectedQueries();
+    const search = window.currentSearch || '';
+    const sort = window.currentSort || 'name';
+    const order = window.currentOrder || 'asc';
+    window.location.href = buildUrl(stores, genres, queries, search, sort, order);
+}
+
+function clearQueryFilter() {
+    const stores = getSelectedStores();
+    const genres = getSelectedGenres();
+    const search = window.currentSearch || '';
+    const sort = window.currentSort || 'name';
+    const order = window.currentOrder || 'asc';
+    window.location.href = buildUrl(stores, genres, [], search, sort, order);
+}
+
 function filterGenreOptions() {
     const searchInput = document.getElementById('genre-search-input');
     const searchTerm = searchInput.value.toLowerCase();

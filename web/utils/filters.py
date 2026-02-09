@@ -96,3 +96,76 @@ QUERY_DESCRIPTIONS = {
     "nsfw": "Adult content games",
     "safe": "Non-adult content games"
 }
+
+
+def build_query_filter_sql(query_ids, table_prefix=""):
+    """
+    Build SQL filter condition from query IDs with proper OR/AND logic.
+    
+    Filters within the same category are combined with OR.
+    Filters from different categories are combined with AND.
+    
+    Args:
+        query_ids: List of query filter IDs (e.g., ['played', 'started', 'highly-rated'])
+        table_prefix: Optional table prefix for column names (e.g., 'g.' for joins)
+    
+    Returns:
+        SQL condition string, or empty string if no valid queries
+    
+    Example:
+        ['played', 'started', 'highly-rated'] →
+        "((playtime_hours > 0 OR (playtime_hours > 0 AND playtime_hours < 5)) AND (total_rating >= 90))"
+    """
+    if not query_ids:
+        return ""
+    
+    # Filter valid queries
+    valid_queries = [q for q in query_ids if q in PREDEFINED_QUERIES]
+    if not valid_queries:
+        return ""
+    
+    # Group queries by category
+    category_groups = {}
+    for query_id in valid_queries:
+        # Find which category this query belongs to
+        category_found = None
+        for category, filter_ids in QUERY_CATEGORIES.items():
+            if query_id in filter_ids:
+                category_found = category
+                break
+        
+        if category_found:
+            if category_found not in category_groups:
+                category_groups[category_found] = []
+            category_groups[category_found].append(query_id)
+    
+    # Build SQL conditions
+    category_conditions = []
+    for category, query_list in category_groups.items():
+        if len(query_list) == 1:
+            # Single query in category
+            sql = PREDEFINED_QUERIES[query_list[0]]
+            if table_prefix:
+                # Replace column names with prefixed versions
+                for col in ['playtime_hours', 'total_rating', 'added_at', 'release_date', 
+                           'nsfw', 'aggregated_rating', 'igdb_rating', 'igdb_rating_count', 'last_modified']:
+                    sql = sql.replace(col, f'{table_prefix}{col}')
+            category_conditions.append(f"({sql})")
+        else:
+            # Multiple queries in same category - combine with OR
+            query_sqls = []
+            for query_id in query_list:
+                sql = PREDEFINED_QUERIES[query_id]
+                if table_prefix:
+                    # Replace column names with prefixed versions
+                    for col in ['playtime_hours', 'total_rating', 'added_at', 'release_date', 
+                               'nsfw', 'aggregated_rating', 'igdb_rating', 'igdb_rating_count', 'last_modified']:
+                        sql = sql.replace(col, f'{table_prefix}{col}')
+                query_sqls.append(f"({sql})")
+            category_conditions.append(f"({' OR '.join(query_sqls)})")
+    
+    # Combine categories with AND
+    if len(category_conditions) == 1:
+        return category_conditions[0]
+    else:
+        return "(" + " AND ".join(category_conditions) + ")"

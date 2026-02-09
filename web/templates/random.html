@@ -827,19 +827,15 @@
     <script src="/static/js/filters.js"></script>
     <script>
         // Initialize current filter state for filters.js
-        window.currentStores = [{% for store in current_stores %}'{{ store }}'{% if not loop.last %}, {% endif %}{% endfor %}];
-        window.currentGenres = [{% for genre in current_genres %}'{{ genre }}'{% if not loop.last %}, {% endif %}{% endfor %}];
-        window.currentQueries = [{% for query in current_queries %}'{{ query }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+        window.currentStores = {{ current_stores|tojson }};
+        window.currentGenres = {{ current_genres|tojson }};
+        window.currentQueries = {{ current_queries|tojson }};
         window.currentSearch = '';
         window.currentSort = '';
         window.currentOrder = '';
         
         // Query categories for exclusive selection
-        window.queryCategories = {
-            {% for category, filter_ids in query_categories.items() %}
-            '{{ category }}': [{% for filter_id in filter_ids %}'{{ filter_id }}'{% if not loop.last %}, {% endif %}{% endfor %}]{% if not loop.last %},{% endif %}
-            {% endfor %}
-        };
+        window.queryCategories = {{ query_categories|tojson }};
     </script>
 </body>
 </html>

@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from ..dependencies import get_db
-from ..utils.filters import EXCLUDE_HIDDEN_FILTER
+from ..utils.filters import EXCLUDE_HIDDEN_FILTER, build_query_filter_sql
 from ..utils.helpers import parse_json_field
 
 router = APIRouter()
@@ -97,7 +97,7 @@ def discover(
         POPULARITY_TYPE_IGDB_PLAYING, POPULARITY_TYPE_IGDB_PLAYED,
         POPULARITY_TYPE_STEAM_PEAK_24H, POPULARITY_TYPE_STEAM_POSITIVE_REVIEWS
     )
-    from ..utils.filters import PREDEFINED_QUERIES, QUERY_DISPLAY_NAMES, QUERY_CATEGORIES, QUERY_DESCRIPTIONS
+    from ..utils.filters import QUERY_DISPLAY_NAMES, QUERY_CATEGORIES, QUERY_DESCRIPTIONS
 
     cursor = conn.cursor()
     
@@ -147,9 +147,9 @@ def discover(
         query += " AND (" + " OR ".join(genre_conditions) + ")"
     
     if queries:
-        valid_queries = [q for q in queries if q in PREDEFINED_QUERIES]
-        for query_id in valid_queries:
-            query += f" AND {PREDEFINED_QUERIES[query_id]}"
+        filter_sql = build_query_filter_sql(queries)
+        if filter_sql:
+            query += f" AND {filter_sql}"
 
     query += " ORDER BY total_rating DESC NULLS LAST"
     cursor.execute(query, params)

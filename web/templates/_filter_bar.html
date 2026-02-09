@@ -88,8 +88,9 @@
                 <div class="dropdown-item" title="{{ query_descriptions[filter_id] }}">
                     <input type="checkbox" 
                            id="query-{{ filter_id }}" 
-                           {% if filter_id in current_queries %}checked{% endif %}
-                           onchange="toggleQueryFilterFromDropdown('{{ filter_id }}')">
+                           name="queries"
+                           value="{{ filter_id }}"
+                           {% if filter_id in current_queries %}checked{% endif %}>
                     <label for="query-{{ filter_id }}">
                         {{ query_display_names[filter_id] }}
                         {% if query_filter_counts and filter_id in query_filter_counts and query_filter_counts[filter_id] > 0 %}
@@ -100,6 +101,10 @@
                 {% endfor %}
             </div>
             {% endfor %}
+            <div class="store-dropdown-actions">
+                <button type="button" class="clear-btn" onclick="clearQueryFilter()">Clear</button>
+                <button type="button" class="apply-btn" onclick="applyQueryFilter()">Apply</button>
+            </div>
         </div>
     </div>
 
