@@ -373,6 +373,13 @@ def discover(
         elif category == 'random_picks':
             random_picks.append(game_dict)
 
+    # Calculate query_filter_counts like in library.py
+    from ..utils.helpers import get_query_filter_counts
+    query_filter_counts = {}
+    if featured_games:
+        # Use the already defined cursor
+        query_filter_counts = get_query_filter_counts(cursor)
+
     return templates.TemplateResponse(
         request,
         "discover.html",
@@ -400,7 +407,7 @@ def discover(
             "query_display_names": QUERY_DISPLAY_NAMES,
             "query_categories": QUERY_CATEGORIES,
             "query_descriptions": QUERY_DESCRIPTIONS,
-            "query_filter_counts": {},  # Empty for discover page (performance)
+            "query_filter_counts": query_filter_counts,
             "show_search": False,  # No search on discover page
             "show_sort": False,  # No sort on discover page
             "show_actions": True,

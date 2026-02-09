@@ -163,6 +163,12 @@ def collection_detail(
     # Group games by IGDB ID (like the library page)
     grouped_games = group_games_by_igdb(games)
 
+    # Calculate query_filter_counts like in library.py
+    from ..utils.helpers import get_query_filter_counts
+    query_filter_counts = {}
+    if grouped_games:
+        query_filter_counts = get_query_filter_counts(cursor)
+
     return templates.TemplateResponse(
         request,
         "collection_detail.html",
@@ -179,7 +185,7 @@ def collection_detail(
             "query_display_names": QUERY_DISPLAY_NAMES,
             "query_categories": QUERY_CATEGORIES,
             "query_descriptions": QUERY_DESCRIPTIONS,
-            "query_filter_counts": {},  # Empty for collection detail (performance)
+            "query_filter_counts": query_filter_counts,
             "show_search": False,  # No search on collection detail
             "show_sort": False,  # No sort on collection detail
             "show_actions": True,

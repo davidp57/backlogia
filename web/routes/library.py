@@ -253,13 +253,15 @@ def random_game(
             genre_conditions.append("LOWER(genres) LIKE ?")
             params.append(f'%"{genre.lower()}"%')
         query += " AND (" + " OR ".join(genre_conditions) + ")"
-    
+
     if queries:
         filter_sql = build_query_filter_sql(queries)
         if filter_sql:
             query += f" AND {filter_sql}"
 
-    query += f" ORDER BY RANDOM() LIMIT {count}"
+    # Draw more games than needed, then group and truncate to ensure enough unique groups
+    overdraw = max(50, count * 4)
+    query += f" ORDER BY RANDOM() LIMIT {overdraw}"
     cursor.execute(query, params)
     games = cursor.fetchall()
 
@@ -292,11 +294,21 @@ def random_game(
     available_stores = list(store_counts.keys())
     available_genres = list(genre_counts.keys())
 
+    # Group games by IGDB (like library) et tronquer à 'count' pour l'affichage
+    grouped_games = group_games_by_igdb(games)
+    grouped_games = grouped_games[:count]
+
+    # Calculate query_filter_counts like in library.py
+    query_filter_counts = {}
+    if grouped_games:
+        query_filter_counts = get_query_filter_counts(cursor)
+
     return templates.TemplateResponse(
         request=request,
         name="random.html",
         context={
-            "games": games,
+            "grouped_games": grouped_games,
+            "count": count,
             "store_counts": store_counts,
             "genre_counts": genre_counts,
             "available_stores": available_stores,
@@ -315,7 +327,7 @@ def random_game(
             "query_display_names": QUERY_DISPLAY_NAMES,
             "query_descriptions": QUERY_DESCRIPTIONS,
             "query_categories": QUERY_CATEGORIES,
-            "query_filter_counts": {},  # Not calculated for random page (performance)
+            "query_filter_counts": query_filter_counts,
             "parse_json": parse_json_field
         }
     )
