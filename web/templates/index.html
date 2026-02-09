@@ -740,6 +740,93 @@
             align-items: center;
         }
 
+        /* Toast Notifications */
+        .toast {
+            background: rgba(26, 26, 46, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 16px 20px;
+            min-width: 300px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideInRight 0.3s ease-out;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .toast:hover {
+            opacity: 0.9;
+        }
+
+        .toast.success {
+            border-left: 4px solid #10b981;
+        }
+
+        .toast.error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .toast.info {
+            border-left: 4px solid #3b82f6;
+        }
+
+        .toast-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-message {
+            color: #e4e4e4;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .toast-close {
+            color: #888;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            cursor: pointer;
+            padding: 0 4px;
+            transition: color 0.2s;
+        }
+
+        .toast-close:hover {
+            color: #e4e4e4;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .toast.hiding {
+            animation: slideOutRight 0.3s ease-in forwards;
+        }
+
         .no-games {
             text-align: center;
             padding: 60px;
@@ -1347,6 +1434,9 @@
     </style>
 </head>
 <body>
+    <!-- Toast Container -->
+    <div id="toast-container" style="position: fixed; top: 80px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 400px;"></div>
+
     <nav class="top-nav">
         <a href="/" class="nav-brand">Backlogia</a>
         <div class="nav-links">
@@ -1654,6 +1744,53 @@
         // Note: All filter-related functions (store dropdown, genre dropdown, query filters, etc.) 
         // are now in /static/js/filters.js
 
+        // Toast Notifications
+        function showToast(message, type = 'info', duration = 3000) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            const icons = {
+                success: '✓',
+                error: '✗',
+                info: 'ℹ'
+            };
+
+            toast.innerHTML = `
+                <div class="toast-icon">${icons[type] || icons.info}</div>
+                <div class="toast-content">
+                    <div class="toast-message">${message}</div>
+                </div>
+                <div class="toast-close" onclick="closeToast(this.parentElement)">×</div>
+            `;
+
+            container.appendChild(toast);
+
+            // Auto-close after duration
+            if (duration > 0) {
+                setTimeout(() => closeToast(toast), duration);
+            }
+
+            // Click to close
+            toast.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('toast-close')) {
+                    closeToast(toast);
+                }
+            });
+
+            return toast;
+        }
+
+        function closeToast(toast) {
+            if (!toast || !toast.parentElement) return;
+            toast.classList.add('hiding');
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.parentElement.removeChild(toast);
+                }
+            }, 300);
+        }
+
         // Multi-select functionality
         let selectMode = false;
         let selectedGames = new Set();
@@ -1764,15 +1901,17 @@
                     clearSelection();
                     toggleSelectMode();
 
-                    // Update stats after a short delay
+                    // Show success and reload
+                    const actionText = action === 'hide' ? 'hidden' : action === 'nsfw' ? 'marked as NSFW' : action;
+                    showToast(`${data.updated} games ${actionText}`, 'success');
                     setTimeout(() => {
                         location.reload();
                     }, 500);
                 } else {
-                    alert('Error: ' + (data.error || 'Unknown error'));
+                    showToast('Error: ' + (data.error || 'Unknown error'), 'error');
                 }
             } catch (error) {
-                alert('Network error: ' + error.message);
+                showToast('Network error: ' + error.message, 'error');
             } finally {
                 actionBtn.disabled = false;
                 actionBtn.textContent = originalText;
@@ -1817,15 +1956,16 @@
                     clearSelection();
                     toggleSelectMode();
 
-                    // Update stats after a short delay
+                    // Show success and reload
+                    showToast(`${data.deleted} games deleted from database`, 'success');
                     setTimeout(() => {
                         location.reload();
                     }, 500);
                 } else {
-                    alert('Error: ' + (data.error || 'Unknown error'));
+                    showToast('Error: ' + (data.error || 'Unknown error'), 'error');
                 }
             } catch (error) {
-                alert('Network error: ' + error.message);
+                showToast('Network error: ' + error.message, 'error');
             } finally {
                 actionBtn.disabled = false;
                 actionBtn.textContent = originalText;
@@ -1892,15 +2032,15 @@
 
                     // Show success message
                     const priorityText = priority === null ? 'removed' : priority;
-                    alert(`Priority ${priorityText} set for ${data.updated} games`);
+                    showToast(`Priority ${priorityText} set for ${data.updated} games`, 'success');
 
                     // Reload to show changes
                     location.reload();
                 } else {
-                    alert('Error: ' + (data.error || 'Unknown error'));
+                    showToast('Error: ' + (data.error || 'Unknown error'), 'error');
                 }
             } catch (error) {
-                alert('Network error: ' + error.message);
+                showToast('Network error: ' + error.message, 'error');
             }
         }
 
@@ -1929,15 +2069,15 @@
 
                     // Show success message
                     const ratingText = rating === 0 ? 'removed' : `${rating}/10`;
-                    alert(`Personal rating ${ratingText} set for ${data.updated} games`);
+                    showToast(`Personal rating ${ratingText} set for ${data.updated} games`, 'success');
 
                     // Reload to show changes
                     location.reload();
                 } else {
-                    alert('Error: ' + (data.error || 'Unknown error'));
+                    showToast('Error: ' + (data.error || 'Unknown error'), 'error');
                 }
             } catch (error) {
-                alert('Network error: ' + error.message);
+                showToast('Network error: ' + error.message, 'error');
             }
         }
 
@@ -1999,12 +2139,12 @@
 
                 // Show success message
                 const tagText = tag === null ? 'removed' : tag;
-                alert(`Playtime tag "${tagText}" set for ${updatedCount} games`);
+                showToast(`Playtime tag "${tagText}" set for ${updatedCount} games`, 'success');
 
                 // Reload to show changes
                 location.reload();
             } catch (error) {
-                alert('Network error: ' + error.message);
+                showToast('Network error: ' + error.message, 'error');
             }
         }
 
