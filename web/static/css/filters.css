@@ -430,4 +430,36 @@
     .dropdown-btn {
         width: 100%;
     }
+    
+    /* Bottom sheet behavior for mobile dropdowns */
+    .dropdown-content,
+    .store-dropdown-menu,
+    .genre-dropdown-menu {
+        position: fixed;
+        top: auto;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 0;
+        max-width: 100%;
+        width: calc(100vw - 32px);
+        max-height: 60vh;
+        border-radius: 16px 16px 0 0;
+    }
+    
+    /* Keep category headers sticky during scroll */
+    .category-header {
+        position: sticky;
+        top: 0;
+        background: rgba(13, 13, 26, 0.98);
+        z-index: 1;
+    }
+    
+    /* Adjust close animation for bottom sheet */
+    .store-dropdown:not(.open) .store-dropdown-menu {
+        transform: translateX(-50%) translateY(100%);
+    }
+    
+    .store-dropdown.open .store-dropdown-menu {
+        transform: translateX(-50%) translateY(0);
+    }
 }
