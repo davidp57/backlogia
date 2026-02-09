@@ -687,21 +687,24 @@ def set_manual_playtime_tag(game_id: int, body: ManualPlaytimeTagRequest, conn: 
         )
     """, (game_id,))
 
-    # Add the selected tag as manual (auto=0)
-    cursor.execute("SELECT id FROM labels WHERE name = ? AND system = 1", (label_name,))
-    label = cursor.fetchone()
+    # If label_name is None/null, just remove tags without adding a new one
+    if label_name:
+        # Add the selected tag as manual (auto=0)
+        cursor.execute("SELECT id FROM labels WHERE name = ? AND system = 1", (label_name,))
+        label = cursor.fetchone()
 
-    if not label:
-        raise HTTPException(status_code=404, detail=f"System label '{label_name}' not found")
+        if not label:
+            raise HTTPException(status_code=404, detail=f"System label '{label_name}' not found")
 
-    cursor.execute("""
-        INSERT INTO game_labels (label_id, game_id, auto)
-        VALUES (?, ?, 0)
-    """, (label[0], game_id))
+        cursor.execute("""
+            INSERT INTO game_labels (label_id, game_id, auto)
+            VALUES (?, ?, 0)
+        """, (label[0], game_id))
 
     conn.commit()
 
-    return {"success": True, "message": f"Tag '{label_name}' applied"}
+    message = f"Tag '{label_name}' applied" if label_name else "Playtime tag removed"
+    return {"success": True, "message": message}
 
 
 @router.post("/api/labels/update-system-tags")

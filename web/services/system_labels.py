@@ -2,31 +2,31 @@
 
 SYSTEM_LABELS = {
     "never-launched": {
-        "name": "Jamais lancé",
+        "name": "Never Launched",
         "icon": "🎮",
         "color": "#64748b",
         "condition": lambda game: game["playtime_hours"] is None or game["playtime_hours"] == 0
     },
     "just-tried": {
-        "name": "Juste essayé",
+        "name": "Just Tried",
         "icon": "👀",
         "color": "#f59e0b",
         "condition": lambda game: game["playtime_hours"] is not None and 0 < game["playtime_hours"] < 2
     },
     "played": {
-        "name": "Joué",
+        "name": "Played",
         "icon": "🎯",
         "color": "#3b82f6",
         "condition": lambda game: game["playtime_hours"] is not None and 2 <= game["playtime_hours"] < 10
     },
     "well-played": {
-        "name": "Bien joué",
+        "name": "Well Played",
         "icon": "⭐",
         "color": "#8b5cf6",
         "condition": lambda game: game["playtime_hours"] is not None and 10 <= game["playtime_hours"] < 50
     },
     "heavily-played": {
-        "name": "Beaucoup joué",
+        "name": "Heavily Played",
         "icon": "🏆",
         "color": "#10b981",
         "condition": lambda game: game["playtime_hours"] is not None and game["playtime_hours"] >= 50
@@ -35,11 +35,30 @@ SYSTEM_LABELS = {
 
 
 def ensure_system_labels(conn):
-    """Create system labels if they don't exist."""
+    """Create or update system labels to match current definitions."""
     cursor = conn.cursor()
 
+    # Map of old French names to new English names for migration
+    name_migrations = {
+        "Jamais lancé": "Never Launched",
+        "Juste essayé": "Just Tried",
+        "Joué": "Played",
+        "Bien joué": "Well Played",
+        "Beaucoup joué": "Heavily Played"
+    }
+
+    # First, migrate old French names to English
+    for old_name, new_name in name_migrations.items():
+        cursor.execute("""
+            UPDATE labels
+            SET name = ?
+            WHERE name = ? AND system = 1 AND type = 'system_tag'
+        """, (new_name, old_name))
+        if cursor.rowcount > 0:
+            print(f"[OK] Migrated system label: {old_name} -> {new_name}")
+
+    # Then create any missing labels
     for label_id, data in SYSTEM_LABELS.items():
-        # Check if label already exists
         cursor.execute("""
             SELECT id FROM labels WHERE name = ? AND system = 1
         """, (data["name"],))
