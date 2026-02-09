@@ -102,6 +102,173 @@
             box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
         }
 
+        /* Quick Action Buttons */
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn-compact {
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #e4e4e4;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            position: relative;
+        }
+
+        .action-btn-compact:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .action-btn-compact.priority {
+            border-color: rgba(251, 191, 36, 0.3);
+        }
+
+        .action-btn-compact.rating {
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+
+        .action-btn-compact.playtime {
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        /* Dropdown Menu */
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            background: rgba(26, 26, 46, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 8px;
+            min-width: 200px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: none;
+        }
+
+        .dropdown-menu.active {
+            display: block;
+        }
+
+        .dropdown-item {
+            width: 100%;
+            padding: 10px 15px;
+            background: none;
+            border: none;
+            color: #e4e4e4;
+            text-align: left;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background 0.15s;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Toast Notifications */
+        .toast {
+            background: rgba(26, 26, 46, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 16px 20px;
+            min-width: 300px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideInRight 0.3s ease-out;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .toast:hover {
+            opacity: 0.9;
+        }
+
+        .toast.success {
+            border-left: 4px solid #10b981;
+        }
+
+        .toast.error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .toast.info {
+            border-left: 4px solid #3b82f6;
+        }
+
+        .toast-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-message {
+            color: #e4e4e4;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .toast-close {
+            color: #888;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            cursor: pointer;
+            padding: 0 4px;
+            transition: color 0.2s;
+        }
+
+        .toast-close:hover {
+            color: #e4e4e4;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .toast.hiding {
+            animation: slideOutRight 0.3s ease-in forwards;
+        }
+
         /* Collection Modal */
         .collection-modal-overlay {
             display: none;
@@ -1170,6 +1337,9 @@
     </style>
 </head>
 <body>
+    <!-- Toast Container -->
+    <div id="toast-container" style="position: fixed; top: 80px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 400px;"></div>
+
     <nav class="top-nav">
         <a href="/" class="nav-brand">Backlogia</a>
         <div class="nav-links">
@@ -1210,9 +1380,50 @@
                     {% if total_playtime %}
                     <span class="meta-item">{{ total_playtime|round(1) }} hours played</span>
                     {% endif %}
-                    <button class="add-to-collection-btn" onclick="openCollectionModal()">
-                        + Add to Collection
-                    </button>
+                    <div class="quick-actions">
+                        <button class="add-to-collection-btn" onclick="openCollectionModal()">
+                            + Add to Collection
+                        </button>
+
+                        <button class="action-btn-compact priority" onclick="togglePriorityMenu(event)">
+                            🎯 Priority
+                            <div id="priority-dropdown" class="dropdown-menu">
+                                <button class="dropdown-item" onclick="setPriority(event, 'high')">🔴 High</button>
+                                <button class="dropdown-item" onclick="setPriority(event, 'medium')">🟡 Medium</button>
+                                <button class="dropdown-item" onclick="setPriority(event, 'low')">🟢 Low</button>
+                                <button class="dropdown-item" onclick="setPriority(event, null)">⚪ None</button>
+                            </div>
+                        </button>
+
+                        <button class="action-btn-compact rating" onclick="toggleRatingMenu(event)">
+                            ⭐ Rating
+                            <div id="rating-dropdown" class="dropdown-menu">
+                                <button class="dropdown-item" onclick="setRating(event, 10)">⭐⭐⭐⭐⭐ (10)</button>
+                                <button class="dropdown-item" onclick="setRating(event, 9)">⭐⭐⭐⭐⭐ (9)</button>
+                                <button class="dropdown-item" onclick="setRating(event, 8)">⭐⭐⭐⭐ (8)</button>
+                                <button class="dropdown-item" onclick="setRating(event, 7)">⭐⭐⭐⭐ (7)</button>
+                                <button class="dropdown-item" onclick="setRating(event, 6)">⭐⭐⭐ (6)</button>
+                                <button class="dropdown-item" onclick="setRating(event, 5)">⭐⭐⭐ (5)</button>
+                                <button class="dropdown-item" onclick="setRating(event, 4)">⭐⭐ (4)</button>
+                                <button class="dropdown-item" onclick="setRating(event, 3)">⭐⭐ (3)</button>
+                                <button class="dropdown-item" onclick="setRating(event, 2)">⭐ (2)</button>
+                                <button class="dropdown-item" onclick="setRating(event, 1)">⭐ (1)</button>
+                                <button class="dropdown-item" onclick="setRating(event, 0)">❌ Remove</button>
+                            </div>
+                        </button>
+
+                        <button class="action-btn-compact playtime" onclick="togglePlaytimeMenu(event)">
+                            🎮 Playtime
+                            <div id="playtime-dropdown" class="dropdown-menu">
+                                <button class="dropdown-item" onclick="setPlaytimeTag(event, 'Never Launched')">🎮 Never Launched</button>
+                                <button class="dropdown-item" onclick="setPlaytimeTag(event, 'Just Tried')">👀 Just Tried</button>
+                                <button class="dropdown-item" onclick="setPlaytimeTag(event, 'Played')">🎯 Played</button>
+                                <button class="dropdown-item" onclick="setPlaytimeTag(event, 'Well Played')">⭐ Well Played</button>
+                                <button class="dropdown-item" onclick="setPlaytimeTag(event, 'Heavily Played')">🏆 Heavily Played</button>
+                                <button class="dropdown-item" onclick="setPlaytimeTag(event, null)">⚪ Remove</button>
+                            </div>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1671,6 +1882,149 @@
     </div>
 
     <script>
+        // Game ID for actions
+        const gameId = {{ game.id }};
+
+        // Toast Notifications
+        function showToast(message, type = 'info', duration = 3000) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            const icons = {
+                success: '✓',
+                error: '✗',
+                info: 'ℹ'
+            };
+
+            toast.innerHTML = `
+                <div class="toast-icon">${icons[type] || icons.info}</div>
+                <div class="toast-content">
+                    <div class="toast-message">${message}</div>
+                </div>
+                <div class="toast-close" onclick="closeToast(this.parentElement)">×</div>
+            `;
+
+            container.appendChild(toast);
+
+            if (duration > 0) {
+                setTimeout(() => closeToast(toast), duration);
+            }
+
+            toast.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('toast-close')) {
+                    closeToast(toast);
+                }
+            });
+
+            return toast;
+        }
+
+        function closeToast(toast) {
+            if (!toast || !toast.parentElement) return;
+            toast.classList.add('hiding');
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.parentElement.removeChild(toast);
+                }
+            }, 300);
+        }
+
+        // Quick Actions
+        function togglePriorityMenu(e) {
+            e.stopPropagation();
+            const dropdown = document.getElementById('priority-dropdown');
+            dropdown.classList.toggle('active');
+            document.getElementById('rating-dropdown').classList.remove('active');
+            document.getElementById('playtime-dropdown').classList.remove('active');
+        }
+
+        function toggleRatingMenu(e) {
+            e.stopPropagation();
+            const dropdown = document.getElementById('rating-dropdown');
+            dropdown.classList.toggle('active');
+            document.getElementById('priority-dropdown').classList.remove('active');
+            document.getElementById('playtime-dropdown').classList.remove('active');
+        }
+
+        function togglePlaytimeMenu(e) {
+            e.stopPropagation();
+            const dropdown = document.getElementById('playtime-dropdown');
+            dropdown.classList.toggle('active');
+            document.getElementById('priority-dropdown').classList.remove('active');
+            document.getElementById('rating-dropdown').classList.remove('active');
+        }
+
+        async function setPriority(e, priority) {
+            e.stopPropagation();
+            try {
+                const response = await fetch(`/api/game/${gameId}/priority`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ priority })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showToast(`Priority ${priority || 'removed'}`, 'success');
+                    document.getElementById('priority-dropdown').classList.remove('active');
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    showToast('Error: ' + (data.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showToast('Network error: ' + error.message, 'error');
+            }
+        }
+
+        async function setRating(e, rating) {
+            e.stopPropagation();
+            try {
+                const response = await fetch(`/api/game/${gameId}/personal-rating`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rating })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showToast(`Rating ${rating > 0 ? rating + '/10' : 'removed'}`, 'success');
+                    document.getElementById('rating-dropdown').classList.remove('active');
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    showToast('Error: ' + (data.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showToast('Network error: ' + error.message, 'error');
+            }
+        }
+
+        async function setPlaytimeTag(e, tag) {
+            e.stopPropagation();
+            try {
+                const response = await fetch(`/api/game/${gameId}/manual-playtime-tag`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ label_name: tag })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showToast(`Playtime tag ${tag ? '"' + tag + '"' : 'removed'}`, 'success');
+                    document.getElementById('playtime-dropdown').classList.remove('active');
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    showToast('Error: ' + (data.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showToast('Network error: ' + error.message, 'error');
+            }
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', () => {
+            document.getElementById('priority-dropdown')?.classList.remove('active');
+            document.getElementById('rating-dropdown')?.classList.remove('active');
+            document.getElementById('playtime-dropdown')?.classList.remove('active');
+        });
+
         // Screenshots data
         const screenshots = [
             {% for url in parse_json(game.igdb_screenshots) or [] %}
