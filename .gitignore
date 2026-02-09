@@ -1,5 +1,8 @@
 game_library.db
 
+# Copilot documentation
+.copilot-docs/
+
 # Docker
 data/
 .empty/
