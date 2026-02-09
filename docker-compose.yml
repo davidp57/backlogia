@@ -7,9 +7,10 @@ services:
     networks:
       - backlogia-net
     volumes:
-      - ./data:/data
-      - ./data/legendary:/root/.config/legendary
-      - ./data/nile:/root/.config/nile
+      - ${BACKLOGIA_DATA_DIR:-.}/data:/data
+      - ${BACKLOGIA_DATA_DIR:-.}/data/legendary:/root/.config/legendary
+      - ${BACKLOGIA_DATA_DIR:-.}/data/nile:/root/.config/nile
+      - ${BACKLOGIA_DATA_DIR:-.}/logs}:/app/logs
       - ${GOG_DB_DIR:-./.empty}:/gog:ro
       # Local game folders (up to 5 by default, add more if needed)
       - ${LOCAL_GAMES_DIR_1:-./.empty}:/local-games-1:ro
@@ -54,8 +55,8 @@ services:
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./data/caddy_data:/data
-      - ./data/caddy_config:/config
+      - ${BACKLOGIA_DATA_DIR:-./data}/caddy_data:/data
+      - ${BACKLOGIA_DATA_DIR:-./data}/caddy_config:/config
     networks:
       - backlogia-net
     restart: unless-stopped
