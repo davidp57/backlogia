@@ -1033,6 +1033,16 @@
             background: rgba(245, 158, 11, 0.3);
         }
 
+        .action-btn.playtime {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .action-btn.playtime:hover {
+            background: rgba(59, 130, 246, 0.3);
+        }
+
         /* Dropdown Menus */
         .dropdown-menu {
             position: fixed;
@@ -1455,6 +1465,9 @@
                 <button class="action-btn rating" onclick="toggleRatingMenu()">
                     Personal Rating
                 </button>
+                <button class="action-btn playtime" onclick="togglePlaytimeMenu()">
+                    Playtime Tag
+                </button>
                 <button class="action-btn hide" onclick="bulkAction('hide')">
                     Hide Selected
                 </button>
@@ -1499,6 +1512,28 @@
             <button class="dropdown-item" onclick="bulkSetPersonalRating(2)">⭐ (2)</button>
             <button class="dropdown-item" onclick="bulkSetPersonalRating(1)">⭐ (1)</button>
             <button class="dropdown-item" onclick="bulkSetPersonalRating(0)">❌ Remove Rating</button>
+        </div>
+
+        <!-- Playtime Tag Dropdown -->
+        <div id="playtime-dropdown" class="dropdown-menu" style="display: none;">
+            <button class="dropdown-item" onclick="bulkSetPlaytimeTag('never-launched')">
+                🎮 Never Launched
+            </button>
+            <button class="dropdown-item" onclick="bulkSetPlaytimeTag('just-tried')">
+                👀 Just Tried
+            </button>
+            <button class="dropdown-item" onclick="bulkSetPlaytimeTag('played')">
+                🎯 Played
+            </button>
+            <button class="dropdown-item" onclick="bulkSetPlaytimeTag('well-played')">
+                ⭐ Well Played
+            </button>
+            <button class="dropdown-item" onclick="bulkSetPlaytimeTag('heavily-played')">
+                🏆 Heavily Played
+            </button>
+            <button class="dropdown-item" onclick="bulkSetPlaytimeTag(null)">
+                ⚪ Remove Tag
+            </button>
         </div>
 
         <!-- Collection Modal -->
@@ -1906,6 +1941,54 @@
             }
         }
 
+        function togglePlaytimeMenu() {
+            const dropdown = document.getElementById('playtime-dropdown');
+            const btn = event.target;
+            const rect = btn.getBoundingClientRect();
+
+            dropdown.style.left = rect.left + 'px';
+            dropdown.style.top = (rect.top - dropdown.offsetHeight - 10) + 'px';
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function bulkSetPlaytimeTag(tag) {
+            if (selectedGames.size === 0) return;
+
+            const gameIds = Array.from(selectedGames).map(id => parseInt(id));
+
+            try {
+                // Call the endpoint for each game (no bulk endpoint exists yet)
+                let updatedCount = 0;
+                for (const gameId of gameIds) {
+                    const response = await fetch(`/api/game/${gameId}/manual-playtime-tag`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            tag_name: tag
+                        })
+                    });
+
+                    if (response.ok) {
+                        updatedCount++;
+                    }
+                }
+
+                // Close dropdown
+                document.getElementById('playtime-dropdown').style.display = 'none';
+
+                // Show success message
+                const tagText = tag === null ? 'removed' : tag;
+                alert(`Playtime tag "${tagText}" set for ${updatedCount} games`);
+
+                // Reload to show changes
+                location.reload();
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        }
+
         // Close dropdowns when clicking outside
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.action-btn.priority') && !e.target.closest('#priority-dropdown')) {
@@ -1913,6 +1996,9 @@
             }
             if (!e.target.closest('.action-btn.rating') && !e.target.closest('#rating-dropdown')) {
                 document.getElementById('rating-dropdown').style.display = 'none';
+            }
+            if (!e.target.closest('.action-btn.playtime') && !e.target.closest('#playtime-dropdown')) {
+                document.getElementById('playtime-dropdown').style.display = 'none';
             }
         });
 
