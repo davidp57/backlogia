@@ -230,7 +230,7 @@ if filter_sql:
 
 **Routes Using Filters:**
 - `web/routes/library.py`: Main library page with filter counting (no prefix)
-- `web/routes/library.py`: Random game endpoint (no prefix)
+- `web/routes/library.py`: Random game endpoint - redirects to a single random game with filters applied (no prefix)
 - `web/routes/collections.py`: Collection detail pages (with `g.` prefix)
 - `web/routes/discover.py`: Game discovery page (no prefix)
 
@@ -313,6 +313,27 @@ The filter bar component is reused across pages:
 - Discovery (`discover.html`)
 
 Each page maintains its own filter context but shares the same UI and logic.
+
+### Random Game with Filters
+
+The `/random` endpoint applies global filters before selecting a game:
+
+**Behavior:**
+- Reads global filters from URL parameters (stores, genres, queries)
+- Applies filters to the games database query
+- Selects one random game from the filtered results
+- Redirects to that game's detail page
+- Returns 404 if no games match the selected filters
+
+**JavaScript Integration:**
+- `filters.js` intercepts Random link clicks on all pages
+- Automatically appends global filters from localStorage to the `/random` URL
+- Ensures filters persist across navigation, including on pages without filter bars (e.g., game detail pages)
+
+**User Experience:**
+- Clicking "Random" multiple times shows different games that match your filters
+- Filters are applied consistently across all pages via localStorage
+- If you change filters and click Random, the new filters are immediately applied
 
 ## Performance Optimizations
 

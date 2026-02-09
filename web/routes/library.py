@@ -226,20 +226,19 @@ def game_detail(request: Request, game_id: int, conn: sqlite3.Connection = Depen
     )
 
 
-@router.get("/random", response_class=HTMLResponse)
+@router.get("/random", response_class=RedirectResponse)
 def random_game(
     request: Request,
-    count: int = Query(default=12, ge=1, le=50),
     stores: list[str] = Query(default=[]),
     genres: list[str] = Query(default=[]),
     queries: list[str] = Query(default=[]),
     conn: sqlite3.Connection = Depends(get_db)
 ):
-    """Display random games from library with optional filters."""
+    """Redirect to a random game from library with optional filters applied."""
     cursor = conn.cursor()
 
     # Build query with filters
-    query = "SELECT * FROM games WHERE 1=1" + EXCLUDE_HIDDEN_FILTER + EXCLUDE_DUPLICATES_FILTER
+    query = "SELECT id FROM games WHERE 1=1" + EXCLUDE_HIDDEN_FILTER + EXCLUDE_DUPLICATES_FILTER
     params = []
 
     if stores:
@@ -259,78 +258,17 @@ def random_game(
         if filter_sql:
             query += f" AND {filter_sql}"
 
-    # Draw more games than needed, then group and truncate to ensure enough unique groups
-    overdraw = max(50, count * 4)
-    query += f" ORDER BY RANDOM() LIMIT {overdraw}"
+    # Get one random game that matches the filters
+    query += " ORDER BY RANDOM() LIMIT 1"
     cursor.execute(query, params)
-    games = cursor.fetchall()
+    result = cursor.fetchone()
 
-    # Get store counts for filter bar
-    cursor.execute("""
-        SELECT store, COUNT(*) as count
-        FROM games
-        WHERE store IS NOT NULL
-    """ + EXCLUDE_HIDDEN_FILTER + """
-        GROUP BY store
-        ORDER BY count DESC
-    """)
-    store_counts = dict(cursor.fetchall())
+    if not result:
+        # No games match the filters - redirect to library with error message
+        raise HTTPException(status_code=404, detail="No games found matching the selected filters")
 
-    # Get genre counts for filter bar
-    cursor.execute("""
-        SELECT DISTINCT genres
-        FROM games
-        WHERE genres IS NOT NULL AND genres != '[]'
-    """ + EXCLUDE_HIDDEN_FILTER)
-    genre_counts = {}
-    for row in cursor.fetchall():
-        genres_list = parse_json_field(row["genres"])
-        if genres_list:
-            for genre in genres_list:
-                genre_counts[genre] = genre_counts.get(genre, 0) + 1
-    genre_counts = dict(sorted(genre_counts.items(), key=lambda x: x[1], reverse=True))
-
-    # Get available stores and genres for filter bar
-    available_stores = list(store_counts.keys())
-    available_genres = list(genre_counts.keys())
-
-    # Group games by IGDB (like library) et tronquer à 'count' pour l'affichage
-    grouped_games = group_games_by_igdb(games)
-    grouped_games = grouped_games[:count]
-
-    # Calculate query_filter_counts like in library.py
-    query_filter_counts = {}
-    if grouped_games:
-        query_filter_counts = get_query_filter_counts(cursor)
-
-    return templates.TemplateResponse(
-        request=request,
-        name="random.html",
-        context={
-            "grouped_games": grouped_games,
-            "count": count,
-            "store_counts": store_counts,
-            "genre_counts": genre_counts,
-            "available_stores": available_stores,
-            "available_genres": available_genres,
-            "current_stores": stores,
-            "current_genres": genres,
-            "current_queries": queries,
-            "predefined_queries": {
-                k: {
-                    "label": QUERY_DISPLAY_NAMES.get(k, k),
-                    "description": QUERY_DESCRIPTIONS.get(k, ""),
-                    "category": next((cat for cat, ids in QUERY_CATEGORIES.items() if k in ids), "other")
-                }
-                for k in PREDEFINED_QUERIES.keys()
-            },
-            "query_display_names": QUERY_DISPLAY_NAMES,
-            "query_descriptions": QUERY_DESCRIPTIONS,
-            "query_categories": QUERY_CATEGORIES,
-            "query_filter_counts": query_filter_counts,
-            "parse_json": parse_json_field
-        }
-    )
+    game_id = result["id"]
+    return RedirectResponse(url=f"/game/{game_id}", status_code=302)
 
 
 @router.get("/hidden", response_class=HTMLResponse)

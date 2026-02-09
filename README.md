@@ -80,7 +80,7 @@ Find your next game to play with curated discovery sections based on your actual
 - **Highly rated** — Games scoring 90+ ratings
 - **Hidden gems** — Quality games that deserve more attention
 - **Most played** — Your games ranked by playtime
-- **Random pick** — Can't decide? Let Backlogia choose for you
+- **Random pick** — Can't decide? Let Backlogia surprise you with one game. Works with global filters to respect your preferences
 
 ### Custom Collections
 
