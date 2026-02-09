@@ -875,6 +875,25 @@
             </div>
         </div>
 
+        {% if auth_enabled %}
+        <!-- Authentication -->
+        <div class="settings-panel">
+            <div class="section-header">
+                <div class="section-icon" style="background: #667eea;">A</div>
+                <div>
+                    <div class="section-title">Authentication</div>
+                    <div class="section-description">Manage your login session</div>
+                </div>
+            </div>
+            <div class="form-group">
+                <p style="margin-bottom: 15px; color: #ccc;">Logged in as <strong>{{ request.state.user.username }}</strong></p>
+                <form method="POST" action="/auth/logout">
+                    <button type="submit" class="btn btn-secondary" style="width: fit-content;">Logout</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Tools -->
         <div class="settings-panel">
             <div class="section-header">

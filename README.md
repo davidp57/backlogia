@@ -237,6 +237,28 @@ You can also trust it manually:
 
 ---
 
+### Authentication (Optional)
+
+Backlogia runs without authentication by default. If you're exposing your instance beyond localhost, you can enable single-user authentication to protect all routes.
+
+**Enable authentication:**
+
+Add to your `.env` file:
+```bash
+ENABLE_AUTH=true
+```
+
+Then restart the container (or application). On first visit you'll be prompted to create an owner account — this is the only account allowed on the instance.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `ENABLE_AUTH` | `false` | Set to `true` to require login |
+| `SESSION_EXPIRY_DAYS` | `30` | How long sessions last before requiring re-login |
+
+A session secret key is generated automatically and persisted in the database. You can logout from the Settings page.
+
+---
+
 ### Option 3: Local Installation
 
 1. **Clone the repository**

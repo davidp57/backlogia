@@ -8,6 +8,7 @@ from .discover import router as discover_router
 from .settings import router as settings_router
 from .sync import router as sync_router
 from .auth import router as auth_router
+from .app_auth import router as app_auth_router
 from .collections import router as collections_router
 
 __all__ = [
@@ -18,5 +19,6 @@ __all__ = [
     "settings_router",
     "sync_router",
     "auth_router",
+    "app_auth_router",
     "collections_router",
 ]

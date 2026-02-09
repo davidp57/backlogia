@@ -41,6 +41,10 @@ services:
       - LOCAL_GAMES_DIR_3=${LOCAL_GAMES_DIR_3:-}
       - LOCAL_GAMES_DIR_4=${LOCAL_GAMES_DIR_4:-}
       - LOCAL_GAMES_DIR_5=${LOCAL_GAMES_DIR_5:-}
+      # Authentication (optional)
+      - ENABLE_AUTH=${ENABLE_AUTH:-false}
+      - SECRET_KEY=${SECRET_KEY:-}
+      - SESSION_EXPIRY_DAYS=${SESSION_EXPIRY_DAYS:-30}
       # Amazon Games - uses Nile (pip install nile && nile auth --login)
     restart: unless-stopped
 

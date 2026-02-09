@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from ..config import ENABLE_AUTH
 from ..dependencies import get_db
 
 router = APIRouter()
@@ -77,7 +78,8 @@ def settings_page(
             "settings": settings,
             "success": success_flag,
             "hidden_count": hidden_count,
-            "is_docker": is_docker
+            "is_docker": is_docker,
+            "auth_enabled": ENABLE_AUTH
         }
     )
 
