@@ -44,10 +44,10 @@ All your games from every store, displayed in one place. Smart deduplication ens
 
 ### Smart Filters
 
-Quickly find games that match your mood with 18 predefined filters organized into categories:
+Quickly find games that match your mood with predefined filters organized into categories:
 
-- **Gameplay Filters** — Unplayed, Played, Started, Well-Played (5+ hours), Heavily-Played (20+ hours)
-- **Rating Filters** — Highly-Rated (90+), Well-Rated (75+), Below-Average (<70), Unrated, Hidden Gems, Critic Favorites, Community Favorites
+- **Gameplay Filters** — Unplayed, Just Tried, Played, Well-Played, Heavily-Played
+- **Rating Filters** — Highly-Rated (90+), Well-Rated (75+), Below-Average (<75), Unrated, Hidden Gems, Critic Favorites, Community Favorites
 - **Date Filters** — Recently Added (30 days), Older Library (180+ days), Recent Releases (90 days), Recently Updated, Classics (pre-2000)
 - **Content Filters** — NSFW, Safe
 
@@ -56,6 +56,23 @@ Quickly find games that match your mood with 18 predefined filters organized int
 - **Global Filters Mode** — Enable "Apply filters globally" to keep your selected filters active across all pages (Library, Discover, Collections, Random)
 - **Keyboard navigation** — Use arrow keys to navigate filters, Esc to close dropdowns, Enter/Space to toggle filters
 - **Accessibility** — Full ARIA label support and screen reader compatibility
+
+### Automatic Gameplay Tagging (Steam)
+
+Steam games are automatically tagged with gameplay labels based on your playtime. Every time you sync your Steam library, Backlogia evaluates each game's playtime and assigns the appropriate label:
+
+| Label | Playtime |
+|-------|----------|
+| **Never Launched** | 0 hours |
+| **Just Tried** | < 2 hours |
+| **Played** | 2 - 10 hours |
+| **Well Played** | 10 - 50 hours |
+| **Heavily Played** | 50+ hours |
+
+- Labels update automatically on each Steam sync — no manual action required
+- Labels are visible on game detail pages and power the Gameplay filters above
+- Steam-only: other stores don't provide reliable playtime data, but you can assign labels manually
+- See [System Labels documentation](docs/system-labels-auto-tagging.md) for technical details
 
 ### Rich Game Details
 

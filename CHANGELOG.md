@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Comprehensive test coverage for labels system**: 62 new tests covering all metadata and bulk operations:
+  - API integration tests (32 tests): All priority, rating, manual tag, and bulk operation endpoints
+  - Database migration tests (12 tests): Collections→labels migration, metadata columns, CASCADE behavior
+  - Manual tag persistence tests (5 tests): Auto vs manual tag conflict resolution, non-Steam games
+  - Edge case tests (13 tests): Games with all metadata, system label deletion, NULL playtime handling, large library performance
+- **Complete API documentation**: New `docs/api-metadata-endpoints.md` with request/response examples, curl commands, and error codes for all 13 metadata endpoints
+- **Enhanced user documentation**: 
+  - Quick Start guide with step-by-step workflows (auto-tagging, priorities, ratings, bulk actions, collections)
+  - FAQ section with 12 common questions (e.g., "Why aren't my Epic games auto-tagged?", "Do manual tags get overwritten?")
+  - Keyboard shortcuts documentation for multi-select mode (Shift-click range selection)
+- **Developer contribution guide**: New `docs/contributing-labels-system.md` with:
+  - System architecture diagrams (database schema, auto column lifecycle)
+  - Tutorial for adding new system labels with code examples
+  - Tutorial for adding new metadata fields (completion_status example)
+  - Performance optimization techniques (batch processing, caching, indexing)
+  - Migration best practices (idempotency, testing, rollback procedures)
 - **Predefined query filters system**: 18 quick filters organized in 4 categories for better library organization:
   - **Gameplay** (5 filters): Unplayed, Played, Started, Well-Played, Heavily-Played
   - **Ratings** (7 filters): Highly-Rated, Well-Rated, Below-Average, Unrated, Hidden Gems, Critic Favorites, Community Favorites
@@ -42,6 +58,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Technical Details
 - **New files**:
+  - `tests/test_api_metadata_endpoints.py`: API integration tests for metadata endpoints (32 tests)
+  - `tests/test_database_migrations.py`: Database migration tests (12 tests)
+  - `tests/test_edge_cases_labels.py`: Edge case tests for labels system (13 tests)
+  - `docs/api-metadata-endpoints.md`: Complete API reference with examples and error codes
+  - `docs/contributing-labels-system.md`: Developer guide for labels system contributions
   - `web/utils/filters.py`: Filter definitions (PREDEFINED_QUERIES, QUERY_DISPLAY_NAMES, QUERY_CATEGORIES, QUERY_DESCRIPTIONS)
   - `web/templates/_filter_bar.html`: Reusable filter bar component
   - `web/templates/random.html`: Random games page with grid layout
@@ -55,5 +76,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `.copilot-docs/filter-system.md`: Filter system architecture
   - `.copilot-docs/filter-sql-reference.md`: SQL conditions reference
   - `.copilot-docs/database-schema.md`: Database schema documentation
+- **Modified files**:
+  - `tests/test_system_labels_auto_tagging.py`: Added 5 manual tag persistence tests
+  - `docs/system-labels-auto-tagging.md`: Added Quick Start guide, FAQ (12 questions), keyboard shortcuts
 - **Modified routes**: `library.py`, `discover.py`, `collections.py`, `settings.py` to support `queries` parameter
 - **Database**: Added `popularity_cache` table and `ensure_predefined_query_indexes()` in `database.py`

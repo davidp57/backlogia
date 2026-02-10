@@ -627,7 +627,7 @@ def bulk_set_priority(body: BulkSetPriorityRequest, conn: sqlite3.Connection = D
     cursor = conn.cursor()
     placeholders = ",".join("?" * len(game_ids))
 
-    cursor.execute(f"UPDATE games SET priority = ? WHERE id IN ({placeholders})", [priority] + game_ids)
+    cursor.execute(f"UPDATE games SET priority = ? WHERE id IN ({placeholders})", (priority, *game_ids))
     updated = cursor.rowcount
 
     conn.commit()
@@ -654,7 +654,7 @@ def bulk_set_personal_rating(body: BulkSetPersonalRatingRequest, conn: sqlite3.C
     rating_value = rating if rating > 0 else None
     placeholders = ",".join("?" * len(game_ids))
 
-    cursor.execute(f"UPDATE games SET personal_rating = ? WHERE id IN ({placeholders})", [rating_value] + game_ids)
+    cursor.execute(f"UPDATE games SET personal_rating = ? WHERE id IN ({placeholders})", (rating_value, *game_ids))
     updated = cursor.rowcount
 
     conn.commit()

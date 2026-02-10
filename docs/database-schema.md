@@ -69,35 +69,72 @@ The `average_rating` column is computed from all available rating sources:
 
 All ratings are normalized to a 0-100 scale, then averaged. Returns `None` if no ratings are available.
 
-### 2. collections
+### 2. collections (deprecated)
 
-User-created game collections for organizing games.
+> **Note:** The `collections` and `collection_games` tables have been replaced by the `labels` and `game_labels` tables (see sections 4 and 5). User collections are now stored as labels with `type = 'collection'`. The migration runs automatically at startup via `web/database.py`.
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | INTEGER | No | Primary key, auto-incremented |
-| `name` | TEXT | No | Collection name |
-| `description` | TEXT | Yes | Collection description |
-| `created_at` | TIMESTAMP | No | When the collection was created (default: current timestamp) |
-| `updated_at` | TIMESTAMP | No | When the collection was last modified (default: current timestamp) |
+### 3. (reserved)
 
-### 3. collection_games
+See `labels` (section 4) and `game_labels` (section 5) below.
 
-Junction table linking games to collections (many-to-many relationship).
+### 4. labels
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `collection_id` | INTEGER | No | Foreign key to collections.id (CASCADE on delete) |
-| `game_id` | INTEGER | No | Foreign key to games.id (CASCADE on delete) |
-| `added_at` | TIMESTAMP | No | When the game was added to collection (default: current timestamp) |
+Stores both user-created labels (for custom organization) and system-managed labels (for auto-tagging). Replaces the former `collections` table.
 
-**Primary Key:** `(collection_id, game_id)`
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | INTEGER | No | Auto-increment | Primary key |
+| `name` | TEXT | No | | Label display name (e.g., "Well Played", "Weekend Playlist") |
+| `description` | TEXT | Yes | | Optional description |
+| `type` | TEXT | No | `'collection'` | Label type: `'collection'` for user labels, `'system_tag'` for system labels |
+| `color` | TEXT | Yes | | Hex color code (e.g., `#8b5cf6`) |
+| `icon` | TEXT | Yes | | Emoji icon for display |
+| `system` | INTEGER | No | `0` | `1` for system-managed labels, `0` for user-created labels |
+| `created_at` | TIMESTAMP | No | `CURRENT_TIMESTAMP` | When the label was created |
+| `updated_at` | TIMESTAMP | No | `CURRENT_TIMESTAMP` | When the label was last modified |
+
+**Indexes:**
+- `idx_labels_type` on `type`
+- `idx_labels_system` on `system`
+
+**System Labels (auto-created at startup):**
+
+| Name | Type | Icon | Color | Purpose |
+|------|------|------|-------|---------|
+| Never Launched | system_tag | :video_game: | `#64748b` | Steam games with 0h playtime |
+| Just Tried | system_tag | :eyes: | `#f59e0b` | Steam games with < 2h playtime |
+| Played | system_tag | :dart: | `#3b82f6` | Steam games with 2-10h playtime |
+| Well Played | system_tag | :star: | `#8b5cf6` | Steam games with 10-50h playtime |
+| Heavily Played | system_tag | :trophy: | `#10b981` | Steam games with 50+ hours playtime |
+
+See [System Labels & Auto-Tagging](system-labels-auto-tagging.md) for full details on the auto-tagging mechanism.
+
+### 5. game_labels
+
+Junction table linking games to labels (many-to-many). Replaces the former `collection_games` table.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `label_id` | INTEGER | No | | Foreign key to `labels.id` |
+| `game_id` | INTEGER | No | | Foreign key to `games.id` |
+| `added_at` | TIMESTAMP | No | `CURRENT_TIMESTAMP` | When the label was assigned to the game |
+| `auto` | INTEGER | No | `0` | `1` if auto-assigned by system, `0` if manually assigned by user |
+
+**Primary Key:** `(label_id, game_id)`
 
 **Foreign Keys:**
-- `collection_id` → `collections(id)` ON DELETE CASCADE
-- `game_id` → `games(id)` ON DELETE CASCADE
+- `label_id` -> `labels(id)` ON DELETE CASCADE
+- `game_id` -> `games(id)` ON DELETE CASCADE
 
-### 4. settings
+**Indexes:**
+- `idx_game_labels_game_id` on `game_id`
+- `idx_game_labels_label_id` on `label_id`
+
+**The `auto` column:**
+- `auto = 1`: Assigned automatically during Steam sync based on playtime. These entries are deleted and re-created on each sync.
+- `auto = 0`: Assigned manually by the user. These entries are never modified by the auto-tagging system.
+
+### 6. settings
 
 Application settings storage (key-value pairs).
 
@@ -172,8 +209,9 @@ The `database.py` module provides:
 The following functions handle database schema migrations:
 
 - `ensure_extra_columns()`: Adds `hidden`, `nsfw`, and `cover_url_override` columns
-- `ensure_collections_tables()`: Creates `collections` and `collection_games` tables
+- `ensure_labels_tables()`: Creates `labels` and `game_labels` tables (migrates from old `collections`/`collection_games` if they exist)
 - `add_average_rating_column()`: Adds `average_rating` column
+- `ensure_system_labels()`: Creates system labels (Never Launched, Just Tried, Played, Well Played, Heavily Played) in the `labels` table
 
 ## Import Pipeline
 
@@ -260,7 +298,8 @@ Always use `json.loads()` and `json.dumps()` when reading/writing these fields.
 4. **Update `updated_at`** whenever modifying game records
 5. **Call `update_average_rating()`** after updating any rating field
 6. **Use `get_db()`** for row factory access to treat rows as dictionaries
-7. **Run migration functions** (`ensure_extra_columns()`, `ensure_collections_tables()`) on startup
+7. **Run migration functions** (`ensure_extra_columns()`, `ensure_labels_tables()`) on startup
+8. **System labels are auto-managed** — don't manually insert/delete rows in `labels` where `system = 1`
 
 ## Error Handling
 

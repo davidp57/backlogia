@@ -26,9 +26,9 @@ PREDEFINED_QUERIES = {
 ```
 
 **Categories:**
-- `Gameplay`: Game completion and play status (8 filters: unplayed, played, started, well-played, heavily-played, completed, abandoned, incomplete)
+- `Gameplay`: Playtime-based status using system labels (5 filters: unplayed, just-tried, played, well-played, heavily-played). These filters use SQL subqueries against the `game_labels`/`labels` tables rather than direct column checks. See [System Labels documentation](system-labels-auto-tagging.md) for details.
 - `Ratings`: Rating-based filters (7 filters: highly-rated, well-rated, critic-favorites, community-favorites, hidden-gems, below-average, unrated)
-- `Dates`: Time-based filters (5 filters: recently-added, old-games, recently-updated, new-releases, classics)
+- `Dates`: Time-based filters (5 filters: recently-added, older-library, recent-releases, recently-updated, classics)
 - `Content`: Content classification (2 filters: nsfw, safe)
 
 **Key Design Principles:**
@@ -167,7 +167,7 @@ Result: Games that are (played OR started) AND (highly OR well rated) AND recent
 
 | Category | Filters | Combination |
 |----------|---------|-------------|
-| **Gameplay** | unplayed, played, started, well-played, heavily-played, completed, abandoned, incomplete | OR |
+| **Gameplay** | unplayed, just-tried, played, well-played, heavily-played | OR |
 | **Ratings** | highly-rated, well-rated, critic-favorites, community-favorites, hidden-gems, below-average, unrated | OR |
 | **Dates** | recently-added, old-games, recently-updated, new-releases, classics | OR |
 | **Content** | nsfw, safe | OR |
@@ -252,6 +252,43 @@ if filter_sql:
 - Styles filter dropdowns and badges
 - Provides visual feedback for active filters
 - Responsive design for mobile and desktop
+
+## System Labels & Gameplay Filters
+
+The Gameplay category filters are unique: they don't query game columns directly. Instead, they use SQL subqueries against the `labels` and `game_labels` tables, which are populated by the **auto-tagging system**.
+
+### How It Works
+
+1. **Steam sync** imports games with playtime data from the Steam API
+2. **Auto-tagging** (`update_all_auto_labels()`) runs immediately after Steam import
+3. Each Steam game receives a **system label** based on its playtime (Never Launched, Just Tried, Played, Well Played, or Heavily Played)
+4. **Gameplay filters** use `EXISTS` subqueries to check for these labels
+
+### SQL Pattern
+
+```sql
+-- Example: "played" filter checks for the "Played" system tag
+EXISTS (
+    SELECT 1 FROM game_labels _gl JOIN labels _l ON _l.id = _gl.label_id
+    WHERE _gl.game_id = games.id AND _l.system = 1 AND _l.type = 'system_tag'
+    AND _l.name = 'Played'
+)
+```
+
+### Why Tags Instead of Direct Playtime Queries?
+
+The tag-based approach allows:
+- **Manual overrides**: Users can manually assign gameplay labels to non-Steam games
+- **Steam-specific logic**: Only Steam provides reliable playtime, so other stores need a different mechanism
+- **Future extensibility**: New label types can be added without changing the filter system
+
+### Full Documentation
+
+See [System Labels & Auto-Tagging](system-labels-auto-tagging.md) for complete details on:
+- Label definitions and playtime boundaries
+- Auto-tagging triggers and processing flow
+- Auto vs manual label distinction
+- Database schema for `labels` and `game_labels` tables
 
 ## Data Flow
 
@@ -436,7 +473,19 @@ All filter UI elements meet WCAG 2.1 Level AA contrast requirements.
 
 **5 integration tests** validate genre filtering SQL patterns.
 
-**Total: 70+ tests** covering all aspects of the filter system.
+#### System Labels Tests (`tests/test_system_labels_auto_tagging.py`)
+
+**Coverage:**
+- System label creation and initialization
+- Each playtime category (Never Launched, Just Tried, Played, Well Played, Heavily Played)
+- Steam-only enforcement (non-Steam games are not auto-tagged)
+- NULL playtime handling
+- Label replacement when playtime changes
+- Boundary value testing (0, 0.1, 1.9, 2.0, 9.9, 10.0, 49.9, 50.0, 1000.0)
+
+**11 unit tests** validate the auto-tagging system that powers Gameplay filters.
+
+**Total: 80+ tests** covering all aspects of the filter system.
 
 ## Extension Guide
 
@@ -569,6 +618,8 @@ def test_new_filter_cross_category_and():
 
 ## Related Documentation
 
+- **System Labels & Auto-Tagging**: See `docs/system-labels-auto-tagging.md` for gameplay label definitions, auto-tagging mechanism, and database schema
+- **Database Schema**: See `docs/database-schema.md` for `labels` and `game_labels` table definitions
 - **API Reference**: See OpenAPI spec in `openspec/specs/predefined-query-filters/spec.md`
 - **Design Decisions**: See `openspec/changes/add-predefined-queries/design.md`
 - **Change Proposal**: See `openspec/changes/add-predefined-queries/proposal.md`
