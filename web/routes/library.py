@@ -68,10 +68,12 @@ def library(
         params.append(f"%{search}%")
 
     # Sorting
-    valid_sorts = ["name", "store", "playtime_hours", "critics_score", "release_date", "added_at", "total_rating", "igdb_rating", "aggregated_rating", "average_rating", "metacritic_score", "metacritic_user_score"]
+    valid_sorts = ["name", "store", "playtime_hours", "critics_score", "release_date", "added_at", "total_rating", "igdb_rating", "aggregated_rating", "average_rating", "metacritic_score", "metacritic_user_score", "personal_rating", "priority"]
     if sort in valid_sorts:
         order_dir = "DESC" if order == "desc" else "ASC"
-        if sort in ["playtime_hours", "critics_score", "total_rating", "igdb_rating", "aggregated_rating", "average_rating", "metacritic_score", "metacritic_user_score", "release_date", "added_at"]:
+        if sort == "priority":
+            query += " ORDER BY CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END ASC"
+        elif sort in ["playtime_hours", "critics_score", "total_rating", "igdb_rating", "aggregated_rating", "average_rating", "metacritic_score", "metacritic_user_score", "release_date", "added_at", "personal_rating"]:
             query += f" ORDER BY {sort} {order_dir} NULLS LAST"
         else:
             query += f" ORDER BY {sort} COLLATE NOCASE {order_dir}"
@@ -88,6 +90,8 @@ def library(
     with_values = []
     without_values = []
 
+    priority_order = {'high': 1, 'medium': 2, 'low': 3}
+
     for g in grouped_games:
         val = g["primary"].get(sort)
         if val is None:
@@ -97,6 +101,8 @@ def library(
 
     def get_sort_key(g):
         val = g["primary"].get(sort)
+        if sort == "priority":
+            return priority_order.get(val, 4)
         if isinstance(val, str):
             return val.lower()
         return val
@@ -213,6 +219,26 @@ def game_detail(request: Request, game_id: int, conn: sqlite3.Connection = Depen
         elif g.get("playtime_hours") and not primary_game.get("playtime_hours"):
             primary_game = g
 
+    # Get current system labels (playtime tags) for this game
+    cursor.execute("""
+        SELECT l.name
+        FROM labels l
+        JOIN game_labels gl ON l.id = gl.label_id
+        WHERE gl.game_id = ? AND l.system = 1 AND l.type = 'system_tag'
+    """, (game_id,))
+    current_playtime_tag = cursor.fetchone()
+    current_playtime_tag_name = current_playtime_tag["name"] if current_playtime_tag else None
+
+    # Get collections this game belongs to
+    cursor.execute("""
+        SELECT c.id, c.name
+        FROM collections c
+        JOIN collection_games cg ON c.id = cg.collection_id
+        WHERE cg.game_id = ?
+        ORDER BY c.name
+    """, (game_id,))
+    game_collections = [dict(c) for c in cursor.fetchall()]
+
     return templates.TemplateResponse(
         request,
         "game_detail.html",
@@ -220,6 +246,8 @@ def game_detail(request: Request, game_id: int, conn: sqlite3.Connection = Depen
             "game": primary_game,
             "store_info": store_info,
             "related_games": related_games,
+            "current_playtime_tag": current_playtime_tag_name,
+            "game_collections": game_collections,
             "parse_json": parse_json_field,
             "get_store_url": get_store_url
         }

@@ -1,5 +1,5 @@
 # routes/api_metadata.py
-# API endpoints for game metadata operations (IGDB, hidden, NSFW, etc.)
+# API endpoints for game metadata operations (IGDB, hidden, NSFW, priority, rating, playtime tags, etc.)
 
 import json
 import sqlite3
@@ -65,7 +65,7 @@ class BulkSetPersonalRatingRequest(BaseModel):
 
 
 class ManualPlaytimeTagRequest(BaseModel):
-    label_name: str
+    label_name: Optional[str] = None
 
 
 @router.post("/api/game/{game_id}/igdb")

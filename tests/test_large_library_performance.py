@@ -35,10 +35,40 @@ def large_db():
             last_modified TIMESTAMP,
             nsfw BOOLEAN DEFAULT 0,
             hidden BOOLEAN DEFAULT 0,
-            cover_url TEXT
+            cover_url TEXT,
+            priority TEXT,
+            personal_rating REAL
         )
     """)
     
+    # Create labels and game_labels tables for tag-based filters
+    cursor.execute("""
+        CREATE TABLE labels (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            type TEXT,
+            system INTEGER DEFAULT 0
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE game_labels (
+            game_id INTEGER,
+            label_id INTEGER,
+            PRIMARY KEY (game_id, label_id)
+        )
+    """)
+
+    # Insert system tag labels
+    system_tags = [
+        (1, 'Never Launched', 'system_tag', 1),
+        (2, 'Just Tried', 'system_tag', 1),
+        (3, 'Played', 'system_tag', 1),
+        (4, 'Well Played', 'system_tag', 1),
+        (5, 'Heavily Played', 'system_tag', 1),
+    ]
+    cursor.executemany("INSERT INTO labels (id, name, type, system) VALUES (?, ?, ?, ?)", system_tags)
+
     # Create indexes (same as production)
     cursor.execute("CREATE INDEX idx_games_playtime ON games(playtime_hours)")
     cursor.execute("CREATE INDEX idx_games_total_rating ON games(total_rating)")
@@ -46,7 +76,7 @@ def large_db():
     cursor.execute("CREATE INDEX idx_games_release_date ON games(release_date)")
     cursor.execute("CREATE INDEX idx_games_nsfw ON games(nsfw)")
     cursor.execute("CREATE INDEX idx_games_last_modified ON games(last_modified)")
-    
+
     # Insert 10,000 games
     print("\nGenerating 10,000 test games...")
     games = []
@@ -77,9 +107,29 @@ def large_db():
                           added_at, release_date, last_modified, nsfw, hidden)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, games)
-    
+
+    # Assign system tags based on playtime to match tag-based filter expectations
+    game_labels = []
+    for i, game in enumerate(games):
+        game_id = i + 1  # IDs start at 1
+        playtime = game[2]  # playtime_hours
+        if playtime is None or playtime == 0:
+            # ~30% have no playtime → some get "Never Launched" for steam
+            if game[1] == "steam" and random.random() > 0.5:
+                game_labels.append((game_id, 1))  # Never Launched
+        elif playtime < 2:
+            game_labels.append((game_id, 2))  # Just Tried
+        elif playtime < 10:
+            game_labels.append((game_id, 3))  # Played
+        elif playtime < 30:
+            game_labels.append((game_id, 4))  # Well Played
+        else:
+            game_labels.append((game_id, 5))  # Heavily Played
+
+    cursor.executemany("INSERT INTO game_labels (game_id, label_id) VALUES (?, ?)", game_labels)
+
     conn.commit()
-    print(f"Created {len(games)} games")
+    print(f"Created {len(games)} games with {len(game_labels)} labels")
     
     yield conn
     conn.close()

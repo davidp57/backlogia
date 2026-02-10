@@ -33,7 +33,9 @@ def empty_db():
             last_modified TIMESTAMP,
             nsfw BOOLEAN DEFAULT 0,
             hidden BOOLEAN DEFAULT 0,
-            cover_url TEXT
+            cover_url TEXT,
+            priority TEXT,
+            personal_rating REAL
         )
     """)
     
@@ -44,7 +46,24 @@ def empty_db():
             name TEXT NOT NULL
         )
     """)
-    
+
+    cursor.execute("""
+        CREATE TABLE labels (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            type TEXT,
+            system INTEGER DEFAULT 0
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE game_labels (
+            game_id INTEGER,
+            label_id INTEGER,
+            PRIMARY KEY (game_id, label_id)
+        )
+    """)
+
     conn.commit()
     yield conn
     conn.close()
