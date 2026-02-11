@@ -1438,9 +1438,9 @@
                                 <div id="amazon-auth-flow" style="display: none; margin-top: 15px;">
                                     <div class="instructions-box">
                                         <ol>
-                                            <li>Click the button above to open Amazon login</li>
+                                            <li>A popup has just been opened for Amazon login</li>
                                             <li>Log in to your Amazon account</li>
-                                            <li>After login, you'll see a blank page - this is expected</li>
+                                            <li>After login, you will be redirected to the main Amazon website</li>
                                             <li>Copy the <strong>entire URL</strong> from your browser's address bar</li>
                                             <li>Paste it below and click "Complete Authentication"</li>
                                         </ol>
@@ -2074,7 +2074,7 @@ LOCAL_GAMES_DIR_2=/another/path/to/games</pre>
             .then(response => response.json())
             .then(data => {
                 if (!data.nile_installed) {
-                    statusEl.innerHTML = '<span style="color: #f44336;">Error: Nile not available in container</span>';
+                    statusEl.innerHTML = '<span style="color: #f44336;">Error: Nile not available, see README for instructions</span>';
                     if (authBtn) authBtn.disabled = true;
                 } else if (data.authenticated) {
                     statusEl.innerHTML = '<span style="color: #4caf50;">Authenticated</span>' +

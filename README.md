@@ -261,6 +261,14 @@ A session secret key is generated automatically and persisted in the database. Y
 
 ### Option 3: Local Installation
 
+#### Prerequisites (Amazon)
+1. Build the latest `nile` code: https://github.com/imLinguin/nile?tab=readme-ov-file#setting-up-dev-environment
+2. Compile `nile` into an executable: https://github.com/imLinguin/nile?tab=readme-ov-file#building-pyinstaller-executable
+3. Make sure that the compiler executable is in your `PATH` (either place it in an existing `PATH` folder or add the folder containing the executable to the `PATH` list)
+4. If you added a new folder to your `PATH` above, open a **new terminal** for the instructions below (so it receives the updated `PATH`)
+
+#### Installation
+
 1. **Clone the repository**
    ```bash
    git clone https://github.com/sam1am/backlogia.git
@@ -285,17 +293,12 @@ A session secret key is generated automatically and persisted in the database. Y
 
 5. **Edit `.env` with your settings** (see [Configuration](#configuration))
 
-6. **Initialize the database**
-   ```bash
-   python scripts/build_database.py
-   ```
-
-7. **Run the application**
+6. **Run the application**
    ```bash
    python web/app.py
    ```
 
-8. **Access Backlogia** at [http://localhost:5050](http://localhost:5050)
+7. **Access Backlogia** at [http://localhost:5050](http://localhost:5050)
 
 #### Updating (Local Installation)
 

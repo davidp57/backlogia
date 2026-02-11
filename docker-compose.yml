@@ -45,7 +45,7 @@ services:
       - ENABLE_AUTH=${ENABLE_AUTH:-false}
       - SECRET_KEY=${SECRET_KEY:-}
       - SESSION_EXPIRY_DAYS=${SESSION_EXPIRY_DAYS:-30}
-      # Amazon Games - uses Nile (pip install nile && nile auth --login)
+      # Amazon Games - uses Nile
     restart: unless-stopped
 
   caddy:
