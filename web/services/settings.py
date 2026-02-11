@@ -19,6 +19,8 @@ BATTLENET_SESSION_COOKIE = "battlenet_session_cookie"
 GOG_DB_PATH = "gog_db_path"
 EA_BEARER_TOKEN = "ea_bearer_token"
 XBOX_XSTS_TOKEN = "xbox_xsts_token"
+XBOX_GAMEPASS_MARKET = "xbox_gamepass_market"
+XBOX_GAMEPASS_PLAN = "xbox_gamepass_plan"
 LOCAL_GAMES_PATHS = "local_games_paths"
 IGDB_MATCH_THRESHOLD = "igdb_match_threshold"
 
@@ -34,6 +36,8 @@ ENV_VAR_MAP = {
     GOG_DB_PATH: "GOG_DB_PATH",
     EA_BEARER_TOKEN: "EA_BEARER_TOKEN",
     XBOX_XSTS_TOKEN: "XBOX_XSTS_TOKEN",
+    XBOX_GAMEPASS_MARKET: "XBOX_GAMEPASS_MARKET",
+    XBOX_GAMEPASS_PLAN: "XBOX_GAMEPASS_PLAN",
     LOCAL_GAMES_PATHS: "LOCAL_GAMES_PATHS",
     IGDB_MATCH_THRESHOLD: "IGDB_MATCH_THRESHOLD",
 }
@@ -179,6 +183,12 @@ def get_xbox_credentials():
         "xsts_token": get_setting(XBOX_XSTS_TOKEN),
     }
 
+def get_xbox_gamepass_settings():
+    """Get Xbox Game Pass settings."""
+    return {
+        "market": get_setting(XBOX_GAMEPASS_MARKET),
+        "plan": get_setting(XBOX_GAMEPASS_PLAN),
+    }
 
 def get_local_games_settings():
     """Get local games folder settings."""

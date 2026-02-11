@@ -1529,6 +1529,17 @@
                                         Game Pass catalog is public and will sync without a token. Token is only needed for your owned games.
                                     </p>
                                 </div>
+                                <label for="xbox_gamepass_market">Xbox Game Pass Market</label>
+                                <input type="text" id="xbox_gamepass_market" name="xbox_gamepass_market"
+                                       value="{{ settings.xbox_gamepass_market }}"
+                                       placeholder="e.g. US, AU">
+                                <label for="xbox_gamepass_plan">Xbox Game Pass Plan</label>
+                                <select id="xbox_gamepass_plan" name="xbox_gamepass_plan">
+                                    <option value="ultimate" {% if settings.xbox_gamepass_plan == 'ultimate' %}selected{% endif %}>Game Pass Ultimate</option>
+                                    <option value="premium" {% if settings.xbox_gamepass_plan == 'premium' %}selected{% endif %}>Game Pass Premium</option>
+                                    <option value="essential" {% if settings.xbox_gamepass_plan == 'essential' %}selected{% endif %}>Game Pass Essential</option>
+                                    <option value="pc" {% if settings.xbox_gamepass_plan == 'pc' %}selected{% endif %}>Game Pass for PC</option>
+                                </select>
                             </div>
                         </div>
                     </div>

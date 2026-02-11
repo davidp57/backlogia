@@ -5,19 +5,33 @@
 import json
 import requests
 
-from ..services.settings import get_xbox_credentials
+from ..services.settings import get_xbox_credentials, get_xbox_gamepass_settings
 
 # Xbox API endpoints
 TITLEHUB_ENDPOINT = "https://titlehub.xboxlive.com"
 COLLECTIONS_ENDPOINT = "https://collections.mp.microsoft.com/v9.0/collections/publisherQuery"
-GAMEPASS_CATALOG_ENDPOINT = "https://catalog.gamepass.com/sigls/v2"
+GAMEPASS_CATALOG_ENDPOINT = "https://catalog.gamepass.com/sigls/v3"
 DISPLAY_CATALOG_ENDPOINT = "https://displaycatalog.mp.microsoft.com/v7.0/products"
 
-# Game Pass catalog IDs
-# fdd9e2a7-0fee-49f6-ad69-4354098401ff = PC Game Pass
-# f6f1f99f-9b49-4ccd-b3bf-4d9767a77f5e = Console Game Pass
-# 29a81209-df6f-41fd-a528-2ae6b91f719c = EA Play
-GAMEPASS_PC_CATALOG_ID = "fdd9e2a7-0fee-49f6-ad69-4354098401ff"
+GAMEPASS_PLAN_MAP = {
+    "ultimate": 
+    {
+        "collection": "97c6c862-d28a-4907-a3d5-c401f2296a53",
+        "subscription": "cfq7ttc0khs0"
+    },
+    "premium": {
+        "collection": "09a72c0d-c466-426a-9580-b78955d8173a",
+        "subscription": "cfq7ttc0p85b"
+    },
+    "essential": {
+        "collection": "34031711-5a70-4196-bab7-45757dc2294e",
+        "subscription": "cfq7ttc0k5dj"
+    },
+    "pc": {
+        "collection": "609d944c-d395-4c0a-9ea4-e9f39b52c1ad",
+        "subscription": "cfq7ttc0kgq8"
+    }
+}
 
 # Required headers for API requests
 REQUIRED_HEADERS = {
@@ -27,6 +41,14 @@ REQUIRED_HEADERS = {
     "x-xbl-contract-version": "2",
 }
 
+def get_resolved_xbox_gamepass_settings():
+    """Get Xbox Game Pass settings."""
+    gamepass_settings = get_xbox_gamepass_settings()
+    return {
+        "plan": gamepass_settings.get("plan", "ultimate"),
+        "market": gamepass_settings.get("market", "US")
+    }
+    
 
 def get_xsts_token():
     """Get stored XSTS token from settings."""
@@ -307,16 +329,18 @@ def get_owned_games_from_collections(token):
         print(f"  Error fetching from Collections API: {e}")
         return []
 
-
-def get_gamepass_catalog():
+def get_gamepass_catalog(plan, market):
     """Fetch Game Pass PC catalog (public API, no auth required)."""
     try:
         all_games = []
 
+        planInfo = GAMEPASS_PLAN_MAP[plan]
+        collectionId = planInfo['collection']
+        subscriptionId = planInfo['subscription']
         # Fetch Game Pass catalog
-        url = f"{GAMEPASS_CATALOG_ENDPOINT}?id={GAMEPASS_PC_CATALOG_ID}&language=en-US&market=US"
+        url = f"{GAMEPASS_CATALOG_ENDPOINT}?id={collectionId}&language=en-US&market={market}&platformContext=pc&subscriptionContext={subscriptionId}"
 
-        print("  Fetching Game Pass catalog...")
+        print(f"  Fetching Game Pass catalog for plan: {plan} (market: {market})...")
         response = requests.get(url, headers=REQUIRED_HEADERS)
 
         if response.status_code != 200:
@@ -430,6 +454,7 @@ def get_product_details(product_ids):
 def get_xbox_library():
     """Fetch all games from Xbox - owned games + Game Pass catalog."""
     token = get_xsts_token()
+    gamepass_settings = get_resolved_xbox_gamepass_settings()
 
     print("Fetching Xbox library...")
 
@@ -451,7 +476,7 @@ def get_xbox_library():
         print("  To import owned games, add your XSTS token in Settings")
 
     # Then fetch Game Pass catalog (public API)
-    gamepass_games = get_gamepass_catalog()
+    gamepass_games = get_gamepass_catalog(gamepass_settings["plan"], gamepass_settings["market"])
     print(f"  Found {len(gamepass_games)} Game Pass games")
 
     # Add Game Pass games that aren't already owned
@@ -488,6 +513,8 @@ def main():
     parser.add_argument("--token", type=str, help="XSTS token (for testing)")
     parser.add_argument("--gamepass-only", action="store_true", help="Only fetch Game Pass catalog")
     parser.add_argument("--export", type=str, help="Export to JSON file instead of database")
+    parser.add_argument("--plan", type=str, choices=["ultimate", "premium", "essential", "pc"], default="ultimate", help="Game Pass plan to fetch (default: ultimate)")
+    parser.add_argument("--market", type=str, default="US", help="Game Pass market to fetch (default: US)")
     args = parser.parse_args()
 
     print("Xbox Library Import")
@@ -495,7 +522,7 @@ def main():
 
     if args.gamepass_only:
         print("Fetching Game Pass catalog only...")
-        games = get_gamepass_catalog()
+        games = get_gamepass_catalog(args.plan, args.market)
     elif args.token:
         # Use provided token for testing
         print("Using provided token...")
