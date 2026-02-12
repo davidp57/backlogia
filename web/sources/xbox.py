@@ -274,12 +274,13 @@ def get_owned_games_from_collections(token):
         }
 
         # Query for owned products
+        planInfo = get_resolved_xbox_gamepass_settings()
         payload = {
             "productIds": [],
             "productSkuIds": [],
             "idType": "ProductId",
             "beneficiaries": [],
-            "market": "US",
+            "market": planInfo["market"],
             "languages": ["en-US"],
             "maxPageSize": 1000,
         }
@@ -383,7 +384,8 @@ def get_product_details(product_ids):
     try:
         # Build the products query
         ids_param = ",".join(product_ids)
-        url = f"{DISPLAY_CATALOG_ENDPOINT}?bigIds={ids_param}&market=US&languages=en-US"
+        planInfo = get_resolved_xbox_gamepass_settings()
+        url = f"{DISPLAY_CATALOG_ENDPOINT}?bigIds={ids_param}&market={planInfo['market']}&languages=en-US"
 
         response = requests.get(url, headers=REQUIRED_HEADERS)
 
