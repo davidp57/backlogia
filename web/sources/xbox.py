@@ -8,6 +8,8 @@ import requests
 from ..services.settings import get_xbox_credentials, get_xbox_gamepass_settings
 
 # Xbox API endpoints
+# Reference: https://www.xbox.com/en-us/xbox-game-pass/games/js/xgpcatPopulate-2025.js
+
 TITLEHUB_ENDPOINT = "https://titlehub.xboxlive.com"
 COLLECTIONS_ENDPOINT = "https://collections.mp.microsoft.com/v9.0/collections/publisherQuery"
 GAMEPASS_CATALOG_ENDPOINT = "https://catalog.gamepass.com/sigls/v3"
@@ -333,8 +335,12 @@ def get_owned_games_from_collections(token):
 def get_gamepass_catalog(plan, market):
     """Fetch Game Pass PC catalog (public API, no auth required)."""
     try:
+        if plan == "none":
+            print("  Game Pass import disabled - skipping")
+            return []
+        
         all_games = []
-
+        
         planInfo = GAMEPASS_PLAN_MAP[plan]
         collectionId = planInfo['collection']
         subscriptionId = planInfo['subscription']
