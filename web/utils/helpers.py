@@ -56,7 +56,7 @@ def get_store_url(store, store_id, extra_data=None):
     elif store == "xbox":
         # Xbox Store URL
         if store_id:
-            return f"https://www.xbox.com/games/store/{store_id}"
+            return f"https://www.xbox.com/games/store/game/{store_id}"
         return None
     return None
 
