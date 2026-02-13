@@ -10,6 +10,7 @@ from ..config import DATABASE_PATH
 
 def create_database():
     """Create the SQLite database with the games table."""
+    DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
 

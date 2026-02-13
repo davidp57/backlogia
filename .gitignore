@@ -1,4 +1,4 @@
-game_library.db
+*.db
 .DS_Store
 
 # Copilot documentation
