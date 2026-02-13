@@ -1,11 +1,15 @@
 # routes/discover.py
 # Discover page routes
 
+import hashlib
+import random
 import sqlite3
+import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from ..dependencies import get_db
@@ -15,21 +19,25 @@ from ..utils.helpers import parse_json_field
 router = APIRouter()
 templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
 
+# Module-level IGDB cache
+_igdb_cache = {
+    "data": None,
+    "expires_at": 0,
+    "igdb_ids_hash": None
+}
+CACHE_TTL = 900  # 15 minutes
 
-@router.get("/discover", response_class=HTMLResponse)
-def discover(request: Request, conn: sqlite3.Connection = Depends(get_db)):
-    """Discover page - showcase popular games from your library."""
-    # Import here to avoid circular imports
-    from ..services.igdb_sync import (
-        IGDBClient,
-        POPULARITY_TYPE_IGDB_VISITS, POPULARITY_TYPE_IGDB_WANT_TO_PLAY,
-        POPULARITY_TYPE_IGDB_PLAYING, POPULARITY_TYPE_IGDB_PLAYED,
-        POPULARITY_TYPE_STEAM_PEAK_24H, POPULARITY_TYPE_STEAM_POSITIVE_REVIEWS
-    )
 
+def _hash_igdb_ids(igdb_ids):
+    """Create a stable hash of the igdb_ids set for cache key."""
+    return hashlib.md5(
+        ",".join(str(i) for i in sorted(set(igdb_ids))).encode()
+    ).hexdigest()
+
+
+def _get_library_games(conn):
+    """Get all games with IGDB IDs from the library."""
     cursor = conn.cursor()
-
-    # Get all games with IGDB IDs from the library (excluding hidden/duplicates)
     cursor.execute(
         """SELECT id, name, store, igdb_id, igdb_cover_url, cover_image,
                   igdb_summary, description, igdb_screenshots, total_rating,
@@ -38,161 +46,227 @@ def discover(request: Request, conn: sqlite3.Connection = Depends(get_db)):
            WHERE igdb_id IS NOT NULL AND igdb_id > 0""" + EXCLUDE_HIDDEN_FILTER + """
            ORDER BY total_rating DESC NULLS LAST"""
     )
-    library_games = cursor.fetchall()
+    return cursor.fetchall()
 
-    # Create a mapping of igdb_id to local game data
+
+def _build_igdb_mapping(library_games):
+    """Build igdb_id -> game data mapping and deduplicated unique games list."""
     igdb_to_local = {}
     igdb_ids = []
+    unique_games = []
+    seen_igdb_ids = set()
+
     for game in library_games:
         igdb_id = game["igdb_id"]
         igdb_ids.append(igdb_id)
         igdb_to_local[igdb_id] = dict(game)
+        if igdb_id not in seen_igdb_ids:
+            seen_igdb_ids.add(igdb_id)
+            unique_games.append(dict(game))
 
-    # Try to get popularity data from IGDB
-    popular_games = []
-    popularity_source = "rating"  # Default fallback
+    return igdb_to_local, igdb_ids, unique_games
 
-    # Popularity-based sections (will be populated if IGDB API succeeds)
-    igdb_visits = []
-    want_to_play = []
-    playing = []
-    played = []
-    steam_peak_24h = []
-    steam_positive_reviews = []
 
-    if igdb_ids:
-        try:
-            client = IGDBClient()
+def _derive_db_categories(unique_games):
+    """Derive category lists from the already-fetched unique games (no extra SQL)."""
+    highly_rated = [g for g in unique_games if (g["total_rating"] or 0) >= 90][:10]
 
-            # Try to fetch popularity primitives for our library games
-            popularity_data = client.get_popular_games(igdb_ids, limit=100)
+    hidden_gems = [g for g in unique_games
+                   if (g["total_rating"] or 0) >= 75
+                   and (g["total_rating"] or 0) < 90
+                   and g["aggregated_rating"] is None]
+    hidden_gems.sort(key=lambda g: g["igdb_rating"] or 0, reverse=True)
+    hidden_gems = hidden_gems[:10]
 
-            if popularity_data:
-                popularity_source = "igdb_popularity"
-                # Sort by popularity value and get top games
-                seen_ids = set()
-                for pop in popularity_data:
-                    game_id = pop.get("game_id")
-                    if game_id in igdb_to_local and game_id not in seen_ids:
-                        game_data = igdb_to_local[game_id].copy()
-                        game_data["popularity_value"] = pop.get("value", 0)
-                        popular_games.append(game_data)
-                        seen_ids.add(game_id)
+    most_played = [g for g in unique_games if (g["playtime_hours"] or 0) > 0]
+    most_played.sort(key=lambda g: g["playtime_hours"] or 0, reverse=True)
+    most_played = most_played[:10]
 
-            # Helper function to fetch games by popularity type
-            def fetch_by_popularity_type(pop_type, limit=10):
-                pop_data = client.get_popular_games(igdb_ids, popularity_type=pop_type, limit=limit)
-                result = []
-                seen = set()
-                for pop in pop_data:
-                    gid = pop.get("game_id")
-                    if gid in igdb_to_local and gid not in seen:
-                        gdata = igdb_to_local[gid].copy()
-                        gdata["popularity_value"] = pop.get("value", 0)
-                        result.append(gdata)
-                        seen.add(gid)
-                return result
+    critic_favorites = [g for g in unique_games if (g["aggregated_rating"] or 0) >= 80]
+    critic_favorites.sort(key=lambda g: g["aggregated_rating"] or 0, reverse=True)
+    critic_favorites = critic_favorites[:10]
 
-            # Fetch each popularity type
-            igdb_visits = fetch_by_popularity_type(POPULARITY_TYPE_IGDB_VISITS)
-            want_to_play = fetch_by_popularity_type(POPULARITY_TYPE_IGDB_WANT_TO_PLAY)
-            playing = fetch_by_popularity_type(POPULARITY_TYPE_IGDB_PLAYING)
-            played = fetch_by_popularity_type(POPULARITY_TYPE_IGDB_PLAYED)
-            steam_peak_24h = fetch_by_popularity_type(POPULARITY_TYPE_STEAM_PEAK_24H)
-            steam_positive_reviews = fetch_by_popularity_type(POPULARITY_TYPE_STEAM_POSITIVE_REVIEWS)
+    random_picks = random.sample(unique_games, min(10, len(unique_games)))
 
-        except Exception as e:
-            print(f"Could not fetch IGDB popularity data: {e}")
+    return highly_rated, hidden_gems, most_played, critic_favorites, random_picks
 
-    # Fallback: use total_rating if no popularity data
-    if not popular_games:
-        popularity_source = "rating"
-        popular_games = [dict(g) for g in library_games if g["total_rating"]]
 
-    # Limit to top games for display
-    featured_games = popular_games[:20] if popular_games else []
+def _empty_igdb_result():
+    return {
+        "popularity_source": "rating",
+        "featured_games": [],
+        "igdb_visits": [],
+        "want_to_play": [],
+        "playing": [],
+        "played": [],
+        "steam_peak_24h": [],
+        "steam_positive_reviews": [],
+    }
 
-    # Get some category breakdowns
-    # Highly rated games (90+)
-    cursor.execute(
-        """SELECT id, name, store, igdb_id, igdb_cover_url, cover_image,
-                  igdb_summary, description, igdb_screenshots, total_rating,
-                  igdb_rating, aggregated_rating, genres, playtime_hours
-           FROM games
-           WHERE igdb_id IS NOT NULL AND igdb_id > 0 AND total_rating >= 90""" + EXCLUDE_HIDDEN_FILTER + """
-           ORDER BY total_rating DESC
-           LIMIT 10"""
+
+def _fetch_igdb_sections(igdb_ids, igdb_to_local):
+    """Fetch all IGDB popularity data in parallel, using cache if available."""
+    from ..services.igdb_sync import (
+        IGDBClient,
+        POPULARITY_TYPE_IGDB_VISITS, POPULARITY_TYPE_IGDB_WANT_TO_PLAY,
+        POPULARITY_TYPE_IGDB_PLAYING, POPULARITY_TYPE_IGDB_PLAYED,
+        POPULARITY_TYPE_STEAM_PEAK_24H, POPULARITY_TYPE_STEAM_POSITIVE_REVIEWS
     )
-    highly_rated = [dict(g) for g in cursor.fetchall()]
 
-    # Hidden gems (good ratings but less known - lower rating count approximated by using aggregated_rating)
-    cursor.execute(
-        """SELECT id, name, store, igdb_id, igdb_cover_url, cover_image,
-                  igdb_summary, description, igdb_screenshots, total_rating,
-                  igdb_rating, aggregated_rating, genres, playtime_hours
-           FROM games
-           WHERE igdb_id IS NOT NULL AND igdb_id > 0
-             AND total_rating >= 75
-             AND total_rating < 90
-             AND aggregated_rating IS NULL""" + EXCLUDE_HIDDEN_FILTER + """
-           ORDER BY igdb_rating DESC NULLS LAST
-           LIMIT 10"""
-    )
-    hidden_gems = [dict(g) for g in cursor.fetchall()]
+    if not igdb_ids:
+        return _empty_igdb_result()
 
-    # Most played (from Steam playtime)
-    cursor.execute(
-        """SELECT id, name, store, igdb_id, igdb_cover_url, cover_image,
-                  igdb_summary, description, igdb_screenshots, total_rating,
-                  igdb_rating, aggregated_rating, genres, playtime_hours
-           FROM games
-           WHERE igdb_id IS NOT NULL AND igdb_id > 0 AND playtime_hours > 0""" + EXCLUDE_HIDDEN_FILTER + """
-           ORDER BY playtime_hours DESC
-           LIMIT 10"""
-    )
-    most_played = [dict(g) for g in cursor.fetchall()]
+    ids_hash = _hash_igdb_ids(igdb_ids)
+    now = time.time()
 
-    # Critic favorites (high aggregated rating)
-    cursor.execute(
-        """SELECT id, name, store, igdb_id, igdb_cover_url, cover_image,
-                  igdb_summary, description, igdb_screenshots, total_rating,
-                  igdb_rating, aggregated_rating, genres, playtime_hours
-           FROM games
-           WHERE igdb_id IS NOT NULL AND igdb_id > 0 AND aggregated_rating >= 80""" + EXCLUDE_HIDDEN_FILTER + """
-           ORDER BY aggregated_rating DESC
-           LIMIT 10"""
-    )
-    critic_favorites = [dict(g) for g in cursor.fetchall()]
+    # Check cache
+    if (_igdb_cache["data"] is not None
+            and _igdb_cache["igdb_ids_hash"] == ids_hash
+            and now < _igdb_cache["expires_at"]):
+        return _igdb_cache["data"]
 
-    # Random picks (10 random games with IGDB data)
-    cursor.execute(
-        """SELECT id, name, store, igdb_id, igdb_cover_url, cover_image,
-                  igdb_summary, description, igdb_screenshots, total_rating,
-                  igdb_rating, aggregated_rating, genres, playtime_hours
-           FROM games
-           WHERE igdb_id IS NOT NULL AND igdb_id > 0""" + EXCLUDE_HIDDEN_FILTER + """
-           ORDER BY RANDOM()
-           LIMIT 10"""
+    # Fetch fresh data with parallelized API calls
+    try:
+        client = IGDBClient()
+
+        pop_types = {
+            "igdb_visits": POPULARITY_TYPE_IGDB_VISITS,
+            "want_to_play": POPULARITY_TYPE_IGDB_WANT_TO_PLAY,
+            "playing": POPULARITY_TYPE_IGDB_PLAYING,
+            "played": POPULARITY_TYPE_IGDB_PLAYED,
+            "steam_peak_24h": POPULARITY_TYPE_STEAM_PEAK_24H,
+            "steam_positive_reviews": POPULARITY_TYPE_STEAM_POSITIVE_REVIEWS,
+        }
+
+        def _resolve_popularity(pop_data):
+            """Map IGDB popularity response to local game data."""
+            result = []
+            seen = set()
+            for pop in pop_data:
+                gid = pop.get("game_id")
+                if gid in igdb_to_local and gid not in seen:
+                    gdata = igdb_to_local[gid].copy()
+                    gdata["popularity_value"] = pop.get("value", 0)
+                    result.append(gdata)
+                    seen.add(gid)
+            return result
+
+        results = {}
+
+        with ThreadPoolExecutor(max_workers=7) as executor:
+            # Submit all 7 IGDB calls in parallel
+            future_popular = executor.submit(
+                client.get_popular_games, igdb_ids, None, 100
+            )
+            futures_by_key = {
+                executor.submit(
+                    client.get_popular_games, igdb_ids, pop_type, 10
+                ): key
+                for key, pop_type in pop_types.items()
+            }
+
+            # Collect general popularity result
+            popularity_data = future_popular.result()
+            popular_games = _resolve_popularity(popularity_data)
+            popularity_source = "igdb_popularity" if popular_games else "rating"
+
+            # Collect typed results
+            for future, key in futures_by_key.items():
+                results[key] = _resolve_popularity(future.result())
+
+        featured_games = popular_games[:20] if popular_games else []
+
+        result = {
+            "popularity_source": popularity_source,
+            "featured_games": featured_games,
+            "igdb_visits": results.get("igdb_visits", []),
+            "want_to_play": results.get("want_to_play", []),
+            "playing": results.get("playing", []),
+            "played": results.get("played", []),
+            "steam_peak_24h": results.get("steam_peak_24h", []),
+            "steam_positive_reviews": results.get("steam_positive_reviews", []),
+        }
+
+        # Update cache
+        _igdb_cache["data"] = result
+        _igdb_cache["expires_at"] = now + CACHE_TTL
+        _igdb_cache["igdb_ids_hash"] = ids_hash
+
+        return result
+
+    except Exception as e:
+        print(f"Could not fetch IGDB popularity data: {e}")
+        return _empty_igdb_result()
+
+
+def _game_to_json(game):
+    """Convert a game dict to a JSON-safe dict with parsed JSON fields."""
+    return {
+        "id": game["id"],
+        "name": game["name"],
+        "store": game.get("store", ""),
+        "igdb_cover_url": game.get("igdb_cover_url") or "",
+        "cover_image": game.get("cover_image") or "",
+        "igdb_summary": game.get("igdb_summary") or "",
+        "description": game.get("description") or "",
+        "igdb_screenshots": parse_json_field(game.get("igdb_screenshots")),
+        "genres": parse_json_field(game.get("genres")),
+        "total_rating": game.get("total_rating"),
+        "igdb_rating": game.get("igdb_rating"),
+        "aggregated_rating": game.get("aggregated_rating"),
+        "playtime_hours": game.get("playtime_hours"),
+    }
+
+
+@router.get("/discover", response_class=HTMLResponse)
+def discover(request: Request, conn: sqlite3.Connection = Depends(get_db)):
+    """Discover page - renders immediately with DB data, IGDB sections load via AJAX."""
+    library_games = _get_library_games(conn)
+    igdb_to_local, igdb_ids, unique_games = _build_igdb_mapping(library_games)
+
+    highly_rated, hidden_gems, most_played, critic_favorites, random_picks = (
+        _derive_db_categories(unique_games)
     )
-    random_picks = [dict(g) for g in cursor.fetchall()]
+
+    has_igdb_ids = bool(igdb_ids)
 
     return templates.TemplateResponse(
         "discover.html",
         {
             "request": request,
-            "featured_games": featured_games,
             "highly_rated": highly_rated,
             "hidden_gems": hidden_gems,
             "most_played": most_played,
             "critic_favorites": critic_favorites,
             "random_picks": random_picks,
-            "popularity_source": popularity_source,
-            "igdb_visits": igdb_visits,
-            "want_to_play": want_to_play,
-            "playing": playing,
-            "played": played,
-            "steam_peak_24h": steam_peak_24h,
-            "steam_positive_reviews": steam_positive_reviews,
-            "parse_json": parse_json_field
+            "has_igdb_ids": has_igdb_ids,
+            "parse_json": parse_json_field,
         }
     )
+
+
+@router.get("/api/discover/igdb-sections")
+def discover_igdb_sections(conn: sqlite3.Connection = Depends(get_db)):
+    """API endpoint returning IGDB popularity sections as JSON."""
+    library_games = _get_library_games(conn)
+    igdb_to_local, igdb_ids, unique_games = _build_igdb_mapping(library_games)
+
+    igdb_data = _fetch_igdb_sections(igdb_ids, igdb_to_local)
+
+    # If no IGDB popularity data, use rating-based fallback
+    if not igdb_data["featured_games"] and unique_games:
+        igdb_data["popularity_source"] = "rating"
+        igdb_data["featured_games"] = [
+            g for g in unique_games if g["total_rating"]
+        ][:20]
+
+    return JSONResponse(content={
+        "popularity_source": igdb_data["popularity_source"],
+        "featured_games": [_game_to_json(g) for g in igdb_data["featured_games"]],
+        "igdb_visits": [_game_to_json(g) for g in igdb_data["igdb_visits"]],
+        "want_to_play": [_game_to_json(g) for g in igdb_data["want_to_play"]],
+        "playing": [_game_to_json(g) for g in igdb_data["playing"]],
+        "played": [_game_to_json(g) for g in igdb_data["played"]],
+        "steam_peak_24h": [_game_to_json(g) for g in igdb_data["steam_peak_24h"]],
+        "steam_positive_reviews": [_game_to_json(g) for g in igdb_data["steam_positive_reviews"]],
+    })
