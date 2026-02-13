@@ -341,11 +341,15 @@ def get_gamepass_catalog(plan, market):
         
         all_games = []
         
-        planInfo = GAMEPASS_PLAN_MAP[plan]
-        collectionId = planInfo['collection']
-        subscriptionId = planInfo['subscription']
+        plan_info = GAMEPASS_PLAN_MAP.get(plan)
+        if not plan_info:
+            print(f"  Invalid Game Pass plan: {plan}")
+            return []
+
+        collection_id = plan_info['collection']
+        subscription_id = plan_info['subscription']
         # Fetch Game Pass catalog
-        url = f"{GAMEPASS_CATALOG_ENDPOINT}?id={collectionId}&language=en-US&market={market}&platformContext=pc&subscriptionContext={subscriptionId}"
+        url = f"{GAMEPASS_CATALOG_ENDPOINT}?id={collection_id}&language=en-US&market={market}&platformContext=pc&subscriptionContext={subscription_id}"
 
         print(f"  Fetching Game Pass catalog for plan: {plan} (market: {market})...")
         response = requests.get(url, headers=REQUIRED_HEADERS)
