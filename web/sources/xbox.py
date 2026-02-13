@@ -340,7 +340,10 @@ def get_gamepass_catalog(plan, market):
         
         all_games = []
         
-        plan_info = GAMEPASS_PLAN_MAP[plan]
+        plan_info = GAMEPASS_PLAN_MAP.get(plan)
+        if not plan_info:
+            raise ValueError(f"Invalid Game Pass plan: {plan}")
+
         collection_id = plan_info['collection']
         subscription_id = plan_info['subscription']
         # Fetch Game Pass catalog
