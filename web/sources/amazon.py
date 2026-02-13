@@ -21,7 +21,7 @@ def _run_nile_command(args, timeout=60):
     """Run a Nile CLI command and return the result."""
     nile_path = shutil.which("nile")
     if not nile_path:
-        return None, "Nile is not installed. Install it with: pip install nile"
+        return None, "Nile is not installed, see README for instructions"
 
     try:
         result = subprocess.run(
@@ -148,16 +148,14 @@ def _read_library_file():
 def get_amazon_library():
     """Fetch all games from Amazon Games library via Nile."""
     if not is_nile_installed():
-        print("Error: Nile is not installed")
-        print("Install it with: pip install nile")
-        print("Then authenticate with: nile auth --login")
+        print("Error: Nile is not installed, see README for instructions")
         return None
 
     # Check authentication status
     status = check_auth_status()
     if not status.get("authenticated"):
         print("Error: Not authenticated with Amazon Games")
-        print("Authenticate with: nile auth --login")
+        print("Authenticate from the Settings page (or manually with: nile auth --login)")
         return None
 
     # Sync library first
@@ -268,9 +266,7 @@ def main():
     args = parser.parse_args()
 
     if not is_nile_installed():
-        print("Error: Nile is not installed")
-        print("Install it with: pip install nile")
-        print("For more info: https://github.com/imLinguin/nile")
+        print("Error: Nile is not installed, see README for instructions")
         return
 
     if args.status:
