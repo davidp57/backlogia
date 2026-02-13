@@ -82,9 +82,14 @@ def library(
     if no_igdb:
         query += " AND (igdb_id IS NULL OR igdb_id = 0)"
 
-    # Sorting
+    # Sorting - detect which columns actually exist in the DB
+    cursor.execute("PRAGMA table_info(games)")
+    existing_columns = {row[1] for row in cursor.fetchall()}
     valid_sorts = ["name", "store", "playtime_hours", "critics_score", "release_date", "total_rating", "igdb_rating", "aggregated_rating", "average_rating", "metacritic_score", "metacritic_user_score"]
-    if sort in valid_sorts:
+    available_sorts = [s for s in valid_sorts if s in existing_columns]
+    if sort not in available_sorts:
+        sort = "name"
+    if sort in available_sorts:
         order_dir = "DESC" if order == "desc" else "ASC"
         if sort in ["playtime_hours", "critics_score", "total_rating", "igdb_rating", "aggregated_rating", "average_rating", "metacritic_score", "metacritic_user_score"]:
             query += f" ORDER BY {sort} {order_dir} NULLS LAST"
@@ -182,6 +187,7 @@ def library(
             "current_protondb_tier": protondb_tier,
             "current_no_igdb": no_igdb,
             "collections": collections,
+            "available_sorts": available_sorts,
             "parse_json": parse_json_field
         }
     )
