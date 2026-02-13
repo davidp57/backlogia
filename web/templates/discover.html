@@ -47,6 +47,14 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
             text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-brand img {
+            height: 32px;
+            width: 32px;
         }
 
         .nav-links {
@@ -1078,7 +1086,7 @@
 </head>
 <body>
     <nav class="nav">
-        <a href="/" class="nav-brand">Backlogia</a>
+        <a href="/" class="nav-brand"><img src="/static/favicons/Backlogia_logo.png" alt="Backlogia logo">Backlogia</a>
         <div class="nav-links">
             <a href="/" class="nav-link active">Discover</a>
             <a href="/library" class="nav-link">Library</a>
