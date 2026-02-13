@@ -164,7 +164,7 @@ def get_xuid_from_token(token):
         return None
 
 
-def get_owned_games(token, xuid=None):
+def get_owned_games(token, market, xuid=None):
     """Fetch owned games from Xbox TitleHub API."""
     try:
         auth_header, userhash = parse_xsts_token(token)
@@ -179,7 +179,7 @@ def get_owned_games(token, xuid=None):
         if not xuid:
             print("  Could not determine XUID - trying alternative API")
             # Fall back to Collections API which doesn't need XUID
-            return get_owned_games_from_collections(token)
+            return get_owned_games_from_collections(token, market)
 
         headers = {
             **REQUIRED_HEADERS,
@@ -204,7 +204,7 @@ def get_owned_games(token, xuid=None):
         if response.status_code != 200:
             print(f"  TitleHub error: {response.status_code} - {response.text[:200]}")
             # Try Collections API as fallback
-            return get_owned_games_from_collections(token)
+            return get_owned_games_from_collections(token, market)
 
         try:
             data = response.json()
@@ -262,7 +262,7 @@ def get_owned_games(token, xuid=None):
         return []
 
 
-def get_owned_games_from_collections(token):
+def get_owned_games_from_collections(token, market):
     """Fetch owned games using Collections API (alternative method)."""
     try:
         auth_header, _ = parse_xsts_token(token)
@@ -276,13 +276,12 @@ def get_owned_games_from_collections(token):
         }
 
         # Query for owned products
-        planInfo = get_resolved_xbox_gamepass_settings()
         payload = {
             "productIds": [],
             "productSkuIds": [],
             "idType": "ProductId",
             "beneficiaries": [],
-            "market": planInfo["market"],
+            "market": market,
             "languages": ["en-US"],
             "maxPageSize": 1000,
         }
@@ -341,11 +340,7 @@ def get_gamepass_catalog(plan, market):
         
         all_games = []
         
-        plan_info = GAMEPASS_PLAN_MAP.get(plan)
-        if not plan_info:
-            print(f"  Invalid Game Pass plan: {plan}")
-            return []
-
+        plan_info = GAMEPASS_PLAN_MAP[plan]
         collection_id = plan_info['collection']
         subscription_id = plan_info['subscription']
         # Fetch Game Pass catalog
@@ -374,7 +369,7 @@ def get_gamepass_catalog(plan, market):
         batch_size = 20
         for i in range(0, len(product_ids), batch_size):
             batch = product_ids[i:i + batch_size]
-            details = get_product_details(batch)
+            details = get_product_details(batch, market)
             all_games.extend(details)
 
         return all_games
@@ -386,7 +381,7 @@ def get_gamepass_catalog(plan, market):
         return []
 
 
-def get_product_details(product_ids):
+def get_product_details(product_ids, market):
     """Fetch product details from Display Catalog API."""
     if not product_ids:
         return []
@@ -394,8 +389,7 @@ def get_product_details(product_ids):
     try:
         # Build the products query
         ids_param = ",".join(product_ids)
-        planInfo = get_resolved_xbox_gamepass_settings()
-        url = f"{DISPLAY_CATALOG_ENDPOINT}?bigIds={ids_param}&market={planInfo['market']}&languages=en-US"
+        url = f"{DISPLAY_CATALOG_ENDPOINT}?bigIds={ids_param}&market={market}&languages=en-US"
 
         response = requests.get(url, headers=REQUIRED_HEADERS)
 
@@ -467,7 +461,8 @@ def get_xbox_library():
     """Fetch all games from Xbox - owned games + Game Pass catalog."""
     token = get_xsts_token()
     gamepass_settings = get_resolved_xbox_gamepass_settings()
-
+    plan = gamepass_settings["plan"]
+    market = gamepass_settings["market"]
     print("Fetching Xbox library...")
 
     all_games = []
@@ -475,7 +470,7 @@ def get_xbox_library():
 
     # First, try to get owned games if token is available
     if token:
-        owned_games = get_owned_games(token)
+        owned_games = get_owned_games(token, market)
         print(f"  Found {len(owned_games)} owned Xbox games")
 
         for game in owned_games:
@@ -488,7 +483,7 @@ def get_xbox_library():
         print("  To import owned games, add your XSTS token in Settings")
 
     # Then fetch Game Pass catalog (public API)
-    gamepass_games = get_gamepass_catalog(gamepass_settings["plan"], gamepass_settings["market"])
+    gamepass_games = get_gamepass_catalog(plan, market)
     print(f"  Found {len(gamepass_games)} Game Pass games")
 
     # Add Game Pass games that aren't already owned
@@ -538,7 +533,7 @@ def main():
     elif args.token:
         # Use provided token for testing
         print("Using provided token...")
-        games = get_owned_games(args.token)
+        games = get_owned_games(args.token, args.market)
     else:
         games = get_xbox_library()
 
