@@ -216,7 +216,7 @@ def sync_store_async(store: StoreType):
             total = len(stores_to_sync)
             results = {}
 
-            for i, (store_name, import_func) in enumerate(stores_to_sync):
+            for i, (store_name, import_func) in enumerate(stores_to_sync, 1):
                 update_job_progress(job_id, i, total, f"Syncing {store_name.capitalize()}...")
                 try:
                     count = import_func(conn)

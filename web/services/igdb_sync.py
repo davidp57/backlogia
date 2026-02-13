@@ -403,7 +403,7 @@ def sync_games(conn, client, limit=None, force=False, progress_callback=None):
 
         # Report progress
         if progress_callback:
-            progress_callback(i, total, f"Processing: {name[:50]}...")
+            progress_callback(i + 1, total, f"Processing: {name[:50]}...")
 
         try:
             results = client.search_game(name)
