@@ -334,6 +334,27 @@
             box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
         }
 
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #e4e4e4;
+            font-size: 1rem;
+        }
+
+        .form-group select:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+        }
+
+        .form-group select option {
+            background: #1a1a2e;
+            color: #e4e4e4;
+        }
+
         .help-text {
             font-size: 0.8rem;
             color: #888;
@@ -1529,6 +1550,18 @@
                                         Game Pass catalog is public and will sync without a token. Token is only needed for your owned games.
                                     </p>
                                 </div>
+                                <label for="xbox_gamepass_market">Xbox Game Pass Market</label>
+                                <input type="text" id="xbox_gamepass_market" name="xbox_gamepass_market"
+                                       value="{{ settings.xbox_gamepass_market }}"
+                                       placeholder="e.g. US, AU">
+                                <label for="xbox_gamepass_plan">Xbox Game Pass Plan</label>
+                                <select id="xbox_gamepass_plan" name="xbox_gamepass_plan">
+                                    <option value="none" {% if not settings.xbox_gamepass_plan or settings.xbox_gamepass_plan == 'none' %}selected{% endif %}>None</option>
+                                    <option value="ultimate" {% if settings.xbox_gamepass_plan == 'ultimate' %}selected{% endif %}>Game Pass Ultimate</option>
+                                    <option value="premium" {% if settings.xbox_gamepass_plan == 'premium' %}selected{% endif %}>Game Pass Premium</option>
+                                    <option value="essential" {% if settings.xbox_gamepass_plan == 'essential' %}selected{% endif %}>Game Pass Essential</option>
+                                    <option value="pc" {% if settings.xbox_gamepass_plan == 'pc' %}selected{% endif %}>PC Game Pass</option>
+                                </select>
                             </div>
                         </div>
                     </div>

@@ -27,7 +27,8 @@ def settings_page(
     from ..services.settings import (
         get_setting, STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET,
         ITCH_API_KEY, HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH,
-        EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD, LOCAL_GAMES_PATHS
+        EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD, LOCAL_GAMES_PATHS, XBOX_XSTS_TOKEN,
+        XBOX_GAMEPASS_MARKET, XBOX_GAMEPASS_PLAN
     )
     from ..sources.local import discover_local_game_paths
 
@@ -63,6 +64,9 @@ def settings_page(
         "gog_db_path": get_setting(GOG_DB_PATH, ""),
         "ea_bearer_token": get_setting(EA_BEARER_TOKEN, ""),
         "local_games_paths": local_games_paths_value,
+        "xbox_xsts_token": get_setting(XBOX_XSTS_TOKEN, ""),
+        "xbox_gamepass_market": get_setting(XBOX_GAMEPASS_MARKET, ""),
+        "xbox_gamepass_plan": get_setting(XBOX_GAMEPASS_PLAN, ""),
     }
     success_flag = success == "1"
 
@@ -97,13 +101,17 @@ def save_settings(
     gog_db_path: str = Form(default=""),
     ea_bearer_token: str = Form(default=""),
     local_games_paths: str = Form(default=""),
+    xbox_xsts_token: str = Form(default=""),
+    xbox_gamepass_market: str = Form(default=""),
+    xbox_gamepass_plan: str = Form(default=""),
 ):
     """Save settings from the form."""
     # Import here to avoid circular imports
     from ..services.settings import (
         set_setting, STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET,
         ITCH_API_KEY, HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH,
-        EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD, LOCAL_GAMES_PATHS
+        EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD, LOCAL_GAMES_PATHS, XBOX_XSTS_TOKEN,
+        XBOX_GAMEPASS_MARKET, XBOX_GAMEPASS_PLAN
     )
 
     # Detect if running in Docker
@@ -120,6 +128,9 @@ def save_settings(
     set_setting(BATTLENET_SESSION_COOKIE, battlenet_session_cookie.strip())
     set_setting(GOG_DB_PATH, gog_db_path.strip())
     set_setting(EA_BEARER_TOKEN, ea_bearer_token.strip())
+    set_setting(XBOX_XSTS_TOKEN, xbox_xsts_token.strip())
+    set_setting(XBOX_GAMEPASS_MARKET, xbox_gamepass_market.strip())
+    set_setting(XBOX_GAMEPASS_PLAN, xbox_gamepass_plan.strip())
     
     # Only save LOCAL_GAMES_PATHS if not in Docker mode
     if not is_docker:
