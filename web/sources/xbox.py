@@ -47,7 +47,7 @@ def get_resolved_xbox_gamepass_settings():
     """Get Xbox Game Pass settings."""
     gamepass_settings = get_xbox_gamepass_settings()
     return {
-        "plan": gamepass_settings.get("plan", "ultimate"),
+        "plan": gamepass_settings.get("plan", "none"),
         "market": gamepass_settings.get("market", "US")
     }
     
