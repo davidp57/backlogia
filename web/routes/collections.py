@@ -89,6 +89,8 @@ def collection_detail(
     stores: list[str] = Query(default=[]),
     genres: list[str] = Query(default=[]),
     queries: list[str] = Query(default=[]),
+    exclude_streaming: bool = False,
+    no_igdb: bool = False,
     conn: sqlite3.Connection = Depends(get_db)
 ):
     """View a single collection with its games (with optional filters)."""
@@ -186,6 +188,9 @@ def collection_detail(
             "query_categories": QUERY_CATEGORIES,
             "query_descriptions": QUERY_DESCRIPTIONS,
             "query_filter_counts": query_filter_counts,
+            # Advanced filters (global)
+            "current_exclude_streaming": exclude_streaming,
+            "current_no_igdb": no_igdb,
             "show_search": False,  # No search on collection detail
             "show_sort": False,  # No sort on collection detail
             "show_actions": True,

@@ -9,6 +9,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/favicons/apple-touch-icon.png">
     <link rel="manifest" href="/static/favicons/site.webmanifest">
+    <meta name="theme-color" content="#1a1a2e">
     <style>
         * {
             margin: 0;
@@ -45,6 +46,14 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
             text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-brand img {
+            height: 32px;
+            width: 32px;
         }
 
         .nav-links {
@@ -385,7 +394,7 @@
 </head>
 <body>
     <nav class="top-nav">
-        <a href="/" class="nav-brand">Backlogia</a>
+        <a href="/" class="nav-brand"><img src="/static/favicons/Backlogia_logo.png" alt="Backlogia logo">Backlogia</a>
         <div class="nav-links">
             <a href="/discover" class="nav-link">Discover</a>
             <a href="/library" class="nav-link">Library</a>

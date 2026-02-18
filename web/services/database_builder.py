@@ -10,6 +10,7 @@ from ..config import DATABASE_PATH
 
 def create_database():
     """Create the SQLite database with the games table."""
+    DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
 
@@ -621,7 +622,7 @@ def import_xbox_games(conn):
         if not games:
             print("  No Xbox games found or not configured")
             print("  Add your XSTS token in Settings to import owned games")
-            print("  Game Pass catalog will be imported regardless")
+            print("  Select Game Pass plan in Settings to import catalog")
             return 0
 
         count = 0

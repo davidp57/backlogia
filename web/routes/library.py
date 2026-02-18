@@ -4,14 +4,13 @@
 import json
 import sqlite3
 from pathlib import Path
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from ..dependencies import get_db
-from ..utils.filters import EXCLUDE_HIDDEN_FILTER, EXCLUDE_DUPLICATES_FILTER, PREDEFINED_QUERIES, QUERY_DISPLAY_NAMES, QUERY_CATEGORIES, QUERY_DESCRIPTIONS, build_query_filter_sql
+from ..utils.filters import EXCLUDE_HIDDEN_FILTER, EXCLUDE_DUPLICATES_FILTER, QUERY_DISPLAY_NAMES, QUERY_CATEGORIES, QUERY_DESCRIPTIONS, build_query_filter_sql
 from ..utils.helpers import parse_json_field, get_store_url, group_games_by_igdb, get_query_filter_counts
 
 router = APIRouter()
@@ -33,6 +32,10 @@ def library(
     search: str = "",
     sort: str = "name",
     order: str = "asc",
+    exclude_streaming: bool = False,
+    collection: int = 0,
+    protondb_tier: str = "",
+    no_igdb: bool = False,
     conn: sqlite3.Connection = Depends(get_db)
 ):
     """Library page - list all games."""
@@ -67,11 +70,36 @@ def library(
         query += " AND name LIKE ?"
         params.append(f"%{search}%")
 
-    # Sorting
-    valid_sorts = ["name", "store", "playtime_hours", "critics_score", "release_date", "added_at", "total_rating", "igdb_rating", "aggregated_rating", "average_rating", "metacritic_score", "metacritic_user_score"]
-    if sort in valid_sorts:
+    # Collection filter
+    if collection:
+        query += " AND id IN (SELECT game_id FROM collection_games WHERE collection_id = ?)"
+        params.append(collection)
+
+    # ProtonDB tier filter (hierarchy: platinum > gold > silver > bronze)
+    protondb_hierarchy = ["platinum", "gold", "silver", "bronze"]
+    if protondb_tier and protondb_tier in protondb_hierarchy:
+        tier_index = protondb_hierarchy.index(protondb_tier)
+        allowed_tiers = protondb_hierarchy[:tier_index + 1]
+        placeholders = ",".join("?" * len(allowed_tiers))
+        query += f" AND protondb_tier IN ({placeholders})"
+        params.extend(allowed_tiers)
+
+    # No IGDB data filter
+    if no_igdb:
+        query += " AND (igdb_id IS NULL OR igdb_id = 0)"
+
+    # Sorting - detect which columns actually exist in the DB
+    cursor.execute("PRAGMA table_info(games)")
+    existing_columns = {row[1] for row in cursor.fetchall()}
+    valid_sorts = ["name", "store", "playtime_hours", "critics_score", "release_date", "added_at", "total_rating", "igdb_rating", "aggregated_rating", "average_rating", "metacritic_score", "metacritic_user_score", "personal_rating", "priority"]
+    available_sorts = [s for s in valid_sorts if s in existing_columns]
+    if sort not in available_sorts:
+        sort = "name"
+    if sort in available_sorts:
         order_dir = "DESC" if order == "desc" else "ASC"
-        if sort in ["playtime_hours", "critics_score", "total_rating", "igdb_rating", "aggregated_rating", "average_rating", "metacritic_score", "metacritic_user_score", "release_date", "added_at"]:
+        if sort == "priority":
+            query += " ORDER BY CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END ASC"
+        elif sort in ["playtime_hours", "critics_score", "total_rating", "igdb_rating", "aggregated_rating", "average_rating", "metacritic_score", "metacritic_user_score", "release_date", "added_at", "personal_rating"]:
             query += f" ORDER BY {sort} {order_dir} NULLS LAST"
         else:
             query += f" ORDER BY {sort} COLLATE NOCASE {order_dir}"
@@ -82,11 +110,17 @@ def library(
     # Group games by IGDB ID (combines multi-store ownership)
     grouped_games = group_games_by_igdb(games)
 
+    # Post-grouping filter: exclude streaming-only games
+    if exclude_streaming:
+        grouped_games = [g for g in grouped_games if not g.get("only_streaming", False)]
+
     # Sort grouped games by primary game's sort field
     # Separate games with null sort values so nulls are always last
     reverse = order == "desc"
     with_values = []
     without_values = []
+
+    priority_order = {'high': 1, 'medium': 2, 'low': 3}
 
     for g in grouped_games:
         val = g["primary"].get(sort)
@@ -97,6 +131,8 @@ def library(
 
     def get_sort_key(g):
         val = g["primary"].get(sort)
+        if sort == "priority":
+            return priority_order.get(val, 4)
         if isinstance(val, str):
             return val.lower()
         return val
@@ -117,6 +153,16 @@ def library(
     # Get hidden count
     cursor.execute("SELECT COUNT(*) FROM games WHERE hidden = 1")
     hidden_count = cursor.fetchone()[0]
+
+    # Get collections for the filter dropdown
+    cursor.execute("""
+        SELECT c.id, c.name, COUNT(cg.game_id) as game_count
+        FROM collections c
+        LEFT JOIN collection_games cg ON c.id = cg.collection_id
+        GROUP BY c.id
+        ORDER BY c.name
+    """)
+    collections = [{"id": row[0], "name": row[1], "game_count": row[2]} for row in cursor.fetchall()]
 
     # Get all unique genres with counts
     cursor.execute("SELECT genres FROM games WHERE genres IS NOT NULL AND genres != '[]'" + EXCLUDE_HIDDEN_FILTER)
@@ -164,6 +210,12 @@ def library(
             "query_display_names": QUERY_DISPLAY_NAMES,
             "query_descriptions": QUERY_DESCRIPTIONS,
             "query_filter_counts": query_filter_counts,
+            "current_exclude_streaming": exclude_streaming,
+            "current_collection": collection,
+            "current_protondb_tier": protondb_tier,
+            "current_no_igdb": no_igdb,
+            "collections": collections,
+            "available_sorts": available_sorts,
             "parse_json": parse_json_field
         }
     )
@@ -213,6 +265,26 @@ def game_detail(request: Request, game_id: int, conn: sqlite3.Connection = Depen
         elif g.get("playtime_hours") and not primary_game.get("playtime_hours"):
             primary_game = g
 
+    # Get current system labels (playtime tags) for this game
+    cursor.execute("""
+        SELECT l.name
+        FROM labels l
+        JOIN game_labels gl ON l.id = gl.label_id
+        WHERE gl.game_id = ? AND l.system = 1 AND l.type = 'system_tag'
+    """, (game_id,))
+    current_playtime_tag = cursor.fetchone()
+    current_playtime_tag_name = current_playtime_tag["name"] if current_playtime_tag else None
+
+    # Get collections this game belongs to
+    cursor.execute("""
+        SELECT c.id, c.name
+        FROM collections c
+        JOIN collection_games cg ON c.id = cg.collection_id
+        WHERE cg.game_id = ?
+        ORDER BY c.name
+    """, (game_id,))
+    game_collections = [dict(c) for c in cursor.fetchall()]
+
     return templates.TemplateResponse(
         request,
         "game_detail.html",
@@ -220,6 +292,8 @@ def game_detail(request: Request, game_id: int, conn: sqlite3.Connection = Depen
             "game": primary_game,
             "store_info": store_info,
             "related_games": related_games,
+            "current_playtime_tag": current_playtime_tag_name,
+            "game_collections": game_collections,
             "parse_json": parse_json_field,
             "get_store_url": get_store_url
         }

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="web/static/favicons/Backlogia_logo.png" alt="Backlogia" width="128" height="128">
+</p>
+
 # Backlogia
 
 **Your entire game library, finally in one place.**
@@ -254,14 +258,53 @@ On **Linux** hosts, mDNS is advertised automatically via Avahi.
 
 **Trusting the Certificate:**
 
-Caddy generates a self-signed certificate. Your browser will show a warning on first visit. You can click past it. To trust it permanently on macOS:
+Caddy generates a self-signed certificate using its own internal CA. Browsers will show a security warning until you trust this CA. Trusting it is **required** for PWA install support (service workers need a valid certificate).
+
+Run the included script to trust the certificate automatically:
 ```bash
-sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ./data/caddy_data/pki/authorities/local/root.crt
+./scripts/trust-caddy-cert.sh
 ```
+
+This adds Caddy's root CA to your system trust store. Restart your browser afterward. The script supports macOS, Linux, and Windows (via Git Bash).
+
+You can also trust it manually:
+- **macOS**: `sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ./data/caddy_data/caddy/pki/authorities/local/root.crt`
+- **Linux**: Copy `./data/caddy_data/caddy/pki/authorities/local/root.crt` to `/usr/local/share/ca-certificates/` and run `sudo update-ca-certificates`
+- **Windows (PowerShell, run as Administrator)**: `certutil -addstore -f Root .\data\caddy_data\caddy\pki\authorities\local\root.crt`
+
+---
+
+### Authentication (Optional)
+
+Backlogia runs without authentication by default. If you're exposing your instance beyond localhost, you can enable single-user authentication to protect all routes.
+
+**Enable authentication:**
+
+Add to your `.env` file:
+```bash
+ENABLE_AUTH=true
+```
+
+Then restart the container (or application). On first visit you'll be prompted to create an owner account — this is the only account allowed on the instance.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `ENABLE_AUTH` | `false` | Set to `true` to require login |
+| `SESSION_EXPIRY_DAYS` | `30` | How long sessions last before requiring re-login |
+
+A session secret key is generated automatically and persisted in the database. You can logout from the Settings page.
 
 ---
 
 ### Option 3: Local Installation
+
+#### Prerequisites (Amazon)
+1. Build the latest `nile` code: https://github.com/imLinguin/nile?tab=readme-ov-file#setting-up-dev-environment
+2. Compile `nile` into an executable: https://github.com/imLinguin/nile?tab=readme-ov-file#building-pyinstaller-executable
+3. Make sure that the compiler executable is in your `PATH` (either place it in an existing `PATH` folder or add the folder containing the executable to the `PATH` list)
+4. If you added a new folder to your `PATH` above, open a **new terminal** for the instructions below (so it receives the updated `PATH`)
+
+#### Installation
 
 1. **Clone the repository**
    ```bash
@@ -287,17 +330,12 @@ sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keyc
 
 5. **Edit `.env` with your settings** (see [Configuration](#configuration))
 
-6. **Initialize the database**
-   ```bash
-   python scripts/build_database.py
-   ```
-
-7. **Run the application**
+6. **Run the application**
    ```bash
    python web/app.py
    ```
 
-8. **Access Backlogia** at [http://localhost:5050](http://localhost:5050)
+7. **Access Backlogia** at [http://localhost:5050](http://localhost:5050)
 
 #### Updating (Local Installation)
 

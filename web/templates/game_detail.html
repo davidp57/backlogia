@@ -9,6 +9,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/favicons/apple-touch-icon.png">
     <link rel="manifest" href="/static/favicons/site.webmanifest">
+    <meta name="theme-color" content="#1a1a2e">
     <style>
         * {
             margin: 0;
@@ -45,6 +46,14 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
             text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-brand img {
+            height: 32px;
+            width: 32px;
         }
 
         .nav-links {
@@ -81,25 +90,357 @@
             opacity: 0.8;
         }
 
-        /* Add to Collection Button */
-        .add-to-collection-btn {
-            padding: 10px 20px;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-size: 0.9rem;
+        /* Game Tags Zone */
+        .game-tags-zone {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        /* Tag pills - clickable menu triggers */
+        .tag-pill {
+            padding: 5px 10px 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
             font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border: 1px solid;
+            line-height: 1.2;
+            cursor: pointer;
+            transition: all 0.15s;
+            background: none;
+            position: relative;
+        }
+
+        .tag-pill:hover {
+            filter: brightness(1.3);
+        }
+
+        .tag-pill .arrow {
+            font-size: 0.6rem;
+            opacity: 0.6;
+            margin-left: 2px;
+        }
+
+        /* Unset state (no value) */
+        .tag-pill.unset {
+            background: rgba(13, 13, 26, 0.75);
+            color: rgba(255, 255, 255, 0.7);
+            border-color: rgba(255, 255, 255, 0.35);
+            border-style: dashed;
+            backdrop-filter: blur(4px);
+        }
+
+        .tag-pill.unset:hover {
+            background: rgba(26, 26, 46, 0.9);
+            color: rgba(255, 255, 255, 0.95);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Priority colors */
+        .tag-pill.priority-high {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .tag-pill.priority-medium {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+            border-color: rgba(251, 191, 36, 0.3);
+        }
+
+        .tag-pill.priority-low {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+
+        .tag-pill.rating-set {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+
+        .tag-pill.playtime-set {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        /* Collection tag (not a menu, just display + link) */
+        .collection-pill {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            line-height: 1.2;
+            text-decoration: none;
+            background: rgba(102, 126, 234, 0.15);
+            color: #667eea;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            transition: all 0.15s;
+        }
+
+        .collection-pill:hover {
+            background: rgba(102, 126, 234, 0.25);
+        }
+
+        /* Status pills (hidden, nsfw) */
+        .status-pill {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            line-height: 1.2;
+        }
+
+        .status-pill.hidden-status {
+            background: rgba(244, 67, 54, 0.15);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.25);
+        }
+
+        .status-pill.nsfw-status {
+            background: rgba(255, 152, 0, 0.15);
+            color: #ff9800;
+            border: 1px solid rgba(255, 152, 0, 0.25);
+        }
+
+        /* Edit button - distinct from pills */
+        .edit-more-btn {
+            padding: 6px 16px;
+            background: rgba(13, 13, 26, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
             cursor: pointer;
             transition: all 0.2s;
             display: inline-flex;
             align-items: center;
+            gap: 6px;
+            margin-left: 4px;
+            backdrop-filter: blur(4px);
+        }
+
+        .edit-more-btn:hover {
+            background: rgba(102, 126, 234, 0.25);
+            color: #667eea;
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+
+        /* Edit actions panel (hidden by default, shown on Edit click) */
+        .edit-actions-panel {
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: max-height 0.3s ease, opacity 0.2s ease, margin 0.3s ease;
+            margin-top: 0;
+        }
+
+        .edit-actions-panel.visible {
+            max-height: 80px;
+            opacity: 1;
+            margin-top: 10px;
+        }
+
+        .edit-actions-panel .action-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .edit-action-btn {
+            padding: 5px 12px;
+            border: 1px solid;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.78rem;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+            background: rgba(13, 13, 26, 0.7);
+            backdrop-filter: blur(4px);
+        }
+
+        .edit-action-btn.collection {
+            color: #667eea;
+            border-color: rgba(102, 126, 234, 0.5);
+            background: rgba(102, 126, 234, 0.12);
+        }
+        .edit-action-btn.collection:hover { background: rgba(102, 126, 234, 0.25); }
+
+        .edit-action-btn.hide {
+            color: #f44336;
+            border-color: rgba(244, 67, 54, 0.5);
+            background: rgba(244, 67, 54, 0.12);
+        }
+        .edit-action-btn.hide:hover { background: rgba(244, 67, 54, 0.25); }
+
+        .edit-action-btn.nsfw {
+            color: #ff9800;
+            border-color: rgba(255, 152, 0, 0.5);
+            background: rgba(255, 152, 0, 0.12);
+        }
+        .edit-action-btn.nsfw:hover { background: rgba(255, 152, 0, 0.25); }
+
+        .edit-action-btn.delete {
+            color: #f44336;
+            border-color: rgba(244, 67, 54, 0.5);
+            background: rgba(244, 67, 54, 0.12);
+        }
+        .edit-action-btn.delete:hover { background: rgba(244, 67, 54, 0.25); }
+
+        /* Dropdown Menu */
+        .dropdown-menu {
+            position: fixed;
+            background: rgba(26, 26, 46, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 8px;
+            min-width: 200px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            z-index: 1001;
+            display: none;
+        }
+
+        .dropdown-menu.active {
+            display: block;
+        }
+
+        .dropdown-item {
+            width: 100%;
+            padding: 10px 15px;
+            background: none;
+            border: none;
+            color: #e4e4e4;
+            text-align: left;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background 0.15s;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
             gap: 8px;
         }
 
-        .add-to-collection-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        .dropdown-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Current selection indicator in dropdowns */
+        .dropdown-item.current {
+            background: rgba(59, 130, 246, 0.15);
+            border-left: 3px solid #3b82f6;
+            padding-left: 12px;
+        }
+
+        .dropdown-item.current::after {
+            content: " ✓";
+            color: #3b82f6;
+            margin-left: auto;
+            padding-left: 8px;
+        }
+
+        /* Toast Notifications */
+        .toast {
+            background: rgba(26, 26, 46, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 16px 20px;
+            min-width: 300px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideInRight 0.3s ease-out;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .toast:hover {
+            opacity: 0.9;
+        }
+
+        .toast.success {
+            border-left: 4px solid #10b981;
+        }
+
+        .toast.error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .toast.info {
+            border-left: 4px solid #3b82f6;
+        }
+
+        .toast-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-message {
+            color: #e4e4e4;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .toast-close {
+            color: #888;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            cursor: pointer;
+            padding: 0 4px;
+            transition: color 0.2s;
+        }
+
+        .toast-close:hover {
+            color: #e4e4e4;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .toast.hiding {
+            animation: slideOutRight 0.3s ease-in forwards;
         }
 
         /* Collection Modal */
@@ -1167,11 +1508,19 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Quick Actions Bar */
+        .priority-badge-icon {
+            font-size: 1rem;
+        }
     </style>
 </head>
 <body>
+    <!-- Toast Container -->
+    <div id="toast-container" style="position: fixed; top: 80px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 400px;"></div>
+
     <nav class="top-nav">
-        <a href="/" class="nav-brand">Backlogia</a>
+        <a href="/" class="nav-brand"><img src="/static/favicons/Backlogia_logo.png" alt="Backlogia logo">Backlogia</a>
         <div class="nav-links">
             <a href="/discover" class="nav-link">Discover</a>
             <a href="/library" class="nav-link">Library</a>
@@ -1210,9 +1559,92 @@
                     {% if total_playtime %}
                     <span class="meta-item">{{ total_playtime|round(1) }} hours played</span>
                     {% endif %}
-                    <button class="add-to-collection-btn" onclick="openCollectionModal()">
-                        + Add to Collection
-                    </button>
+                    <div class="game-tags-zone">
+                        {# Priority pill #}
+                        {% if game.priority == 'high' %}
+                        <button class="tag-pill priority-high" onclick="togglePriorityMenu(event)">
+                            🔴 High <span class="arrow">&#9662;</span>
+                        </button>
+                        {% elif game.priority == 'medium' %}
+                        <button class="tag-pill priority-medium" onclick="togglePriorityMenu(event)">
+                            🟡 Medium <span class="arrow">&#9662;</span>
+                        </button>
+                        {% elif game.priority == 'low' %}
+                        <button class="tag-pill priority-low" onclick="togglePriorityMenu(event)">
+                            🟢 Low <span class="arrow">&#9662;</span>
+                        </button>
+                        {% else %}
+                        <button class="tag-pill unset" onclick="togglePriorityMenu(event)">
+                            ⭐ Priority <span class="arrow">&#9662;</span>
+                        </button>
+                        {% endif %}
+
+                        {# Rating pill #}
+                        {% if game.personal_rating and game.personal_rating > 0 %}
+                        <button class="tag-pill rating-set" onclick="toggleRatingMenu(event)">
+                            {{ '⭐' * ((game.personal_rating + 1) // 2) }} {{ game.personal_rating }}/10 <span class="arrow">&#9662;</span>
+                        </button>
+                        {% else %}
+                        <button class="tag-pill unset" onclick="toggleRatingMenu(event)">
+                            💯 Rating <span class="arrow">&#9662;</span>
+                        </button>
+                        {% endif %}
+
+                        {# Playtime pill #}
+                        {% if current_playtime_tag %}
+                        <button class="tag-pill playtime-set" onclick="togglePlaytimeMenu(event)">
+                            {% if current_playtime_tag == 'Never Launched' %}🎮
+                            {% elif current_playtime_tag == 'Just Tried' %}👀
+                            {% elif current_playtime_tag == 'Played' %}🎯
+                            {% elif current_playtime_tag == 'Well Played' %}⭐
+                            {% elif current_playtime_tag == 'Heavily Played' %}🏆
+                            {% endif %}
+                            {{ current_playtime_tag }} <span class="arrow">&#9662;</span>
+                        </button>
+                        {% else %}
+                        <button class="tag-pill unset" onclick="togglePlaytimeMenu(event)">
+                            🎮 Playtime <span class="arrow">&#9662;</span>
+                        </button>
+                        {% endif %}
+
+                        {# Collection pills (display only, link to collection) #}
+                        {% for col in game_collections %}
+                        <a href="/collections/{{ col.id }}" class="collection-pill">
+                            🏷️ {{ col.name }}
+                        </a>
+                        {% endfor %}
+
+                        {# Status indicators #}
+                        {% if game.hidden %}
+                        <span class="status-pill hidden-status">👁️ Hidden</span>
+                        {% endif %}
+                        {% if game.nsfw %}
+                        <span class="status-pill nsfw-status">🔞 NSFW</span>
+                        {% endif %}
+
+                        {# Edit button - opens secondary actions #}
+                        <button class="edit-more-btn" onclick="toggleEditPanel()">
+                            ✏️ Edit...
+                        </button>
+                    </div>
+
+                    {# Edit panel - Collection, Hide, NSFW, Delete #}
+                    <div class="edit-actions-panel" id="edit-actions-panel">
+                        <div class="action-buttons">
+                            <button class="edit-action-btn collection" onclick="openCollectionModal()">
+                                🏷️ Collection
+                            </button>
+                            <button class="edit-action-btn hide" onclick="toggleHide()">
+                                👁️ {{ 'Unhide' if game.hidden else 'Hide' }}
+                            </button>
+                            <button class="edit-action-btn nsfw" onclick="toggleNSFW()">
+                                🔞 {{ 'Mark SFW' if game.nsfw else 'Mark NSFW' }}
+                            </button>
+                            <button class="edit-action-btn delete" onclick="deleteGame()">
+                                🗑️ Delete
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1543,7 +1975,7 @@
                                     <div id="igdb-status" class="igdb-status" style="display: none;"></div>
                                     <p class="igdb-help">
                                         Find the IGDB ID by searching on <a href="https://www.igdb.com/search?utf8=%E2%9C%93&type=1&q={{ game.name|urlencode }}" target="_blank" rel="noopener">igdb.com</a>.
-                                        The ID is in the URL (e.g., igdb.com/games/<strong>slug</strong>/123 → ID is 123).
+                                        The ID is displayed in a box to the right of the metadata pane (e.g. IGDB ID: 12345).
                                     </p>
                                 </div>
                             </div>
@@ -1671,6 +2103,54 @@
     </div>
 
     <script>
+        // Game ID for actions
+        const gameId = {{ game.id }};
+
+        // Toast Notifications
+        function showToast(message, type = 'info', duration = 5000) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            const icons = {
+                success: '✓',
+                error: '✗',
+                info: 'ℹ'
+            };
+
+            toast.innerHTML = `
+                <div class="toast-icon">${icons[type] || icons.info}</div>
+                <div class="toast-content">
+                    <div class="toast-message">${message}</div>
+                </div>
+                <div class="toast-close" onclick="closeToast(this.parentElement)">×</div>
+            `;
+
+            container.appendChild(toast);
+
+            if (duration > 0) {
+                setTimeout(() => closeToast(toast), duration);
+            }
+
+            toast.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('toast-close')) {
+                    closeToast(toast);
+                }
+            });
+
+            return toast;
+        }
+
+        function closeToast(toast) {
+            if (!toast || !toast.parentElement) return;
+            toast.classList.add('hiding');
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.parentElement.removeChild(toast);
+                }
+            }, 300);
+        }
+
         // Screenshots data
         const screenshots = [
             {% for url in parse_json(game.igdb_screenshots) or [] %}
@@ -1715,7 +2195,7 @@
         });
 
         // IGDB Sync Functions
-        const gameId = {{ game.id }};
+        // gameId already declared above
 
         function showStatus(message, type) {
             const statusEl = document.getElementById('igdb-status');
@@ -2345,6 +2825,203 @@
                 createAndAddCollection();
             }
         });
+
+        // Edit panel toggle
+        function toggleEditPanel() {
+            const panel = document.getElementById('edit-actions-panel');
+            panel.classList.toggle('visible');
+        }
+
+        // Dropdown toggle functions
+        function togglePriorityMenu(e) {
+            e = e || window.event;
+            e.stopPropagation();
+            const dropdown = document.getElementById('priority-dropdown');
+            if (!dropdown) return;
+            toggleDropdownGame(dropdown, e.target.closest('.tag-pill'));
+        }
+
+        function toggleRatingMenu(e) {
+            e = e || window.event;
+            e.stopPropagation();
+            const dropdown = document.getElementById('rating-dropdown');
+            if (!dropdown) return;
+            toggleDropdownGame(dropdown, e.target.closest('.tag-pill'));
+        }
+
+        function togglePlaytimeMenu(e) {
+            e = e || window.event;
+            e.stopPropagation();
+            const dropdown = document.getElementById('playtime-dropdown');
+            if (!dropdown) return;
+            toggleDropdownGame(dropdown, e.target.closest('.tag-pill'));
+        }
+
+        function toggleDropdownGame(dropdown, button) {
+            if (!dropdown) return;
+
+            // Close all other dropdowns
+            document.querySelectorAll('.dropdown-menu').forEach(d => {
+                if (d !== dropdown) d.style.display = 'none';
+            });
+
+            // Toggle this dropdown
+            const isVisible = dropdown.style.display === 'block';
+            dropdown.style.display = isVisible ? 'none' : 'block';
+
+            if (!isVisible && button) {
+                const rect = button.getBoundingClientRect();
+                dropdown.style.left = rect.left + 'px';
+                dropdown.style.top = (rect.bottom + 8) + 'px';
+
+                // Prevent overflow at bottom of viewport
+                requestAnimationFrame(() => {
+                    const dropRect = dropdown.getBoundingClientRect();
+                    if (dropRect.bottom > window.innerHeight - 10) {
+                        dropdown.style.top = (rect.top - dropRect.height - 8) + 'px';
+                    }
+                    // Prevent overflow at right edge
+                    if (dropRect.right > window.innerWidth - 10) {
+                        dropdown.style.left = (window.innerWidth - dropRect.width - 10) + 'px';
+                    }
+                });
+            }
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.tag-pill') && !e.target.closest('.dropdown-menu')) {
+                document.querySelectorAll('.dropdown-menu').forEach(d => {
+                    d.style.display = 'none';
+                });
+            }
+        });
+
+        // Action functions for single game
+        async function setPriority(priority) {
+            try {
+                const response = await fetch(`/api/game/${gameId}/priority`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({priority: priority})
+                });
+
+                if (response.ok) {
+                    const text = priority ? `Priority set to ${priority}` : 'Priority removed';
+                    showToast(text, 'success');
+                    document.getElementById('priority-dropdown').style.display = 'none';
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast('Failed to set priority', 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function setPersonalRating(rating) {
+            try {
+                const response = await fetch(`/api/game/${gameId}/personal-rating`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({rating: rating})
+                });
+
+                if (response.ok) {
+                    const text = rating > 0 ? `Rating set to ${rating}/10` : 'Rating removed';
+                    showToast(text, 'success');
+                    document.getElementById('rating-dropdown').style.display = 'none';
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast('Failed to set rating', 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function setPlaytimeTag(tag) {
+            try {
+                const response = await fetch(`/api/game/${gameId}/manual-playtime-tag`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({label_name: tag})
+                });
+
+                if (response.ok) {
+                    const text = tag ? `Playtime tag set to "${tag}"` : 'Playtime tag removed';
+                    showToast(text, 'success');
+                    document.getElementById('playtime-dropdown').style.display = 'none';
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast('Failed to set playtime tag', 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function toggleHide() {
+            const isCurrentlyHidden = {{ 'true' if game.hidden else 'false' }};
+            try {
+                const response = await fetch(`/api/game/${gameId}/hidden`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hidden: !isCurrentlyHidden })
+                });
+
+                if (response.ok) {
+                    showToast(isCurrentlyHidden ? 'Game unhidden' : 'Game hidden', 'success');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast('Failed to toggle visibility', 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function toggleNSFW() {
+            const isCurrentlyNsfw = {{ 'true' if game.nsfw else 'false' }};
+            try {
+                const response = await fetch(`/api/game/${gameId}/nsfw`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nsfw: !isCurrentlyNsfw })
+                });
+
+                if (response.ok) {
+                    showToast(isCurrentlyNsfw ? 'Marked as SFW' : 'Marked as NSFW', 'success');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast('Failed to toggle NSFW status', 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteGame() {
+            const gameName = {{ game.name|tojson }};
+            if (!confirm(`Are you sure you want to delete "${gameName}" from the database?\n\n⚠️ This action is IRREVERSIBLE.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/game/${gameId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    showToast('Game deleted', 'success');
+                    setTimeout(() => window.location.href = '/library', 1500);
+                } else {
+                    showToast('Failed to delete game', 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
     </script>
 
     <!-- Collection Modal -->
@@ -2373,7 +3050,50 @@
             <div id="collection-status" class="collection-status" style="display: none;"></div>
         </div>
     </div>
-    
+
+    <!-- Dropdowns (fixed position, outside flow) -->
+    <div id="priority-dropdown" class="dropdown-menu" style="display: none;">
+        <button class="dropdown-item{{ ' current' if game.priority == 'high' }}" onclick="setPriority('high')">
+            <span class="priority-badge-icon">🔴</span> High Priority
+        </button>
+        <button class="dropdown-item{{ ' current' if game.priority == 'medium' }}" onclick="setPriority('medium')">
+            <span class="priority-badge-icon">🟡</span> Medium Priority
+        </button>
+        <button class="dropdown-item{{ ' current' if game.priority == 'low' }}" onclick="setPriority('low')">
+            <span class="priority-badge-icon">🟢</span> Low Priority
+        </button>
+        <button class="dropdown-item" onclick="setPriority(null)">
+            <span class="priority-badge-icon">⚪</span> Remove Priority
+        </button>
+    </div>
+
+    <div id="rating-dropdown" class="dropdown-menu" style="display: none;">
+        {% for r in range(10, 0, -1) %}
+        <button class="dropdown-item{{ ' current' if game.personal_rating == r }}" onclick="setPersonalRating({{ r }})">
+            {{ '⭐' * ((r + 1) // 2) }} ({{ r }})
+        </button>
+        {% endfor %}
+        <button class="dropdown-item" onclick="setPersonalRating(0)">❌ Remove Rating</button>
+    </div>
+
+    <div id="playtime-dropdown" class="dropdown-menu" style="display: none;">
+        {% set playtime_tags = [
+            ('Never Launched', '🎮'),
+            ('Just Tried', '👀'),
+            ('Played', '🎯'),
+            ('Well Played', '⭐'),
+            ('Heavily Played', '🏆')
+        ] %}
+        {% for tag_name, tag_icon in playtime_tags %}
+        <button class="dropdown-item{{ ' current' if current_playtime_tag == tag_name }}" onclick="setPlaytimeTag('{{ tag_name }}')">
+            {{ tag_icon }} {{ tag_name }}
+        </button>
+        {% endfor %}
+        <button class="dropdown-item" onclick="setPlaytimeTag(null)">
+            ⚪ Remove Tag
+        </button>
+    </div>
+
     <!-- Load filter script to handle Random link with global filters -->
     <script src="/static/js/filters.js"></script>
 
