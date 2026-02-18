@@ -4,14 +4,13 @@
 import json
 import sqlite3
 from pathlib import Path
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from ..dependencies import get_db
-from ..utils.filters import EXCLUDE_HIDDEN_FILTER, EXCLUDE_DUPLICATES_FILTER, PREDEFINED_QUERIES, QUERY_DISPLAY_NAMES, QUERY_CATEGORIES, QUERY_DESCRIPTIONS, build_query_filter_sql
+from ..utils.filters import EXCLUDE_HIDDEN_FILTER, EXCLUDE_DUPLICATES_FILTER, QUERY_DISPLAY_NAMES, QUERY_CATEGORIES, QUERY_DESCRIPTIONS, build_query_filter_sql
 from ..utils.helpers import parse_json_field, get_store_url, group_games_by_igdb, get_query_filter_counts
 
 router = APIRouter()
@@ -33,6 +32,10 @@ def library(
     search: str = "",
     sort: str = "name",
     order: str = "asc",
+    exclude_streaming: bool = False,
+    collection: int = 0,
+    protondb_tier: str = "",
+    no_igdb: bool = False,
     conn: sqlite3.Connection = Depends(get_db)
 ):
     """Library page - list all games."""
@@ -67,9 +70,32 @@ def library(
         query += " AND name LIKE ?"
         params.append(f"%{search}%")
 
-    # Sorting
+    # Collection filter
+    if collection:
+        query += " AND id IN (SELECT game_id FROM collection_games WHERE collection_id = ?)"
+        params.append(collection)
+
+    # ProtonDB tier filter (hierarchy: platinum > gold > silver > bronze)
+    protondb_hierarchy = ["platinum", "gold", "silver", "bronze"]
+    if protondb_tier and protondb_tier in protondb_hierarchy:
+        tier_index = protondb_hierarchy.index(protondb_tier)
+        allowed_tiers = protondb_hierarchy[:tier_index + 1]
+        placeholders = ",".join("?" * len(allowed_tiers))
+        query += f" AND protondb_tier IN ({placeholders})"
+        params.extend(allowed_tiers)
+
+    # No IGDB data filter
+    if no_igdb:
+        query += " AND (igdb_id IS NULL OR igdb_id = 0)"
+
+    # Sorting - detect which columns actually exist in the DB
+    cursor.execute("PRAGMA table_info(games)")
+    existing_columns = {row[1] for row in cursor.fetchall()}
     valid_sorts = ["name", "store", "playtime_hours", "critics_score", "release_date", "added_at", "total_rating", "igdb_rating", "aggregated_rating", "average_rating", "metacritic_score", "metacritic_user_score", "personal_rating", "priority"]
-    if sort in valid_sorts:
+    available_sorts = [s for s in valid_sorts if s in existing_columns]
+    if sort not in available_sorts:
+        sort = "name"
+    if sort in available_sorts:
         order_dir = "DESC" if order == "desc" else "ASC"
         if sort == "priority":
             query += " ORDER BY CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END ASC"
@@ -83,6 +109,10 @@ def library(
 
     # Group games by IGDB ID (combines multi-store ownership)
     grouped_games = group_games_by_igdb(games)
+
+    # Post-grouping filter: exclude streaming-only games
+    if exclude_streaming:
+        grouped_games = [g for g in grouped_games if not g.get("only_streaming", False)]
 
     # Sort grouped games by primary game's sort field
     # Separate games with null sort values so nulls are always last
@@ -123,6 +153,16 @@ def library(
     # Get hidden count
     cursor.execute("SELECT COUNT(*) FROM games WHERE hidden = 1")
     hidden_count = cursor.fetchone()[0]
+
+    # Get collections for the filter dropdown
+    cursor.execute("""
+        SELECT c.id, c.name, COUNT(cg.game_id) as game_count
+        FROM collections c
+        LEFT JOIN collection_games cg ON c.id = cg.collection_id
+        GROUP BY c.id
+        ORDER BY c.name
+    """)
+    collections = [{"id": row[0], "name": row[1], "game_count": row[2]} for row in cursor.fetchall()]
 
     # Get all unique genres with counts
     cursor.execute("SELECT genres FROM games WHERE genres IS NOT NULL AND genres != '[]'" + EXCLUDE_HIDDEN_FILTER)
@@ -170,6 +210,12 @@ def library(
             "query_display_names": QUERY_DISPLAY_NAMES,
             "query_descriptions": QUERY_DESCRIPTIONS,
             "query_filter_counts": query_filter_counts,
+            "current_exclude_streaming": exclude_streaming,
+            "current_collection": collection,
+            "current_protondb_tier": protondb_tier,
+            "current_no_igdb": no_igdb,
+            "collections": collections,
+            "available_sorts": available_sorts,
             "parse_json": parse_json_field
         }
     )

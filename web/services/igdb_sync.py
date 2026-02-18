@@ -1,11 +1,11 @@
 # igdb_sync.py
 # Matches games in our database to IGDB entries and fetches ratings/metadata
 
-import sqlite3
 import requests
 import time
 import json
 import re
+from datetime import datetime, timezone
 
 from .settings import get_igdb_credentials, get_setting, IGDB_MATCH_THRESHOLD
 
@@ -265,6 +265,7 @@ def add_igdb_columns(conn):
         ("igdb_matched_at", "TIMESTAMP"),
         ("nsfw", "BOOLEAN DEFAULT 0"),  # NSFW flag (from IGDB themes/age ratings or manual)
         ("steam_app_id", "TEXT"),  # Steam App ID from IGDB external_games (for ProtonDB)
+        ("igdb_release_date", "INTEGER"),  # IGDB first_release_date as Unix timestamp
     ]
 
     for col_name, col_type in new_columns:
@@ -333,8 +334,14 @@ def merge_and_dedupe_genres(existing_genres_json, new_genres):
     return json.dumps(merged) if merged else None
 
 
-def calculate_match_score(game_name, igdb_result):
-    """Calculate how well an IGDB result matches our game."""
+def calculate_match_score(game_name, igdb_result, game_release_year=None):
+    """Calculate how well an IGDB result matches our game.
+
+    Args:
+        game_name: The game name from our database
+        igdb_result: The IGDB search result dict
+        game_release_year: Optional release year (int) from the store's release_date
+    """
     if not igdb_result or not game_name:
         return 0
 
@@ -343,21 +350,36 @@ def calculate_match_score(game_name, igdb_result):
 
     # Exact match
     if our_name == igdb_name:
-        return 100
-
+        score = 100
     # One contains the other
-    if our_name in igdb_name or igdb_name in our_name:
-        return 80
+    elif our_name in igdb_name or igdb_name in our_name:
+        score = 80
+    else:
+        # Check word overlap
+        our_words = set(re.findall(r"\w+", our_name))
+        igdb_words = set(re.findall(r"\w+", igdb_name))
 
-    # Check word overlap
-    our_words = set(re.findall(r"\w+", our_name))
-    igdb_words = set(re.findall(r"\w+", igdb_name))
+        if not our_words:
+            return 0
 
-    if not our_words:
-        return 0
+        overlap = len(our_words & igdb_words)
+        score = (overlap / len(our_words)) * 70
 
-    overlap = len(our_words & igdb_words)
-    score = (overlap / len(our_words)) * 70
+    # Apply release year bonus/penalty if both sides have year data
+    if game_release_year and igdb_result.get("first_release_date"):
+        igdb_year = datetime.fromtimestamp(
+            igdb_result["first_release_date"], tz=timezone.utc
+        ).year
+        year_diff = abs(game_release_year - igdb_year)
+
+        if year_diff == 0:
+            score += 10
+        elif year_diff == 1:
+            pass  # No change - accounts for regional release differences
+        elif year_diff <= 3:
+            score -= 15
+        else:
+            score -= 30
 
     return score
 
@@ -378,11 +400,11 @@ def sync_games(conn, client, limit=None, force=False, progress_callback=None):
     # Also fetch existing genres to merge with IGDB data
     if force:
         cursor.execute(
-            "SELECT id, name, store, genres FROM games WHERE name IS NOT NULL ORDER BY name"
+            "SELECT id, name, store, genres, release_date FROM games WHERE name IS NOT NULL ORDER BY name"
         )
     else:
         cursor.execute(
-            """SELECT id, name, store, genres FROM games
+            """SELECT id, name, store, genres, release_date FROM games
                WHERE name IS NOT NULL AND igdb_id IS NULL
                ORDER BY name"""
         )
@@ -398,12 +420,20 @@ def sync_games(conn, client, limit=None, force=False, progress_callback=None):
     matched = 0
     failed = 0
 
-    for i, (game_id, name, store, existing_genres) in enumerate(games):
+    for i, (game_id, name, store, existing_genres, release_date) in enumerate(games):
         print(f"[{i+1}/{total}] Searching for: {name}...", end=" ", flush=True)
+
+        # Parse release year from store's release_date (ISO format string)
+        game_release_year = None
+        if release_date:
+            try:
+                game_release_year = int(str(release_date)[:4])
+            except (ValueError, IndexError):
+                pass
 
         # Report progress
         if progress_callback:
-            progress_callback(i, total, f"Processing: {name[:50]}...")
+            progress_callback(i + 1, total, f"Processing: {name[:50]}...")
 
         try:
             results = client.search_game(name)
@@ -424,7 +454,7 @@ def sync_games(conn, client, limit=None, force=False, progress_callback=None):
             best_score = 0
 
             for result in results:
-                score = calculate_match_score(name, result)
+                score = calculate_match_score(name, result, game_release_year)
                 if score > best_score:
                     best_score = score
                     best_match = result
@@ -478,7 +508,8 @@ def sync_games(conn, client, limit=None, force=False, progress_callback=None):
                         igdb_matched_at = CURRENT_TIMESTAMP,
                         nsfw = ?,
                         genres = ?,
-                        steam_app_id = ?
+                        steam_app_id = ?,
+                        igdb_release_date = ?
                     WHERE id = ?""",
                     (
                         best_match.get("id"),
@@ -495,6 +526,7 @@ def sync_games(conn, client, limit=None, force=False, progress_callback=None):
                         1 if is_nsfw else 0,
                         merged_genres,
                         steam_app_id,
+                        best_match.get("first_release_date"),
                         game_id,
                     ),
                 )

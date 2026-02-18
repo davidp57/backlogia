@@ -9,6 +9,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/favicons/apple-touch-icon.png">
     <link rel="manifest" href="/static/favicons/site.webmanifest">
+    <meta name="theme-color" content="#1a1a2e">
     <style>
         * {
             margin: 0;
@@ -45,6 +46,14 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
             text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-brand img {
+            height: 32px;
+            width: 32px;
         }
 
         .nav-links {
@@ -261,32 +270,37 @@
             align-items: center;
             gap: 5px;
             white-space: nowrap;
-            background: none;
+            background: rgba(13, 13, 26, 0.7);
+            backdrop-filter: blur(4px);
         }
 
         .edit-action-btn.collection {
             color: #667eea;
-            border-color: rgba(102, 126, 234, 0.3);
+            border-color: rgba(102, 126, 234, 0.5);
+            background: rgba(102, 126, 234, 0.12);
         }
-        .edit-action-btn.collection:hover { background: rgba(102, 126, 234, 0.15); }
+        .edit-action-btn.collection:hover { background: rgba(102, 126, 234, 0.25); }
 
         .edit-action-btn.hide {
             color: #f44336;
-            border-color: rgba(244, 67, 54, 0.3);
+            border-color: rgba(244, 67, 54, 0.5);
+            background: rgba(244, 67, 54, 0.12);
         }
-        .edit-action-btn.hide:hover { background: rgba(244, 67, 54, 0.15); }
+        .edit-action-btn.hide:hover { background: rgba(244, 67, 54, 0.25); }
 
         .edit-action-btn.nsfw {
             color: #ff9800;
-            border-color: rgba(255, 152, 0, 0.3);
+            border-color: rgba(255, 152, 0, 0.5);
+            background: rgba(255, 152, 0, 0.12);
         }
-        .edit-action-btn.nsfw:hover { background: rgba(255, 152, 0, 0.15); }
+        .edit-action-btn.nsfw:hover { background: rgba(255, 152, 0, 0.25); }
 
         .edit-action-btn.delete {
             color: #f44336;
-            border-color: rgba(244, 67, 54, 0.3);
+            border-color: rgba(244, 67, 54, 0.5);
+            background: rgba(244, 67, 54, 0.12);
         }
-        .edit-action-btn.delete:hover { background: rgba(244, 67, 54, 0.15); }
+        .edit-action-btn.delete:hover { background: rgba(244, 67, 54, 0.25); }
 
         /* Dropdown Menu */
         .dropdown-menu {
@@ -1504,7 +1518,7 @@
     <div id="toast-container" style="position: fixed; top: 80px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 400px;"></div>
 
     <nav class="top-nav">
-        <a href="/" class="nav-brand">Backlogia</a>
+        <a href="/" class="nav-brand"><img src="/static/favicons/Backlogia_logo.png" alt="Backlogia logo">Backlogia</a>
         <div class="nav-links">
             <a href="/discover" class="nav-link">Discover</a>
             <a href="/library" class="nav-link">Library</a>
@@ -1959,7 +1973,7 @@
                                     <div id="igdb-status" class="igdb-status" style="display: none;"></div>
                                     <p class="igdb-help">
                                         Find the IGDB ID by searching on <a href="https://www.igdb.com/search?utf8=%E2%9C%93&type=1&q={{ game.name|urlencode }}" target="_blank" rel="noopener">igdb.com</a>.
-                                        The ID is in the URL (e.g., igdb.com/games/<strong>slug</strong>/123 → ID is 123).
+                                        The ID is displayed in a box to the right of the metadata pane (e.g. IGDB ID: 12345).
                                     </p>
                                 </div>
                             </div>

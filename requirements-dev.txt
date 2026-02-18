@@ -1,0 +1,12 @@
+# Development dependencies
+# Install with: pip install -r requirements-dev.txt
+
+# Inherit production dependencies
+-r requirements.txt
+
+# Testing
+pytest
+pytest-cov
+
+# Code quality
+ruff

@@ -108,6 +108,76 @@
         </div>
     </div>
 
+    <!-- Advanced Filters (from MAIN branch) -->
+    {% if collections|default([]) %}
+    <!-- Collection Filter -->
+    <div class="dropdown" style="position: relative;" role="group" aria-label="Collection filter">
+        <button class="dropdown-btn {% if current_collection %}active{% endif %}" onclick="toggleDropdown('collection-dropdown')" aria-haspopup="true" aria-expanded="false" aria-label="Filter by collection">
+            {% if current_collection %}
+                Collection: {{ collections|selectattr('id', 'equalto', current_collection)|map(attribute='name')|first|default('Selected') }}
+            {% else %}
+                All Collections
+            {% endif %}
+            <span class="dropdown-arrow">&#9662;</span>
+        </button>
+        <div id="collection-dropdown" class="dropdown-content" style="display: none; min-width: 200px;">
+            <div class="dropdown-item" onclick="applyCollectionFilter(0)">
+                <label style="cursor: pointer;">All Collections</label>
+            </div>
+            {% for col in collections %}
+            <div class="dropdown-item" onclick="applyCollectionFilter({{ col.id }})">
+                <label style="cursor: pointer;">{{ col.name }}</label>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ProtonDB Tier Filter -->
+    <div class="dropdown" style="position: relative;" role="group" aria-label="ProtonDB tier filter">
+        <button class="dropdown-btn {% if current_protondb_tier %}active{% endif %}" onclick="toggleDropdown('protondb-dropdown')" aria-haspopup="true" aria-expanded="false" aria-label="Filter by ProtonDB tier">
+            {% if current_protondb_tier == 'platinum' %}ProtonDB: Platinum+
+            {% elif current_protondb_tier == 'gold' %}ProtonDB: Gold+
+            {% elif current_protondb_tier == 'silver' %}ProtonDB: Silver+
+            {% elif current_protondb_tier == 'bronze' %}ProtonDB: Bronze+
+            {% else %}All ProtonDB
+            {% endif %}
+            <span class="dropdown-arrow">&#9662;</span>
+        </button>
+        <div id="protondb-dropdown" class="dropdown-content" style="display: none; min-width: 180px;">
+            <div class="dropdown-item" onclick="applyProtonDBFilter('')">
+                <label style="cursor: pointer;">All ProtonDB Tiers</label>
+            </div>
+            <div class="dropdown-item" onclick="applyProtonDBFilter('platinum')">
+                <label style="cursor: pointer;">Platinum+</label>
+            </div>
+            <div class="dropdown-item" onclick="applyProtonDBFilter('gold')">
+                <label style="cursor: pointer;">Gold+</label>
+            </div>
+            <div class="dropdown-item" onclick="applyProtonDBFilter('silver')">
+                <label style="cursor: pointer;">Silver+</label>
+            </div>
+            <div class="dropdown-item" onclick="applyProtonDBFilter('bronze')">
+                <label style="cursor: pointer;">Bronze+</label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toggle Buttons for Advanced Filters -->
+    <button class="dropdown-btn {% if current_exclude_streaming %}active{% endif %}" 
+            onclick="toggleExcludeStreaming()" 
+            title="Exclude Xbox Cloud/streaming games"
+            aria-label="{% if current_exclude_streaming %}Including{% else %}Excluding{% endif %} streaming games">
+        {% if current_exclude_streaming %}✓{% endif %} Exclude Streaming
+    </button>
+
+    <button class="dropdown-btn {% if current_no_igdb %}active{% endif %}" 
+            onclick="toggleNoIGDB()" 
+            title="Show only games without IGDB metadata"
+            aria-label="{% if current_no_igdb %}Showing{% else %}Not showing{% endif %} only games without IGDB">
+        {% if current_no_igdb %}✓{% endif %} No IGDB Data
+    </button>
+
     {% if show_search|default(True) %}
     <div class="search-box">
         <form action="" method="get" id="search-form" onsubmit="saveSearchPreferences()" role="search">

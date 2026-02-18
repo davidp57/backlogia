@@ -1,41 +1,101 @@
-// Global filter management functions
+// ========================================================================
+// GLOBAL FILTER MANAGEMENT SYSTEM
+// ========================================================================
+//
+// This system manages two types of filters:
+//
+// 1. GLOBAL FILTERS (persisted in localStorage across pages):
+//    - stores: Selected game stores (Steam, Epic, GOG, etc.)
+//    - genres: Selected game genres
+//    - queries: Smart filters (unplayed, highly-rated, etc.)
+//    - excludeStreaming: Exclude Xbox Cloud/streaming games
+//    - noIgdb: Show only games without IGDB metadata
+//    - protondbTier: ProtonDB compatibility tier filter
+//
+// 2. CONTEXTUAL FILTERS (URL-only, page-specific):
+//    - collection: Collection ID (specific to collection detail page)
+//    - search: Search query (temporary search context)
+//    - sort/order: Sorting preferences (could be global in future)
+//
+// PERSISTENCE STRATEGY:
+// - buildUrl(): Saves global filters to localStorage when user changes a filter
+// - saveCurrentFilters(): Syncs localStorage with URL on page load
+// - applyGlobalFiltersOnLoad(): Restores missing global filters from localStorage to URL
+// - interceptNavigationLinks(): Adds global filters when navigating between pages
+//
+// ========================================================================
 
 function saveCurrentFilters() {
     const currentUrl = new URL(window.location.href);
     const filters = {
         stores: currentUrl.searchParams.getAll('stores'),
         genres: currentUrl.searchParams.getAll('genres'),
-        queries: currentUrl.searchParams.getAll('queries')
+        queries: currentUrl.searchParams.getAll('queries'),
+        excludeStreaming: currentUrl.searchParams.get('exclude_streaming') === 'true',
+        noIgdb: currentUrl.searchParams.get('no_igdb') === 'true',
+        protondbTier: currentUrl.searchParams.get('protondb_tier') || ''
     };
     localStorage.setItem('globalFilters', JSON.stringify(filters));
 }
 
 function getGlobalFilters() {
     const stored = localStorage.getItem('globalFilters');
-    return stored ? JSON.parse(stored) : { stores: [], genres: [], queries: [] };
+    return stored ? JSON.parse(stored) : { 
+        stores: [], 
+        genres: [], 
+        queries: [],
+        excludeStreaming: false,
+        noIgdb: false,
+        protondbTier: ''
+    };
 }
 
 // Apply global filters on page load if no filters in URL
 function applyGlobalFiltersOnLoad() {
     const currentUrl = new URL(window.location.href);
-    const hasFilters = currentUrl.searchParams.has('stores') || 
-                     currentUrl.searchParams.has('genres') || 
-                     currentUrl.searchParams.has('queries');
+    const filters = getGlobalFilters();
     
-    if (!hasFilters) {
-        const filters = getGlobalFilters();
-        const hasGlobalFilters = filters.stores.length > 0 || 
-                               filters.genres.length > 0 || 
-                               filters.queries.length > 0;
-        
-        if (hasGlobalFilters) {
-            // Redirect to same page with filters
-            filters.stores.forEach(store => currentUrl.searchParams.append('stores', store));
-            filters.genres.forEach(genre => currentUrl.searchParams.append('genres', genre));
-            filters.queries.forEach(query => currentUrl.searchParams.append('queries', query));
-            window.location.href = currentUrl.toString();
-            return;
-        }
+    let needsRedirect = false;
+    
+    // Add stores from localStorage if not in URL
+    if (!currentUrl.searchParams.has('stores') && filters.stores.length > 0) {
+        filters.stores.forEach(store => currentUrl.searchParams.append('stores', store));
+        needsRedirect = true;
+    }
+    
+    // Add genres from localStorage if not in URL
+    if (!currentUrl.searchParams.has('genres') && filters.genres.length > 0) {
+        filters.genres.forEach(genre => currentUrl.searchParams.append('genres', genre));
+        needsRedirect = true;
+    }
+    
+    // Add queries from localStorage if not in URL
+    if (!currentUrl.searchParams.has('queries') && filters.queries.length > 0) {
+        filters.queries.forEach(query => currentUrl.searchParams.append('queries', query));
+        needsRedirect = true;
+    }
+    
+    // Add exclude_streaming from localStorage if not in URL
+    if (!currentUrl.searchParams.has('exclude_streaming') && filters.excludeStreaming) {
+        currentUrl.searchParams.set('exclude_streaming', 'true');
+        needsRedirect = true;
+    }
+    
+    // Add no_igdb from localStorage if not in URL
+    if (!currentUrl.searchParams.has('no_igdb') && filters.noIgdb) {
+        currentUrl.searchParams.set('no_igdb', 'true');
+        needsRedirect = true;
+    }
+    
+    // Add protondb_tier from localStorage if not in URL
+    if (!currentUrl.searchParams.has('protondb_tier') && filters.protondbTier) {
+        currentUrl.searchParams.set('protondb_tier', filters.protondbTier);
+        needsRedirect = true;
+    }
+    
+    if (needsRedirect) {
+        window.location.href = currentUrl.toString();
+        return;
     }
 }
 
@@ -59,7 +119,7 @@ function getSelectedGenres() {
     return Array.from(checkboxes).map(cb => cb.value);
 }
 
-function buildUrl(stores, genres, queries, search, sort, order) {
+function buildUrl(stores, genres, queries, search, sort, order, excludeStreaming, collection, protondbTier, noIgdb) {
     const params = new URLSearchParams();
     stores.forEach(store => params.append('stores', store));
     genres.forEach(genre => params.append('genres', genre));
@@ -67,34 +127,61 @@ function buildUrl(stores, genres, queries, search, sort, order) {
     if (search) params.set('search', search);
     if (sort) params.set('sort', sort);
     if (order) params.set('order', order);
+    if (excludeStreaming) params.set('exclude_streaming', 'true');
+    if (collection) params.set('collection', collection);
+    if (protondbTier) params.set('protondb_tier', protondbTier);
+    if (noIgdb) params.set('no_igdb', 'true');
     
-    // Always save filters to localStorage (filters are always global now)
+    // Always save global filters to localStorage
+    // Note: 'collection' is NOT saved (page-specific context)
     localStorage.setItem('globalFilters', JSON.stringify({
         stores: stores,
         genres: genres,
-        queries: queries
+        queries: queries,
+        excludeStreaming: excludeStreaming || false,
+        noIgdb: noIgdb || false,
+        protondbTier: protondbTier || ''
     }));
     
     return window.location.pathname + '?' + params.toString();
 }
 
+// Helper to get current advanced filter values from URL or localStorage
+function getAdvancedFilters() {
+    const params = new URLSearchParams(window.location.search);
+    const globalFilters = getGlobalFilters();
+    
+    return {
+        excludeStreaming: params.get('exclude_streaming') === 'true' || globalFilters.excludeStreaming || false,
+        collection: parseInt(params.get('collection') || '0'),
+        protondbTier: params.get('protondb_tier') || globalFilters.protondbTier || '',
+        noIgdb: params.get('no_igdb') === 'true' || globalFilters.noIgdb || false
+    };
+}
+
 function applyStoreFilter() {
     const stores = getSelectedStores();
     const genres = getSelectedGenres();
-    const queries = window.currentQueries || [];
+    // Merge current URL params with localStorage
+    const globalFilters = getGlobalFilters();
+    const queries = window.currentQueries && window.currentQueries.length > 0 ? window.currentQueries : globalFilters.queries;
     const search = window.currentSearch || '';
     const sort = window.currentSort || 'name';
     const order = window.currentOrder || 'asc';
-    window.location.href = buildUrl(stores, genres, queries, search, sort, order);
+    const advanced = getAdvancedFilters();
+    window.location.href = buildUrl(stores, genres, queries, search, sort, order, advanced.excludeStreaming, advanced.collection, advanced.protondbTier, advanced.noIgdb);
 }
 
 function clearStoreFilter() {
     const genres = getSelectedGenres();
-    const queries = window.currentQueries || [];
+    // Merge current URL params with localStorage
+    const globalFilters = getGlobalFilters();
+    const queries = window.currentQueries && window.currentQueries.length > 0 ? window.currentQueries : globalFilters.queries;
     const search = window.currentSearch || '';
     const sort = window.currentSort || 'name';
     const order = window.currentOrder || 'asc';
-    window.location.href = buildUrl([], genres, queries, search, sort, order);
+    const advanced = getAdvancedFilters();
+    window.location.href = buildUrl([], genres, queries, search, sort, order, advanced.excludeStreaming, advanced.collection, advanced.protondbTier, advanced.noIgdb);
 }
 
 // Genre dropdown functionality
@@ -110,20 +197,26 @@ function toggleGenreDropdown() {
 function applyGenreFilter() {
     const stores = getSelectedStores();
     const genres = getSelectedGenres();
-    const queries = window.currentQueries || [];
+    // Merge current URL params with localStorage
+    const globalFilters = getGlobalFilters();
+    const queries = window.currentQueries && window.currentQueries.length > 0 ? window.currentQueries : globalFilters.queries;
     const search = window.currentSearch || '';
     const sort = window.currentSort || 'name';
     const order = window.currentOrder || 'asc';
-    window.location.href = buildUrl(stores, genres, queries, search, sort, order);
+    const advanced = getAdvancedFilters();
+    window.location.href = buildUrl(stores, genres, queries, search, sort, order, advanced.excludeStreaming, advanced.collection, advanced.protondbTier, advanced.noIgdb);
 }
 
 function clearGenreFilter() {
     const stores = getSelectedStores();
-    const queries = window.currentQueries || [];
+    // Merge current URL params with localStorage
+    const globalFilters = getGlobalFilters();
+    const queries = window.currentQueries && window.currentQueries.length > 0 ? window.currentQueries : globalFilters.queries;
     const search = window.currentSearch || '';
     const sort = window.currentSort || 'name';
     const order = window.currentOrder || 'asc';
-    window.location.href = buildUrl(stores, [], queries, search, sort, order);
+    const advanced = getAdvancedFilters();
+    window.location.href = buildUrl(stores, [], queries, search, sort, order, advanced.excludeStreaming, advanced.collection, advanced.protondbTier, advanced.noIgdb);
 }
 
 function getSelectedQueries() {
@@ -138,7 +231,8 @@ function applyQueryFilter() {
     const search = window.currentSearch || '';
     const sort = window.currentSort || 'name';
     const order = window.currentOrder || 'asc';
-    window.location.href = buildUrl(stores, genres, queries, search, sort, order);
+    const advanced = getAdvancedFilters();
+    window.location.href = buildUrl(stores, genres, queries, search, sort, order, advanced.excludeStreaming, advanced.collection, advanced.protondbTier, advanced.noIgdb);
 }
 
 function clearQueryFilter() {
@@ -147,7 +241,8 @@ function clearQueryFilter() {
     const search = window.currentSearch || '';
     const sort = window.currentSort || 'name';
     const order = window.currentOrder || 'asc';
-    window.location.href = buildUrl(stores, genres, [], search, sort, order);
+    const advanced = getAdvancedFilters();
+    window.location.href = buildUrl(stores, genres, [], search, sort, order, advanced.excludeStreaming, advanced.collection, advanced.protondbTier, advanced.noIgdb);
 }
 
 function filterGenreOptions() {
@@ -171,11 +266,14 @@ function applySort(value) {
     if (dropdown) dropdown.style.display = 'none';
     
     const [sort, order] = value.split('-');
-    const stores = window.currentStores || [];
-    const genres = window.currentGenres || [];
-    const queries = window.currentQueries || [];
+    // Merge current URL params with localStorage
+    const globalFilters = getGlobalFilters();
+    const stores = window.currentStores && window.currentStores.length > 0 ? window.currentStores : globalFilters.stores;
+    const genres = window.currentGenres && window.currentGenres.length > 0 ? window.currentGenres : globalFilters.genres;
+    const queries = window.currentQueries && window.currentQueries.length > 0 ? window.currentQueries : globalFilters.queries;
     const search = window.currentSearch || '';
-    window.location.href = buildUrl(stores, genres, queries, search, sort, order);
+    const advanced = getAdvancedFilters();
+    window.location.href = buildUrl(stores, genres, queries, search, sort, order, advanced.excludeStreaming, advanced.collection, advanced.protondbTier, advanced.noIgdb);
 }
 
 // Query categories - will be set by each page
@@ -194,9 +292,11 @@ function getCategoryForQuery(queryId) {
 // Toggle query filter from dropdown (exclusive per category)
 function toggleQueryFilterFromDropdown(queryId) {
     const checkbox = document.getElementById('query-' + queryId);
-    const stores = window.currentStores || [];
-    const genres = window.currentGenres || [];
-    let queries = window.currentQueries || [];
+    // Merge current URL params with localStorage
+    const globalFilters = getGlobalFilters();
+    const stores = window.currentStores && window.currentStores.length > 0 ? window.currentStores : globalFilters.stores;
+    const genres = window.currentGenres && window.currentGenres.length > 0 ? window.currentGenres : globalFilters.genres;
+    let queries = window.currentQueries && window.currentQueries.length > 0 ? window.currentQueries : globalFilters.queries;
     const search = window.currentSearch || '';
     const sort = window.currentSort || 'name';
     const order = window.currentOrder || 'asc';
@@ -223,7 +323,8 @@ function toggleQueryFilterFromDropdown(queryId) {
         }
     }
     
-    window.location.href = buildUrl(stores, genres, queries, search, sort, order);
+    const advanced = getAdvancedFilters();
+    window.location.href = buildUrl(stores, genres, queries, search, sort, order, advanced.excludeStreaming, advanced.collection, advanced.protondbTier, advanced.noIgdb);
 }
 
 // Dropdown toggle functionality
@@ -357,7 +458,10 @@ function interceptRandomLinks() {
             const filters = getGlobalFilters();
             const hasFilters = filters.stores.length > 0 || 
                              filters.genres.length > 0 || 
-                             filters.queries.length > 0;
+                             filters.queries.length > 0 ||
+                             filters.excludeStreaming ||
+                             filters.noIgdb ||
+                             filters.protondbTier;
             
             if (hasFilters) {
                 event.preventDefault();
@@ -365,6 +469,37 @@ function interceptRandomLinks() {
                 filters.stores.forEach(store => url.searchParams.append('stores', store));
                 filters.genres.forEach(genre => url.searchParams.append('genres', genre));
                 filters.queries.forEach(query => url.searchParams.append('queries', query));
+                if (filters.excludeStreaming) url.searchParams.set('exclude_streaming', 'true');
+                if (filters.noIgdb) url.searchParams.set('no_igdb', 'true');
+                if (filters.protondbTier) url.searchParams.set('protondb_tier', filters.protondbTier);
+                window.location.href = url.toString();
+            }
+        });
+    });
+}
+
+// Intercept navigation links to add global filters
+function interceptNavigationLinks() {
+    const navLinks = document.querySelectorAll('a[href="/library"], a[href="/discover"], a[href^="/collection/"]');
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(event) {
+            const filters = getGlobalFilters();
+            const hasFilters = filters.stores.length > 0 || 
+                             filters.genres.length > 0 || 
+                             filters.queries.length > 0 ||
+                             filters.excludeStreaming ||
+                             filters.noIgdb ||
+                             filters.protondbTier;
+            
+            if (hasFilters) {
+                event.preventDefault();
+                const url = new URL(link.getAttribute('href'), window.location.origin);
+                filters.stores.forEach(store => url.searchParams.append('stores', store));
+                filters.genres.forEach(genre => url.searchParams.append('genres', genre));
+                filters.queries.forEach(query => url.searchParams.append('queries', query));
+                if (filters.excludeStreaming) url.searchParams.set('exclude_streaming', 'true');
+                if (filters.noIgdb) url.searchParams.set('no_igdb', 'true');
+                if (filters.protondbTier) url.searchParams.set('protondb_tier', filters.protondbTier);
                 window.location.href = url.toString();
             }
         });
@@ -375,8 +510,82 @@ function interceptRandomLinks() {
 document.addEventListener('DOMContentLoaded', function() {
     applyGlobalFiltersOnLoad();
     interceptRandomLinks();
+    interceptNavigationLinks();
     
     // Save current filters
     saveCurrentFilters();
 });
 
+// ========== Advanced Filters Support (MAIN branch integration) ==========
+
+// Collection filter
+function applyCollectionFilter(collectionId) {
+    // Merge current URL params with localStorage
+    const globalFilters = getGlobalFilters();
+    const stores = window.currentStores && window.currentStores.length > 0 ? window.currentStores : globalFilters.stores;
+    const genres = window.currentGenres && window.currentGenres.length > 0 ? window.currentGenres : globalFilters.genres;
+    const queries = window.currentQueries && window.currentQueries.length > 0 ? window.currentQueries : globalFilters.queries;
+    const search = window.currentSearch || '';
+    const sort = window.currentSort || 'name';
+    const order = window.currentOrder || 'asc';
+    const advanced = getAdvancedFilters();
+    
+    window.location.href = buildUrl(
+        stores, genres, queries, search, sort, order,
+        advanced.excludeStreaming, collectionId, advanced.protondbTier, advanced.noIgdb
+    );
+}
+
+// ProtonDB tier filter
+function applyProtonDBFilter(tier) {
+    // Merge current URL params with localStorage
+    const globalFilters = getGlobalFilters();
+    const stores = window.currentStores && window.currentStores.length > 0 ? window.currentStores : globalFilters.stores;
+    const genres = window.currentGenres && window.currentGenres.length > 0 ? window.currentGenres : globalFilters.genres;
+    const queries = window.currentQueries && window.currentQueries.length > 0 ? window.currentQueries : globalFilters.queries;
+    const search = window.currentSearch || '';
+    const sort = window.currentSort || 'name';
+    const order = window.currentOrder || 'asc';
+    const advanced = getAdvancedFilters();
+    
+    window.location.href = buildUrl(
+        stores, genres, queries, search, sort, order,
+        advanced.excludeStreaming, advanced.collection, tier, advanced.noIgdb
+    );
+}
+
+// Toggle exclude streaming
+function toggleExcludeStreaming() {
+    // Merge current URL params with localStorage
+    const globalFilters = getGlobalFilters();
+    const stores = window.currentStores && window.currentStores.length > 0 ? window.currentStores : globalFilters.stores;
+    const genres = window.currentGenres && window.currentGenres.length > 0 ? window.currentGenres : globalFilters.genres;
+    const queries = window.currentQueries && window.currentQueries.length > 0 ? window.currentQueries : globalFilters.queries;
+    const search = window.currentSearch || '';
+    const sort = window.currentSort || 'name';
+    const order = window.currentOrder || 'asc';
+    const advanced = getAdvancedFilters();
+    
+    window.location.href = buildUrl(
+        stores, genres, queries, search, sort, order,
+        !advanced.excludeStreaming, advanced.collection, advanced.protondbTier, advanced.noIgdb
+    );
+}
+
+// Toggle no IGDB filter
+function toggleNoIGDB() {
+    // Merge current URL params with localStorage
+    const globalFilters = getGlobalFilters();
+    const stores = window.currentStores && window.currentStores.length > 0 ? window.currentStores : globalFilters.stores;
+    const genres = window.currentGenres && window.currentGenres.length > 0 ? window.currentGenres : globalFilters.genres;
+    const queries = window.currentQueries && window.currentQueries.length > 0 ? window.currentQueries : globalFilters.queries;
+    const search = window.currentSearch || '';
+    const sort = window.currentSort || 'name';
+    const order = window.currentOrder || 'asc';
+    const advanced = getAdvancedFilters();
+    
+    window.location.href = buildUrl(
+        stores, genres, queries, search, sort, order,
+        advanced.excludeStreaming, advanced.collection, advanced.protondbTier, !advanced.noIgdb
+    );
+}

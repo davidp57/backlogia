@@ -6,10 +6,11 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from .config import DATABASE_PATH
+from .config import DATABASE_PATH, ENABLE_AUTH, SECRET_KEY
 from .database import (
     ensure_extra_columns,
     ensure_collections_tables,
@@ -29,6 +30,7 @@ from .routes.api_games import router as api_games_router
 from .routes.api_metadata import router as api_metadata_router
 from .routes.sync import router as sync_router
 from .routes.auth import router as auth_router
+from .routes.app_auth import router as app_auth_router
 from .routes.collections import router as collections_router
 from .routes.library import router as library_router
 from .routes.discover import router as discover_router
@@ -88,8 +90,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Conditionally add auth middleware (after CORS so CORS is the outer layer)
+if ENABLE_AUTH:
+    from .middleware import AuthMiddleware
+    from .services.auth_service import get_or_create_secret_key, cleanup_expired_sessions
+
+    actual_secret = SECRET_KEY or get_or_create_secret_key()
+    app.add_middleware(AuthMiddleware, secret_key=actual_secret)
+    cleanup_expired_sessions()
+
 # Initialize database on startup
 init_database()
+
+# Serve the service worker from root scope for PWA support
+sw_path = Path(__file__).parent / "static" / "sw.js"
+
+
+@app.get("/sw.js", include_in_schema=False)
+async def service_worker():
+    return FileResponse(sw_path, media_type="application/javascript",
+                        headers={"Service-Worker-Allowed": "/"})
+
 
 # Mount static files
 static_path = Path(__file__).parent / "static"
@@ -107,5 +128,6 @@ app.include_router(discover_router)
 app.include_router(settings_router)
 app.include_router(sync_router)
 app.include_router(auth_router)
+app.include_router(app_auth_router)
 app.include_router(collections_router)
 app.include_router(jobs_router)

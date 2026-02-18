@@ -18,5 +18,7 @@ python-dotenv
 
 # Metacritic scraping
 beautifulsoup4
-# Testing
-pytest
+
+# Authentication (optional)
+bcrypt
+itsdangerous

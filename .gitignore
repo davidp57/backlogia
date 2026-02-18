@@ -1,10 +1,10 @@
-game_library.db
+*.db
+.DS_Store
 
 # Copilot documentation
 .copilot-docs/
 
 # OpenSpec workflow and GitHub configs
-.github/
 openspec/
 
 # Docker
@@ -230,3 +230,24 @@ __marimo__/
 
 # Claude code
 .claude/
+.github/prompts/opsx-apply.prompt.md
+.github/prompts/opsx-archive.prompt.md
+.github/prompts/opsx-bulk-archive.prompt.md
+.github/prompts/opsx-continue.prompt.md
+.github/prompts/opsx-explore.prompt.md
+.github/prompts/opsx-ff.prompt.md
+.github/prompts/opsx-new.prompt.md
+.github/prompts/opsx-onboard.prompt.md
+.github/prompts/opsx-sync.prompt.md
+.github/prompts/opsx-verify.prompt.md
+.github/skills/openspec-apply-change/SKILL.md
+.github/skills/openspec-archive-change/SKILL.md
+.github/skills/openspec-bulk-archive-change/SKILL.md
+.github/skills/openspec-continue-change/SKILL.md
+.github/skills/openspec-explore/SKILL.md
+.github/skills/openspec-ff-change/SKILL.md
+.github/skills/openspec-new-change/SKILL.md
+.github/skills/openspec-onboard/SKILL.md
+.github/skills/openspec-sync-specs/SKILL.md
+.github/skills/openspec-verify-change/SKILL.md
+.github/copilot-instructions.md
