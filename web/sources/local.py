@@ -1,7 +1,6 @@
 # local.py
 # Imports games from local folders
 
-import os
 import json
 import hashlib
 from pathlib import Path

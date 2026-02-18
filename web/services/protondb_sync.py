@@ -1,7 +1,6 @@
 # protondb_sync.py
 # Fetches ProtonDB Linux/Steam Deck compatibility data for Steam games
 
-import sqlite3
 import requests
 import time
 import threading

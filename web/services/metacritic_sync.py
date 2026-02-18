@@ -1,7 +1,6 @@
 # metacritic_sync.py
 # Fetches Metacritic scores for games in our database
 
-import sqlite3
 import requests
 import time
 import re

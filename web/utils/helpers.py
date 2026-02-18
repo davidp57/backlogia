@@ -2,6 +2,7 @@
 # Utility functions for the Backlogia application
 
 import json
+from urllib.parse import quote
 from .filters import PREDEFINED_QUERIES, EXCLUDE_HIDDEN_FILTER
 
 
@@ -23,8 +24,20 @@ def get_store_url(store, store_id, extra_data=None):
     if store == "steam":
         return f"https://store.steampowered.com/app/{store_id}"
     elif store == "epic":
-        # Epic URLs use the app_name slug
-        return f"https://store.epicgames.com/en-US/p/{store_id}"
+        # Try to use the product slug from extra_data (extracted from Epic metadata)
+        if extra_data:
+            try:
+                data = json.loads(extra_data) if isinstance(extra_data, str) else extra_data
+                product_slug = data.get("product_slug")
+                if product_slug:
+                    return f"https://store.epicgames.com/en-US/p/{product_slug}"
+                # Fallback: search the Epic Store by game name
+                name = data.get("name")
+                if name:
+                    return f"https://store.epicgames.com/en-US/browse?q={quote(name)}&sortBy=relevancy"
+            except (json.JSONDecodeError, TypeError):
+                pass
+        return None
     elif store == "gog":
         # GOG URLs use the product ID
         return f"https://www.gog.com/en/game/{store_id}"
@@ -57,7 +70,7 @@ def get_store_url(store, store_id, extra_data=None):
     elif store == "xbox":
         # Xbox Store URL
         if store_id:
-            return f"https://www.xbox.com/games/store/{store_id}"
+            return f"https://www.xbox.com/games/store/game/{store_id}"
         return None
     return None
 
@@ -81,6 +94,8 @@ def group_games_by_igdb(games):
             except (json.JSONDecodeError, TypeError):
                 pass
 
+        has_non_streaming = not is_streaming
+
         if igdb_id:
             if igdb_id not in grouped:
                 grouped[igdb_id] = {
@@ -88,7 +103,8 @@ def group_games_by_igdb(games):
                     "stores": [game_dict["store"]],
                     "game_ids": [game_dict["id"]],
                     "store_data": {game_dict["store"]: game_dict},
-                    "is_streaming": is_streaming
+                    "is_streaming": is_streaming,
+                    "has_non_streaming": has_non_streaming
                 }
             else:
                 grouped[igdb_id]["stores"].append(game_dict["store"])
@@ -97,6 +113,9 @@ def group_games_by_igdb(games):
                 # Aggregate streaming flag - if any game has it, the group has it
                 if is_streaming:
                     grouped[igdb_id]["is_streaming"] = True
+                # Track if any copy is non-streaming (owned)
+                if has_non_streaming:
+                    grouped[igdb_id]["has_non_streaming"] = True
                 # Use the one with more data as primary (prefer one with playtime or better cover)
                 current_primary = grouped[igdb_id]["primary"]
                 if (game_dict.get("playtime_hours") and not current_primary.get("playtime_hours")) or \
@@ -108,11 +127,17 @@ def group_games_by_igdb(games):
                 "stores": [game_dict["store"]],
                 "game_ids": [game_dict["id"]],
                 "store_data": {game_dict["store"]: game_dict},
-                "is_streaming": is_streaming
+                "is_streaming": is_streaming,
+                "has_non_streaming": has_non_streaming
             })
 
     # Convert grouped dict to list and add non-IGDB games
     result = list(grouped.values()) + no_igdb_games
+
+    # Set only_streaming flag: True if game is streaming and has no non-streaming copies
+    for game in result:
+        game["only_streaming"] = game.get("is_streaming", False) and not game.get("has_non_streaming", False)
+
     return result
 
 

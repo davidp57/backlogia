@@ -4,6 +4,8 @@
 import subprocess
 import json
 import sys
+import time
+import urllib.request
 
 
 def is_legendary_installed():
@@ -164,6 +166,50 @@ def _auth_import():
         return False
 
 
+def _fetch_product_mapping():
+    """Fetch the namespace-to-slug product mapping from Epic Games Store API.
+
+    Returns:
+        dict: Mapping of namespace IDs to product slugs, or empty dict on failure.
+    """
+    url = "https://store-content.ak.epicgames.com/api/content/productmapping"
+    try:
+        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return json.loads(resp.read().decode())
+    except Exception as e:
+        print(f"  Warning: Could not fetch Epic product mapping: {e}")
+        return {}
+
+
+def _fetch_slug_from_graphql(namespace):
+    """Fetch the product page slug for a namespace via Epic's GraphQL API.
+
+    Returns:
+        str or None: The pageSlug if found, None otherwise.
+    """
+    url = "https://store.epicgames.com/graphql"
+    query = json.dumps({
+        "query": '{Catalog{catalogNs(namespace:"' + namespace + '"){mappings(pageType:"productHome"){pageSlug}}}}'
+    }).encode()
+    req = urllib.request.Request(url, data=query, headers={
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+        "Origin": "https://store.epicgames.com",
+        "Referer": "https://store.epicgames.com/",
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            result = json.loads(resp.read().decode())
+            mappings = (result.get("data", {}).get("Catalog", {})
+                        .get("catalogNs", {}).get("mappings", []))
+            if mappings:
+                return mappings[0].get("pageSlug")
+    except Exception:
+        pass
+    return None
+
+
 def _parse_game(game):
     """Parse a game object from legendary JSON into our format."""
     metadata = game.get("metadata", {})
@@ -191,6 +237,14 @@ def _parse_game(game):
             cover_image = images[img_type]["url"]
             break
 
+    # Extract product slug for store URL generation
+    custom_attrs = metadata.get("customAttributes", {})
+    product_slug_attr = custom_attrs.get("com.epicgames.app.productSlug", {})
+    product_slug = product_slug_attr.get("value") if isinstance(product_slug_attr, dict) else None
+    # Strip trailing "/home" that some slugs include
+    if product_slug and product_slug.endswith("/home"):
+        product_slug = product_slug[:-5]
+
     return {
         "name": game.get("app_title") or metadata.get("title"),
         "app_name": game.get("app_name"),
@@ -202,7 +256,8 @@ def _parse_game(game):
         "cover_image": cover_image,
         "images": images,
         "dlcs": game.get("dlcs", []),
-        "can_run_offline": metadata.get("customAttributes", {}).get("CanRunOffline", {}).get("value") == "true",
+        "can_run_offline": custom_attrs.get("CanRunOffline", {}).get("value") == "true",
+        "product_slug": product_slug,
         "created_date": metadata.get("creationDate"),
         "last_modified": metadata.get("lastModifiedDate"),
         "store": "epic"
@@ -315,6 +370,39 @@ def get_epic_library_legendary():
                         games.append(_parse_game(game))
                     except json.JSONDecodeError:
                         continue
+
+        # Enrich games with product slugs for store URLs
+        print("Fetching Epic Store product slugs...")
+
+        # Layer 1: Bulk product mapping (single HTTP request)
+        product_mapping = _fetch_product_mapping()
+        mapping_count = 0
+        if product_mapping:
+            for game in games:
+                if not game.get("product_slug") and game.get("namespace"):
+                    slug = product_mapping.get(game["namespace"])
+                    if slug:
+                        game["product_slug"] = slug
+                        mapping_count += 1
+
+        # Layer 2: GraphQL API for remaining games (one request per game)
+        remaining = [g for g in games
+                     if not g.get("product_slug") and g.get("namespace")]
+        graphql_count = 0
+        if remaining:
+            print(f"  Querying GraphQL for {len(remaining)} remaining games...")
+            for game in remaining:
+                slug = _fetch_slug_from_graphql(game["namespace"])
+                if slug:
+                    game["product_slug"] = slug
+                    graphql_count += 1
+                time.sleep(0.15)
+
+        total = mapping_count + graphql_count
+        still_missing = sum(1 for g in games if not g.get("product_slug"))
+        print(f"  Resolved {total} product slugs ({mapping_count} from mapping, {graphql_count} from GraphQL)")
+        if still_missing:
+            print(f"  {still_missing} games without store page slugs")
 
         return games
     except Exception as e:

@@ -216,7 +216,7 @@ def sync_store_async(store: StoreType):
             total = len(stores_to_sync)
             results = {}
 
-            for i, (store_name, import_func) in enumerate(stores_to_sync):
+            for i, (store_name, import_func) in enumerate(stores_to_sync, 1):
                 update_job_progress(job_id, i, total, f"Syncing {store_name.capitalize()}...")
                 try:
                     count = import_func(conn)
@@ -262,7 +262,7 @@ def sync_igdb_async(mode: str):
             # Ensure IGDB columns exist
             add_igdb_columns(conn)
 
-            update_job_progress(job_id, 0, 1, f"Initializing IGDB sync...")
+            update_job_progress(job_id, 0, 1, "Initializing IGDB sync...")
 
             # Progress callback to update job status
             def on_progress(current, total, message):
@@ -304,7 +304,7 @@ def sync_metacritic_async(mode: str):
             # Ensure Metacritic columns exist
             add_metacritic_columns(conn)
 
-            update_job_progress(job_id, 0, 1, f"Initializing Metacritic sync...")
+            update_job_progress(job_id, 0, 1, "Initializing Metacritic sync...")
 
             # Progress callback to update job status
             def on_progress(current, total, message):
@@ -375,7 +375,7 @@ def sync_protondb_async(mode: str):
             # Ensure ProtonDB columns exist
             add_protondb_columns(conn)
 
-            update_job_progress(job_id, 0, 1, f"Initializing ProtonDB sync...")
+            update_job_progress(job_id, 0, 1, "Initializing ProtonDB sync...")
 
             # Progress callback to update job status
             def on_progress(current, total, message):
