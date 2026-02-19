@@ -25,6 +25,10 @@ class UpdateNsfwRequest(BaseModel):
     nsfw: bool
 
 
+class UpdateRemovedRequest(BaseModel):
+    removed: bool
+
+
 class UpdateCoverOverrideRequest(BaseModel):
     cover_url_override: Optional[str] = None
 
@@ -189,6 +193,18 @@ def update_hidden(game_id: int, body: UpdateHiddenRequest, conn: sqlite3.Connect
     conn.commit()
 
     return {"success": True, "hidden": bool(hidden)}
+
+
+@router.post("/api/game/{game_id}/removed")
+def update_removed(game_id: int, body: UpdateRemovedRequest, conn: sqlite3.Connection = Depends(get_db)):
+    """Toggle removed status for a game."""
+    removed = 1 if body.removed else 0
+
+    cursor = conn.cursor()
+    cursor.execute("UPDATE games SET removed = ? WHERE id = ?", (removed, game_id))
+    conn.commit()
+
+    return {"success": True, "removed": bool(removed)}
 
 
 @router.post("/api/game/{game_id}/nsfw")

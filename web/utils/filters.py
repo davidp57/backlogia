@@ -10,4 +10,5 @@ EXCLUDE_DUPLICATES_FILTER = """
 # Filter to exclude hidden games (in addition to duplicates)
 EXCLUDE_HIDDEN_FILTER = EXCLUDE_DUPLICATES_FILTER + """
     AND (hidden IS NULL OR hidden = 0)
+    AND (removed IS NULL OR removed = 0)
 """

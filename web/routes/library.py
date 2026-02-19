@@ -142,6 +142,10 @@ def library(
     cursor.execute("SELECT COUNT(*) FROM games WHERE hidden = 1")
     hidden_count = cursor.fetchone()[0]
 
+    # Get removed count
+    cursor.execute("SELECT COUNT(*) FROM games WHERE removed = 1")
+    removed_count = cursor.fetchone()[0]
+
     # Get collections for the filter dropdown
     cursor.execute("""
         SELECT c.id, c.name, COUNT(cg.game_id) as game_count
@@ -177,6 +181,7 @@ def library(
             "total_count": total_count,
             "unique_count": unique_count,
             "hidden_count": hidden_count,
+            "removed_count": removed_count,
             "current_stores": stores,
             "current_genres": genres,
             "current_search": search,
@@ -290,6 +295,38 @@ def hidden_games(
 
     return templates.TemplateResponse(
         "hidden_games.html",
+        {
+            "request": request,
+            "games": games,
+            "current_search": search,
+            "parse_json": parse_json_field
+        }
+    )
+
+
+@router.get("/removed", response_class=HTMLResponse)
+def removed_games(
+    request: Request,
+    search: str = "",
+    conn: sqlite3.Connection = Depends(get_db)
+):
+    """Page showing all removed games."""
+    cursor = conn.cursor()
+
+    query = "SELECT * FROM games WHERE removed = 1" + EXCLUDE_DUPLICATES_FILTER
+    params = []
+
+    if search:
+        query += " AND name LIKE ?"
+        params.append(f"%{search}%")
+
+    query += " ORDER BY name COLLATE NOCASE ASC"
+
+    cursor.execute(query, params)
+    games = cursor.fetchall()
+
+    return templates.TemplateResponse(
+        "removed_games.html",
         {
             "request": request,
             "games": games,
