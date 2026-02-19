@@ -159,12 +159,22 @@
             border-radius: 8px;
             border: 1px solid rgba(255, 255, 255, 0.06);
             transition: all 0.2s ease;
+            cursor: pointer;
         }
 
         .store-stat:hover {
             background: rgba(255, 255, 255, 0.08);
             border-color: rgba(255, 255, 255, 0.12);
             transform: translateY(-1px);
+        }
+
+        .store-stat.active {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: rgba(102, 126, 234, 0.4);
+        }
+
+        .store-stat.active:hover {
+            background: rgba(102, 126, 234, 0.3);
         }
 
         .store-stat img {
@@ -1273,9 +1283,9 @@
                 <div class="stats-divider"></div>
                 <div class="store-stats">
                     {% for store, count in store_counts.items() %}
-                    <div class="store-stat {% if store not in store_icons_header %}no-icon{% endif %}">
+                    <div class="store-stat {% if store not in store_icons_header %}no-icon{% endif %} {% if store in current_stores %}active{% endif %}" data-store="{{ store }}" onclick="toggleStoreFilter('{{ store }}')" title="{{ store|capitalize }}">
                         {% if store in store_icons_header %}
-                        <img src="/static/images/{{ store_icons_header[store] }}" alt="{{ store }}" title="{{ store|capitalize }}">
+                        <img src="/static/images/{{ store_icons_header[store] }}" alt="{{ store }}">
                         {% else %}
                         <span class="store-name">{{ store }}</span>
                         {% endif %}
@@ -1553,10 +1563,13 @@
             // Restore filter/sort preferences from localStorage if no URL params
             restoreFilterPreferences();
 
-            // Toggle selected class on store chips when clicked
+            // Toggle selected class on store chips and sync with header stats
             document.querySelectorAll('.filter-store-chip input[type="checkbox"]').forEach(cb => {
                 cb.addEventListener('change', function() {
                     this.closest('.filter-store-chip').classList.toggle('selected', this.checked);
+                    // Sync header store stat
+                    const headerStat = document.querySelector(`.store-stat[data-store="${this.value}"]`);
+                    if (headerStat) headerStat.classList.toggle('active', this.checked);
                 });
             });
         });
@@ -1692,11 +1705,12 @@
         }
 
         function clearAllPanelFilters() {
-            // Uncheck all store chips
+            // Uncheck all store chips and sync header stats
             document.querySelectorAll('#filter-stores input').forEach(cb => {
                 cb.checked = false;
                 cb.closest('.filter-store-chip').classList.remove('selected');
             });
+            document.querySelectorAll('.store-stat.active').forEach(el => el.classList.remove('active'));
             // Uncheck all genre tags
             document.querySelectorAll('#filter-tags input').forEach(cb => { cb.checked = false; });
             // Reset toggles
@@ -1710,6 +1724,26 @@
             // Clear tag search
             const tagSearch = document.getElementById('panel-tag-search');
             if (tagSearch) { tagSearch.value = ''; filterPanelTags(); }
+        }
+
+        function toggleStoreFilter(store) {
+            const currentStores = [{% for store in current_stores %}'{{ store }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+            const idx = currentStores.indexOf(store);
+            if (idx >= 0) {
+                currentStores.splice(idx, 1);
+            } else {
+                currentStores.push(store);
+            }
+            const genres = [{% for genre in current_genres %}'{{ genre }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+            const search = '{{ current_search }}';
+            const sort = '{{ current_sort }}';
+            const order = '{{ current_order }}';
+            const excludeStreaming = {{ 'true' if current_exclude_streaming else 'false' }};
+            const collection = {{ current_collection }};
+            const protondbTier = '{{ current_protondb_tier }}';
+            const noIgdb = {{ 'true' if current_no_igdb else 'false' }};
+            saveFilterPreferences(currentStores, genres, search, sort, order, excludeStreaming, collection, protondbTier, noIgdb);
+            window.location.href = buildUrl(currentStores, genres, search, sort, order, excludeStreaming, collection, protondbTier, noIgdb);
         }
 
         function applySort(value) {
