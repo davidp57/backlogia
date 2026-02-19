@@ -487,11 +487,45 @@
         /* Filter panel footer */
         .filter-panel-footer {
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
+            align-items: center;
             gap: 10px;
             margin-top: 20px;
             padding-top: 15px;
             border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .filter-panel-footer-left {
+            display: flex;
+            gap: 8px;
+        }
+
+        .filter-panel-footer-right {
+            display: flex;
+            gap: 10px;
+        }
+
+        .filter-page-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-decoration: none;
+            background: rgba(255, 255, 255, 0.06);
+            color: #999;
+            transition: all 0.15s;
+        }
+
+        .filter-page-link:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ccc;
+        }
+
+        .filter-page-link .link-arrow {
+            font-size: 0.75rem;
         }
 
         .filter-panel-footer button {
@@ -1437,8 +1471,18 @@
             </div>
 
             <div class="filter-panel-footer">
-                <button class="filter-clear-btn" onclick="clearAllPanelFilters()">Clear All</button>
-                <button class="filter-apply-btn" onclick="applyPanelFilters()">Apply Filters</button>
+                <div class="filter-panel-footer-left">
+                    {% if hidden_count %}
+                    <a href="/hidden" class="filter-page-link">{{ hidden_count }} Hidden <span class="link-arrow">&#8599;</span></a>
+                    {% endif %}
+                    {% if removed_count %}
+                    <a href="/removed" class="filter-page-link">{{ removed_count }} Removed <span class="link-arrow">&#8599;</span></a>
+                    {% endif %}
+                </div>
+                <div class="filter-panel-footer-right">
+                    <button class="filter-clear-btn" onclick="clearAllPanelFilters()">Clear All</button>
+                    <button class="filter-apply-btn" onclick="applyPanelFilters()">Apply Filters</button>
+                </div>
             </div>
         </div>
 
