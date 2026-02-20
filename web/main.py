@@ -23,6 +23,7 @@ from .database import (
 from .services.database_builder import create_database
 from .services.igdb_sync import add_igdb_columns
 from .services.jobs import cleanup_orphaned_jobs
+from .services.system_labels import ensure_system_labels
 
 # Import routers
 from .routes.api_games import router as api_games_router
@@ -41,17 +42,25 @@ def init_database():
     """Initialize the database and ensure all tables/columns exist."""
     create_database()
     ensure_extra_columns()
-    ensure_collections_tables()
+
+    # Migrate collections to labels if needed
+    migrate_collections_to_labels()
+
+    # Ensure labels tables exist (new unified system)
+    ensure_labels_tables()
+
+    # Add new game metadata columns (priority, personal_rating)
+    ensure_game_metadata_columns()
     ensure_predefined_query_indexes()
     ensure_popularity_cache_table()
-    
-    # Labels system migrations and tables
-    migrate_collections_to_labels()
-    ensure_labels_tables()
-    ensure_game_metadata_columns()
 
     conn = sqlite3.connect(DATABASE_PATH)
+    conn.row_factory = sqlite3.Row
     add_igdb_columns(conn)
+
+    # Initialize system labels (playtime tags)
+    ensure_system_labels(conn)
+
     conn.close()
 
     # Clean up any jobs that were running when the server last stopped

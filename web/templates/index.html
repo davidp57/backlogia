@@ -669,10 +669,163 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
+        /* Game badges (priority and rating) */
+        .game-badges {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            z-index: 10;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.75);
+            color: white;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+        }
+
+        .priority-badge.priority-high {
+            background: rgba(239, 68, 68, 0.95);
+        }
+
+        .priority-badge.priority-medium {
+            background: rgba(251, 191, 36, 0.95);
+        }
+
+        .priority-badge.priority-low {
+            background: rgba(34, 197, 94, 0.95);
+        }
+
+        .rating-badge {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.95), rgba(245, 158, 11, 0.95));
+            font-weight: bold;
+        }
+
+        /* Responsive adjustments for badges */
+        .games-grid.size-small .game-badges {
+            top: 6px;
+            left: 6px;
+            gap: 3px;
+        }
+
+        .games-grid.size-small .badge {
+            padding: 3px 6px;
+            font-size: 0.6rem;
+        }
+
+        .games-grid.size-large .game-badges {
+            top: 10px;
+            left: 10px;
+            gap: 6px;
+        }
+
+        .games-grid.size-large .badge {
+            padding: 5px 10px;
+            font-size: 0.75rem;
+        }
+
         .game-stats {
             display: flex;
             gap: 8px;
             align-items: center;
+        }
+
+        /* Toast Notifications */
+        .toast {
+            background: rgba(26, 26, 46, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 16px 20px;
+            min-width: 300px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideInRight 0.3s ease-out;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .toast:hover {
+            opacity: 0.9;
+        }
+
+        .toast.success {
+            border-left: 4px solid #10b981;
+        }
+
+        .toast.error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .toast.info {
+            border-left: 4px solid #3b82f6;
+        }
+
+        .toast-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-message {
+            color: #e4e4e4;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .toast-close {
+            color: #888;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            cursor: pointer;
+            padding: 0 4px;
+            transition: color 0.2s;
+        }
+
+        .toast-close:hover {
+            color: #e4e4e4;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .toast.hiding {
+            animation: slideOutRight 0.3s ease-in forwards;
         }
 
         .no-games {
@@ -948,6 +1101,78 @@
             background: rgba(102, 126, 234, 0.3);
         }
 
+        .action-btn.priority {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .action-btn.priority:hover {
+            background: rgba(251, 191, 36, 0.3);
+        }
+
+        .action-btn.rating {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .action-btn.rating:hover {
+            background: rgba(245, 158, 11, 0.3);
+        }
+
+        .action-btn.playtime {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .action-btn.playtime:hover {
+            background: rgba(59, 130, 246, 0.3);
+        }
+
+        /* Dropdown Menus */
+        .dropdown-menu {
+            position: fixed;
+            background: rgba(26, 26, 46, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 8px;
+            min-width: 200px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            z-index: 250;
+        }
+
+        .dropdown-item {
+            width: 100%;
+            padding: 10px 15px;
+            border: none;
+            background: transparent;
+            color: #e4e4e4;
+            text-align: left;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background 0.2s;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(102, 126, 234, 0.2);
+        }
+
+        .dropdown-item .priority-badge-icon {
+            font-size: 1.1rem;
+        }
+
+        .dropdown-menu.rating-menu {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
         /* Collection Modal */
         .collection-modal-overlay {
             display: none;
@@ -1210,6 +1435,9 @@
     </style>
 </head>
 <body>
+    <!-- Toast Container -->
+    <div id="toast-container" style="position: fixed; top: 80px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 400px;"></div>
+
     <nav class="top-nav">
         <a href="/" class="nav-brand">Backlogia</a>
         <div class="nav-links">
@@ -1272,6 +1500,24 @@
                     {% if grouped_game.is_streaming %}
                     <span class="streaming-pill">Streaming</span>
                     {% endif %}
+
+                    <!-- Badges Container (top-left) -->
+                    <div class="game-badges">
+                        {% if game.priority %}
+                        <span class="badge priority-badge priority-{{ game.priority }}" data-priority="{{ game.priority }}">
+                            {% if game.priority == 'high' %}🔴
+                            {% elif game.priority == 'medium' %}🟡
+                            {% elif game.priority == 'low' %}🟢
+                            {% endif %}
+                        </span>
+                        {% endif %}
+
+                        {% if game.personal_rating and game.personal_rating > 0 %}
+                        <span class="badge rating-badge" data-rating="{{ game.personal_rating }}" title="Personal rating: {{ game.personal_rating }}/10">
+                            {{ '⭐' * ((game.personal_rating + 1) // 2) }} {{ game.personal_rating }}
+                        </span>
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="game-info">
                     <div class="game-title">{{ game.name or 'Unknown Game' }}</div>
@@ -1304,6 +1550,15 @@
                 <button class="action-btn collection" onclick="openCollectionModal()">
                     Add to Collection
                 </button>
+                <button class="action-btn priority" onclick="togglePriorityMenu()">
+                    Set Priority
+                </button>
+                <button class="action-btn rating" onclick="toggleRatingMenu()">
+                    Personal Rating
+                </button>
+                <button class="action-btn playtime" onclick="togglePlaytimeMenu()">
+                    Playtime Tag
+                </button>
                 <button class="action-btn hide" onclick="bulkAction('hide')">
                     Hide Selected
                 </button>
@@ -1317,6 +1572,59 @@
                     Cancel
                 </button>
             </div>
+        </div>
+
+        <!-- Priority Dropdown -->
+        <div id="priority-dropdown" class="dropdown-menu" style="display: none;">
+            <button class="dropdown-item priority-high" onclick="bulkSetPriority('high')">
+                <span class="priority-badge-icon">🔴</span> High Priority
+            </button>
+            <button class="dropdown-item priority-medium" onclick="bulkSetPriority('medium')">
+                <span class="priority-badge-icon">🟡</span> Medium Priority
+            </button>
+            <button class="dropdown-item priority-low" onclick="bulkSetPriority('low')">
+                <span class="priority-badge-icon">🟢</span> Low Priority
+            </button>
+            <button class="dropdown-item priority-none" onclick="bulkSetPriority(null)">
+                <span class="priority-badge-icon">⚪</span> Remove Priority
+            </button>
+        </div>
+
+        <!-- Personal Rating Dropdown -->
+        <div id="rating-dropdown" class="dropdown-menu rating-menu" style="display: none;">
+            <button class="dropdown-item" onclick="bulkSetPersonalRating(10)">⭐⭐⭐⭐⭐ (10)</button>
+            <button class="dropdown-item" onclick="bulkSetPersonalRating(9)">⭐⭐⭐⭐⭐ (9)</button>
+            <button class="dropdown-item" onclick="bulkSetPersonalRating(8)">⭐⭐⭐⭐ (8)</button>
+            <button class="dropdown-item" onclick="bulkSetPersonalRating(7)">⭐⭐⭐⭐ (7)</button>
+            <button class="dropdown-item" onclick="bulkSetPersonalRating(6)">⭐⭐⭐ (6)</button>
+            <button class="dropdown-item" onclick="bulkSetPersonalRating(5)">⭐⭐⭐ (5)</button>
+            <button class="dropdown-item" onclick="bulkSetPersonalRating(4)">⭐⭐ (4)</button>
+            <button class="dropdown-item" onclick="bulkSetPersonalRating(3)">⭐⭐ (3)</button>
+            <button class="dropdown-item" onclick="bulkSetPersonalRating(2)">⭐ (2)</button>
+            <button class="dropdown-item" onclick="bulkSetPersonalRating(1)">⭐ (1)</button>
+            <button class="dropdown-item" onclick="bulkSetPersonalRating(0)">❌ Remove Rating</button>
+        </div>
+
+        <!-- Playtime Tag Dropdown -->
+        <div id="playtime-dropdown" class="dropdown-menu" style="display: none;">
+            <button class="dropdown-item" onclick="bulkSetPlaytimeTag('Never Launched')">
+                🎮 Never Launched
+            </button>
+            <button class="dropdown-item" onclick="bulkSetPlaytimeTag('Just Tried')">
+                👀 Just Tried
+            </button>
+            <button class="dropdown-item" onclick="bulkSetPlaytimeTag('Played')">
+                🎯 Played
+            </button>
+            <button class="dropdown-item" onclick="bulkSetPlaytimeTag('Well Played')">
+                ⭐ Well Played
+            </button>
+            <button class="dropdown-item" onclick="bulkSetPlaytimeTag('Heavily Played')">
+                🏆 Heavily Played
+            </button>
+            <button class="dropdown-item" onclick="bulkSetPlaytimeTag(null)">
+                ⚪ Remove Tag
+            </button>
         </div>
 
         <!-- Collection Modal -->
@@ -1437,9 +1745,57 @@
         // Note: All filter-related functions (store dropdown, genre dropdown, query filters, etc.) 
         // are now in /static/js/filters.js
 
+        // Toast Notifications
+        function showToast(message, type = 'info', duration = 3000) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            const icons = {
+                success: '✓',
+                error: '✗',
+                info: 'ℹ'
+            };
+
+            toast.innerHTML = `
+                <div class="toast-icon">${icons[type] || icons.info}</div>
+                <div class="toast-content">
+                    <div class="toast-message">${message}</div>
+                </div>
+                <div class="toast-close" onclick="closeToast(this.parentElement)">×</div>
+            `;
+
+            container.appendChild(toast);
+
+            // Auto-close after duration
+            if (duration > 0) {
+                setTimeout(() => closeToast(toast), duration);
+            }
+
+            // Click to close
+            toast.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('toast-close')) {
+                    closeToast(toast);
+                }
+            });
+
+            return toast;
+        }
+
+        function closeToast(toast) {
+            if (!toast || !toast.parentElement) return;
+            toast.classList.add('hiding');
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.parentElement.removeChild(toast);
+                }
+            }, 300);
+        }
+
         // Multi-select functionality
         let selectMode = false;
         let selectedGames = new Set();
+        let lastSelectedCard = null;
 
         function toggleSelectMode() {
             selectMode = !selectMode;
@@ -1466,6 +1822,35 @@
             const card = checkbox.closest('.game-card');
             const gameIds = card.dataset.gameIds.split(',');
 
+            // Shift-click for range selection
+            if (event.shiftKey && lastSelectedCard && lastSelectedCard !== card) {
+                const allCards = Array.from(document.querySelectorAll('.game-card'));
+                const lastIndex = allCards.indexOf(lastSelectedCard);
+                const currentIndex = allCards.indexOf(card);
+
+                if (lastIndex !== -1 && currentIndex !== -1) {
+                    const start = Math.min(lastIndex, currentIndex);
+                    const end = Math.max(lastIndex, currentIndex);
+
+                    // Select all cards in range
+                    for (let i = start; i <= end; i++) {
+                        const rangeCard = allCards[i];
+                        const rangeCheckbox = rangeCard.querySelector('.game-checkbox');
+                        const rangeGameIds = rangeCard.dataset.gameIds.split(',');
+
+                        if (!rangeCheckbox.classList.contains('checked')) {
+                            rangeCheckbox.classList.add('checked');
+                            rangeCard.classList.add('selected');
+                            rangeGameIds.forEach(id => selectedGames.add(id));
+                        }
+                    }
+
+                    updateSelectionCount();
+                    return;
+                }
+            }
+
+            // Normal toggle
             if (checkbox.classList.contains('checked')) {
                 checkbox.classList.remove('checked');
                 card.classList.remove('selected');
@@ -1474,6 +1859,7 @@
                 checkbox.classList.add('checked');
                 card.classList.add('selected');
                 gameIds.forEach(id => selectedGames.add(id));
+                lastSelectedCard = card;
             }
 
             updateSelectionCount();
@@ -1547,15 +1933,17 @@
                     clearSelection();
                     toggleSelectMode();
 
-                    // Update stats after a short delay
+                    // Show success and reload
+                    const actionText = action === 'hide' ? 'hidden' : action === 'nsfw' ? 'marked as NSFW' : action;
+                    showToast(`${data.updated} games ${actionText}`, 'success');
                     setTimeout(() => {
                         location.reload();
                     }, 500);
                 } else {
-                    alert('Error: ' + (data.error || 'Unknown error'));
+                    showToast('Error: ' + (data.error || 'Unknown error'), 'error');
                 }
             } catch (error) {
-                alert('Network error: ' + error.message);
+                showToast('Network error: ' + error.message, 'error');
             } finally {
                 actionBtn.disabled = false;
                 actionBtn.textContent = originalText;
@@ -1600,20 +1988,210 @@
                     clearSelection();
                     toggleSelectMode();
 
-                    // Update stats after a short delay
+                    // Show success and reload
+                    showToast(`${data.deleted} games deleted from database`, 'success');
                     setTimeout(() => {
                         location.reload();
                     }, 500);
                 } else {
-                    alert('Error: ' + (data.error || 'Unknown error'));
+                    showToast('Error: ' + (data.error || 'Unknown error'), 'error');
                 }
             } catch (error) {
-                alert('Network error: ' + error.message);
+                showToast('Network error: ' + error.message, 'error');
             } finally {
                 actionBtn.disabled = false;
                 actionBtn.textContent = originalText;
             }
         }
+
+        // Priority and Rating Menus
+        function togglePriorityMenu() {
+            const dropdown = document.getElementById('priority-dropdown');
+            const ratingDropdown = document.getElementById('rating-dropdown');
+
+            // Close rating menu if open
+            ratingDropdown.style.display = 'none';
+
+            // Toggle priority menu
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+
+            // Position dropdown near the button
+            const btn = document.querySelector('.action-btn.priority');
+            const rect = btn.getBoundingClientRect();
+            dropdown.style.top = (rect.top - dropdown.offsetHeight - 10) + 'px';
+            dropdown.style.left = rect.left + 'px';
+        }
+
+        function toggleRatingMenu() {
+            const dropdown = document.getElementById('rating-dropdown');
+            const priorityDropdown = document.getElementById('priority-dropdown');
+
+            // Close priority menu if open
+            priorityDropdown.style.display = 'none';
+
+            // Toggle rating menu
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+
+            // Position dropdown near the button
+            const btn = document.querySelector('.action-btn.rating');
+            const rect = btn.getBoundingClientRect();
+            dropdown.style.top = (rect.top - dropdown.offsetHeight - 10) + 'px';
+            dropdown.style.left = rect.left + 'px';
+        }
+
+        async function bulkSetPriority(priority) {
+            if (selectedGames.size === 0) return;
+
+            const gameIds = Array.from(selectedGames).map(id => parseInt(id));
+
+            try {
+                const response = await fetch('/api/games/bulk/set-priority', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        game_ids: gameIds,
+                        priority: priority
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Close dropdown
+                    document.getElementById('priority-dropdown').style.display = 'none';
+
+                    // Show success message
+                    const priorityText = priority === null ? 'removed' : priority;
+                    showToast(`Priority ${priorityText} set for ${data.updated} games`, 'success');
+
+                    // Reload to show changes
+                    location.reload();
+                } else {
+                    showToast('Error: ' + (data.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showToast('Network error: ' + error.message, 'error');
+            }
+        }
+
+        async function bulkSetPersonalRating(rating) {
+            if (selectedGames.size === 0) return;
+
+            const gameIds = Array.from(selectedGames).map(id => parseInt(id));
+
+            try {
+                const response = await fetch('/api/games/bulk/set-personal-rating', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        game_ids: gameIds,
+                        rating: rating
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Close dropdown
+                    document.getElementById('rating-dropdown').style.display = 'none';
+
+                    // Show success message
+                    const ratingText = rating === 0 ? 'removed' : `${rating}/10`;
+                    showToast(`Personal rating ${ratingText} set for ${data.updated} games`, 'success');
+
+                    // Reload to show changes
+                    location.reload();
+                } else {
+                    showToast('Error: ' + (data.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showToast('Network error: ' + error.message, 'error');
+            }
+        }
+
+        function togglePlaytimeMenu() {
+            const dropdown = document.getElementById('playtime-dropdown');
+            const priorityDropdown = document.getElementById('priority-dropdown');
+            const ratingDropdown = document.getElementById('rating-dropdown');
+
+            // Close other menus if open
+            priorityDropdown.style.display = 'none';
+            ratingDropdown.style.display = 'none';
+
+            // Toggle playtime menu
+            const isVisible = dropdown.style.display !== 'none';
+            dropdown.style.display = isVisible ? 'none' : 'block';
+
+            if (!isVisible) {
+                // Position dropdown near the button
+                const btn = document.querySelector('.action-btn.playtime');
+                const rect = btn.getBoundingClientRect();
+
+                // Show first to get actual height
+                dropdown.style.visibility = 'hidden';
+                dropdown.style.display = 'block';
+                const height = dropdown.offsetHeight;
+                dropdown.style.visibility = 'visible';
+
+                dropdown.style.top = (rect.top - height - 10) + 'px';
+                dropdown.style.left = rect.left + 'px';
+            }
+        }
+
+        async function bulkSetPlaytimeTag(tag) {
+            if (selectedGames.size === 0) return;
+
+            const gameIds = Array.from(selectedGames).map(id => parseInt(id));
+
+            try {
+                // Call the endpoint for each game (no bulk endpoint exists yet)
+                let updatedCount = 0;
+                for (const gameId of gameIds) {
+                    const response = await fetch(`/api/game/${gameId}/manual-playtime-tag`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            label_name: tag
+                        })
+                    });
+
+                    if (response.ok) {
+                        updatedCount++;
+                    }
+                }
+
+                // Close dropdown
+                document.getElementById('playtime-dropdown').style.display = 'none';
+
+                // Show success message
+                const tagText = tag === null ? 'removed' : tag;
+                showToast(`Playtime tag "${tagText}" set for ${updatedCount} games`, 'success');
+
+                // Reload to show changes
+                location.reload();
+            } catch (error) {
+                showToast('Network error: ' + error.message, 'error');
+            }
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.action-btn.priority') && !e.target.closest('#priority-dropdown')) {
+                document.getElementById('priority-dropdown').style.display = 'none';
+            }
+            if (!e.target.closest('.action-btn.rating') && !e.target.closest('#rating-dropdown')) {
+                document.getElementById('rating-dropdown').style.display = 'none';
+            }
+            if (!e.target.closest('.action-btn.playtime') && !e.target.closest('#playtime-dropdown')) {
+                document.getElementById('playtime-dropdown').style.display = 'none';
+            }
+        });
 
         // Collection Modal
         let allCollections = [];

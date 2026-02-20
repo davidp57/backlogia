@@ -55,6 +55,9 @@ def sync_store(store: StoreType):
 
         if store == StoreType.steam or store == StoreType.all:
             results["steam"] = import_steam_games(conn)
+            # Auto-apply system tags based on playtime
+            from ..services.system_labels import update_all_auto_labels
+            update_all_auto_labels(conn)
 
         if store == StoreType.epic or store == StoreType.all:
             results["epic"] = import_epic_games(conn)
@@ -221,6 +224,12 @@ def sync_store_async(store: StoreType):
                 try:
                     count = import_func(conn)
                     results[store_name] = count
+
+                    # Auto-apply system tags for Steam games after sync
+                    if store_name == "steam":
+                        from ..services.system_labels import update_all_auto_labels
+                        update_all_auto_labels(conn)
+
                 except Exception as e:
                     results[store_name] = f"Error: {str(e)}"
 

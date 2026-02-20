@@ -254,3 +254,4 @@ __marimo__/
 .github/skills/openspec-sync-specs/SKILL.md
 .github/skills/openspec-verify-change/SKILL.md
 .github/copilot-instructions.md
+.vscode/settings.json

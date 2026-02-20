@@ -41,15 +41,16 @@ def collections_page(request: Request, conn: sqlite3.Connection = Depends(get_db
     # Get all collections with game count and cover thumbnails
     cursor.execute("""
         SELECT
-            c.id,
-            c.name,
-            c.description,
-            c.created_at,
-            COUNT(cg.game_id) as game_count
-        FROM collections c
-        LEFT JOIN collection_games cg ON c.id = cg.collection_id
-        GROUP BY c.id
-        ORDER BY c.updated_at DESC
+            l.id,
+            l.name,
+            l.description,
+            l.created_at,
+            COUNT(gl.game_id) as game_count
+        FROM labels l
+        LEFT JOIN game_labels gl ON l.id = gl.label_id
+        WHERE l.type = 'collection'
+        GROUP BY l.id
+        ORDER BY l.updated_at DESC
     """)
     collections = cursor.fetchall()
 
@@ -59,10 +60,10 @@ def collections_page(request: Request, conn: sqlite3.Connection = Depends(get_db
         collection_dict = dict(collection)
         cursor.execute("""
             SELECT g.igdb_cover_url, g.cover_image
-            FROM collection_games cg
-            JOIN games g ON cg.game_id = g.id
-            WHERE cg.collection_id = ?
-            ORDER BY cg.added_at DESC
+            FROM game_labels gl
+            JOIN games g ON gl.game_id = g.id
+            WHERE gl.label_id = ?
+            ORDER BY gl.added_at DESC
             LIMIT 4
         """, (collection_dict["id"],))
         covers = []
@@ -82,10 +83,10 @@ def collections_page(request: Request, conn: sqlite3.Connection = Depends(get_db
     )
 
 
-@router.get("/collection/{collection_id}", response_class=HTMLResponse)
+@router.get("/collection/{label_id}", response_class=HTMLResponse)
 def collection_detail(
     request: Request,
-    collection_id: int,
+    label_id: int,
     stores: list[str] = Query(default=[]),
     genres: list[str] = Query(default=[]),
     queries: list[str] = Query(default=[]),
@@ -99,7 +100,7 @@ def collection_detail(
     cursor = conn.cursor()
 
     # Get collection info
-    cursor.execute("SELECT * FROM collections WHERE id = ?", (collection_id,))
+    cursor.execute("SELECT * FROM labels WHERE type = 'collection' AND id = ?", (label_id,))
     collection = cursor.fetchone()
 
     if not collection:
@@ -108,20 +109,20 @@ def collection_detail(
     # Get store and genre counts for filters (from all collection games, not filtered)
     cursor.execute("""
         SELECT g.store, COUNT(*) as count
-        FROM collection_games cg
-        JOIN games g ON cg.game_id = g.id
-        WHERE cg.collection_id = ?
+        FROM game_labels gl
+        JOIN games g ON gl.game_id = g.id
+        WHERE gl.label_id = ?
         GROUP BY g.store
         ORDER BY count DESC
-    """, (collection_id,))
+    """, (label_id,))
     store_counts = dict(cursor.fetchall())
     
     cursor.execute("""
         SELECT DISTINCT g.genres
-        FROM collection_games cg
-        JOIN games g ON cg.game_id = g.id
-        WHERE cg.collection_id = ? AND g.genres IS NOT NULL AND g.genres != '[]'
-    """, (collection_id,))
+        FROM game_labels gl
+        JOIN games g ON gl.game_id = g.id
+        WHERE gl.label_id = ? AND g.genres IS NOT NULL AND g.genres != '[]'
+    """, (label_id,))
     genre_counts = {}
     for row in cursor.fetchall():
         try:
@@ -134,12 +135,12 @@ def collection_detail(
 
     # Build query with filters
     query = """
-        SELECT g.*, cg.added_at as collection_added_at
-        FROM collection_games cg
-        JOIN games g ON cg.game_id = g.id
-        WHERE cg.collection_id = ?
+        SELECT g.*, gl.added_at as collection_added_at
+        FROM game_labels gl
+        JOIN games g ON gl.game_id = g.id
+        WHERE gl.label_id = ?
     """
-    params: list[str | int] = [collection_id]
+    params: list[str | int] = [label_id]
 
     if stores:
         placeholders = ",".join("?" * len(stores))
@@ -158,7 +159,7 @@ def collection_detail(
         if filter_sql:
             query += f" AND {filter_sql}"
 
-    query += " ORDER BY cg.added_at DESC"
+    query += " ORDER BY gl.added_at DESC"
     cursor.execute(query, params)
     games = cursor.fetchall()
 
@@ -204,11 +205,12 @@ def api_get_collections(conn: sqlite3.Connection = Depends(get_db)):
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT c.id, c.name, c.description, COUNT(cg.game_id) as game_count
-        FROM collections c
-        LEFT JOIN collection_games cg ON c.id = cg.collection_id
-        GROUP BY c.id
-        ORDER BY c.name
+        SELECT l.id, l.name, l.description, COUNT(gl.game_id) as game_count
+        FROM labels l
+        LEFT JOIN game_labels gl ON l.id = gl.label_id
+        WHERE l.type = 'collection'
+        GROUP BY l.id
+        ORDER BY l.name
     """)
     collections = [dict(c) for c in cursor.fetchall()]
 
@@ -227,26 +229,26 @@ def api_create_collection(body: CreateCollectionRequest, conn: sqlite3.Connectio
     cursor = conn.cursor()
 
     cursor.execute(
-        "INSERT INTO collections (name, description) VALUES (?, ?)",
+        "INSERT INTO labels (name, type, description) VALUES (?, 'collection', ?)",
         (name, description)
     )
-    collection_id = cursor.lastrowid
+    label_id = cursor.lastrowid
     conn.commit()
 
     return {
         "success": True,
-        "id": collection_id,
+        "id": label_id,
         "name": name,
         "description": description
     }
 
 
-@router.delete("/api/collections/{collection_id}", tags=["Collections"])
-def api_delete_collection(collection_id: int, conn: sqlite3.Connection = Depends(get_db)):
+@router.delete("/api/collections/{label_id}", tags=["Collections"])
+def api_delete_collection(label_id: int, conn: sqlite3.Connection = Depends(get_db)):
     """Delete a collection."""
     cursor = conn.cursor()
 
-    cursor.execute("DELETE FROM collections WHERE id = ?", (collection_id,))
+    cursor.execute("DELETE FROM labels WHERE type = 'collection' AND id = ?", (label_id,))
     if cursor.rowcount == 0:
         raise HTTPException(status_code=404, detail="Collection not found")
 
@@ -255,13 +257,13 @@ def api_delete_collection(collection_id: int, conn: sqlite3.Connection = Depends
     return {"success": True}
 
 
-@router.put("/api/collections/{collection_id}", tags=["Collections"])
-def api_update_collection(collection_id: int, body: UpdateCollectionRequest, conn: sqlite3.Connection = Depends(get_db)):
+@router.put("/api/collections/{label_id}", tags=["Collections"])
+def api_update_collection(label_id: int, body: UpdateCollectionRequest, conn: sqlite3.Connection = Depends(get_db)):
     """Update a collection's name and description."""
     cursor = conn.cursor()
 
     # Check if collection exists
-    cursor.execute("SELECT id FROM collections WHERE id = ?", (collection_id,))
+    cursor.execute("SELECT id FROM labels WHERE type = 'collection' AND id = ?", (label_id,))
     if not cursor.fetchone():
         raise HTTPException(status_code=404, detail="Collection not found")
 
@@ -279,9 +281,9 @@ def api_update_collection(collection_id: int, body: UpdateCollectionRequest, con
 
     if updates:
         updates.append("updated_at = CURRENT_TIMESTAMP")
-        params.append(collection_id)
+        params.append(label_id)
         cursor.execute(
-            f"UPDATE collections SET {', '.join(updates)} WHERE id = ?",
+            f"UPDATE labels SET {', '.join(updates)} WHERE id = ?",
             params
         )
         conn.commit()
@@ -289,15 +291,15 @@ def api_update_collection(collection_id: int, body: UpdateCollectionRequest, con
     return {"success": True}
 
 
-@router.post("/api/collections/{collection_id}/games", tags=["Collections"])
-def api_add_game_to_collection(collection_id: int, body: AddGameRequest, conn: sqlite3.Connection = Depends(get_db)):
+@router.post("/api/collections/{label_id}/games", tags=["Collections"])
+def api_add_game_to_collection(label_id: int, body: AddGameRequest, conn: sqlite3.Connection = Depends(get_db)):
     """Add a game to a collection."""
     game_id = body.game_id
 
     cursor = conn.cursor()
 
     # Check if collection exists
-    cursor.execute("SELECT id FROM collections WHERE id = ?", (collection_id,))
+    cursor.execute("SELECT id FROM labels WHERE type = 'collection' AND id = ?", (label_id,))
     if not cursor.fetchone():
         raise HTTPException(status_code=404, detail="Collection not found")
 
@@ -309,13 +311,13 @@ def api_add_game_to_collection(collection_id: int, body: AddGameRequest, conn: s
     # Try to add (ignore if already exists)
     try:
         cursor.execute(
-            "INSERT OR IGNORE INTO collection_games (collection_id, game_id) VALUES (?, ?)",
-            (collection_id, game_id)
+            "INSERT OR IGNORE INTO game_labels (label_id, game_id) VALUES (?, ?)",
+            (label_id, game_id)
         )
         # Update collection's updated_at
         cursor.execute(
-            "UPDATE collections SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-            (collection_id,)
+            "UPDATE labels SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (label_id,)
         )
         conn.commit()
     except Exception as e:
@@ -324,14 +326,14 @@ def api_add_game_to_collection(collection_id: int, body: AddGameRequest, conn: s
     return {"success": True}
 
 
-@router.delete("/api/collections/{collection_id}/games/{game_id}", tags=["Collections"])
-def api_remove_game_from_collection(collection_id: int, game_id: int, conn: sqlite3.Connection = Depends(get_db)):
+@router.delete("/api/collections/{label_id}/games/{game_id}", tags=["Collections"])
+def api_remove_game_from_collection(label_id: int, game_id: int, conn: sqlite3.Connection = Depends(get_db)):
     """Remove a game from a collection."""
     cursor = conn.cursor()
 
     cursor.execute(
-        "DELETE FROM collection_games WHERE collection_id = ? AND game_id = ?",
-        (collection_id, game_id)
+        "DELETE FROM game_labels WHERE label_id = ? AND game_id = ?",
+        (label_id, game_id)
     )
 
     if cursor.rowcount == 0:
@@ -339,8 +341,8 @@ def api_remove_game_from_collection(collection_id: int, game_id: int, conn: sqli
 
     # Update collection's updated_at
     cursor.execute(
-        "UPDATE collections SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        (collection_id,)
+        "UPDATE labels SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (label_id,)
     )
     conn.commit()
 
@@ -353,11 +355,11 @@ def api_get_game_collections(game_id: int, conn: sqlite3.Connection = Depends(ge
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT c.id, c.name
-        FROM collections c
-        JOIN collection_games cg ON c.id = cg.collection_id
-        WHERE cg.game_id = ?
-        ORDER BY c.name
+        SELECT l.id, l.name
+        FROM labels l
+        JOIN game_labels gl ON l.id = gl.label_id
+        WHERE gl.game_id = ? AND l.type = 'collection'
+        ORDER BY l.name
     """, (game_id,))
 
     collections = [dict(c) for c in cursor.fetchall()]

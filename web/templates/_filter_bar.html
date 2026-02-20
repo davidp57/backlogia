@@ -205,6 +205,8 @@
             {% elif current_sort == 'igdb_rating' %}IGDB User Rating (High-Low)
             {% elif current_sort == 'aggregated_rating' %}IGDB Critic Rating (High-Low)
             {% elif current_sort == 'playtime_hours' %}Most Played
+            {% elif current_sort == 'personal_rating' %}My Rating (High-Low)
+            {% elif current_sort == 'priority' %}Priority (High first)
             {% elif current_sort == 'release_date' and current_order == 'desc' %}Release Date (Newest)
             {% elif current_sort == 'release_date' and current_order == 'asc' %}Release Date (Oldest)
             {% elif current_sort == 'added_at' and current_order == 'desc' %}Recently Added
@@ -248,6 +250,12 @@
             </div>
             <div class="dropdown-item" onclick="applySort('aggregated_rating-desc')">
                 <label style="cursor: pointer;">IGDB Critic Rating (High-Low)</label>
+            </div>
+            <div class="dropdown-item" onclick="applySort('personal_rating-desc')">
+                <label style="cursor: pointer;">My Rating (High-Low)</label>
+            </div>
+            <div class="dropdown-item" onclick="applySort('priority-asc')">
+                <label style="cursor: pointer;">Priority (High first)</label>
             </div>
         </div>
     </div>
