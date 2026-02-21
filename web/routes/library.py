@@ -215,7 +215,15 @@ def library(
             "current_no_igdb": no_igdb,
             "collections": collections,
             "available_sorts": available_sorts,
-            "parse_json": parse_json_field
+            "parse_json": parse_json_field,
+            "active_filter_count": (
+                len(stores) + len(genres) + len(queries) +
+                (1 if search else 0) +
+                (1 if exclude_streaming else 0) +
+                (1 if collection else 0) +
+                (1 if protondb_tier else 0) +
+                (1 if no_igdb else 0)
+            ),
         }
     )
 

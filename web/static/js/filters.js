@@ -33,7 +33,11 @@ function saveCurrentFilters() {
         queries: currentUrl.searchParams.getAll('queries'),
         excludeStreaming: currentUrl.searchParams.get('exclude_streaming') === 'true',
         noIgdb: currentUrl.searchParams.get('no_igdb') === 'true',
-        protondbTier: currentUrl.searchParams.get('protondb_tier') || ''
+        protondbTier: currentUrl.searchParams.get('protondb_tier') || '',
+        search: currentUrl.searchParams.get('search') || '',
+        sort: currentUrl.searchParams.get('sort') || 'name',
+        order: currentUrl.searchParams.get('order') || 'asc',
+        collection: parseInt(currentUrl.searchParams.get('collection') || '0')
     };
     localStorage.setItem('globalFilters', JSON.stringify(filters));
 }
@@ -46,7 +50,11 @@ function getGlobalFilters() {
         queries: [],
         excludeStreaming: false,
         noIgdb: false,
-        protondbTier: ''
+        protondbTier: '',
+        search: '',
+        sort: 'name',
+        order: 'asc',
+        collection: 0
     };
 }
 
@@ -132,15 +140,18 @@ function buildUrl(stores, genres, queries, search, sort, order, excludeStreaming
     if (protondbTier) params.set('protondb_tier', protondbTier);
     if (noIgdb) params.set('no_igdb', 'true');
     
-    // Always save global filters to localStorage
-    // Note: 'collection' is NOT saved (page-specific context)
+    // Always save all filters to localStorage (single globalFilters key)
     localStorage.setItem('globalFilters', JSON.stringify({
         stores: stores,
         genres: genres,
         queries: queries,
         excludeStreaming: excludeStreaming || false,
         noIgdb: noIgdb || false,
-        protondbTier: protondbTier || ''
+        protondbTier: protondbTier || '',
+        search: search || '',
+        sort: sort || 'name',
+        order: order || 'asc',
+        collection: collection || 0
     }));
     
     return window.location.pathname + '?' + params.toString();
@@ -588,4 +599,89 @@ function toggleNoIGDB() {
         stores, genres, queries, search, sort, order,
         advanced.excludeStreaming, advanced.collection, advanced.protondbTier, !advanced.noIgdb
     );
+}
+
+// ── Panel UI functions (shared across all pages using _filter_bar.html) ──────
+
+function toggleFilterPanel() {
+    const panel = document.getElementById('filter-panel');
+    const btn = document.getElementById('filter-toggle');
+    if (!panel) return;
+    panel.classList.toggle('open');
+    btn?.classList.toggle('panel-open');
+}
+
+// Close panel / sort dropdown when clicking outside
+document.addEventListener('click', function (e) {
+    const panel = document.getElementById('filter-panel');
+    const panelBtn = document.getElementById('filter-toggle');
+    if (panel?.classList.contains('open') && !panel.contains(e.target) && !panelBtn?.contains(e.target)) {
+        panel.classList.remove('open');
+        panelBtn?.classList.remove('panel-open');
+    }
+    const sortMenu = document.getElementById('sort-dropdown-menu');
+    const sortBtn = document.getElementById('sort-toggle');
+    if (sortMenu?.classList.contains('open') && !sortBtn?.contains(e.target)) {
+        sortMenu.classList.remove('open');
+    }
+});
+
+function toggleSortDropdown(e) {
+    e && e.stopPropagation();
+    document.getElementById('sort-dropdown-menu')?.classList.toggle('open');
+}
+
+function toggleSwitch(el) {
+    if (el) el.classList.toggle('active');
+}
+
+function filterPanelTags() {
+    const q = (document.getElementById('panel-tag-search')?.value || '').toLowerCase();
+    document.querySelectorAll('.filter-tag-option').forEach(o => {
+        const label = o.querySelector('.tag-label')?.textContent.toLowerCase() || '';
+        o.classList.toggle('hidden', q.length > 0 && !label.includes(q));
+    });
+}
+
+function getPanelFilterState() {
+    return {
+        stores: [...document.querySelectorAll('#filter-stores input:checked')].map(c => c.value),
+        genres: [...document.querySelectorAll('#filter-tags input:checked')].map(c => c.value),
+        queries: [...document.querySelectorAll('#filter-queries input:checked')].map(c => c.value),
+        excludeStreaming: document.getElementById('toggle-exclude-streaming')?.classList.contains('active') || false,
+        collection: parseInt(document.getElementById('filter-collection')?.value || '0'),
+        protondbTier: document.getElementById('filter-protondb')?.value || '',
+        noIgdb: document.getElementById('toggle-no-igdb')?.classList.contains('active') || false
+    };
+}
+
+function applyPanelFilters() {
+    const state = getPanelFilterState();
+    const form = document.getElementById('search-form');
+    const search = form?.querySelector('input[name="search"]')?.value || '';
+    const sort = form?.querySelector('input[name="sort"]')?.value || 'name';
+    const order = form?.querySelector('input[name="order"]')?.value || 'asc';
+    window.location.href = buildUrl(
+        state.stores, state.genres, state.queries,
+        search, sort, order,
+        state.excludeStreaming, state.collection, state.protondbTier, state.noIgdb
+    );
+}
+
+function clearAllPanelFilters() {
+    document.querySelectorAll('#filter-stores input').forEach(cb => {
+        cb.checked = false;
+        cb.closest('.filter-store-chip')?.classList.remove('selected');
+    });
+    document.querySelectorAll('#filter-tags input, #filter-queries input').forEach(cb => {
+        cb.checked = false;
+    });
+    document.getElementById('toggle-exclude-streaming')?.classList.remove('active');
+    document.getElementById('toggle-no-igdb')?.classList.remove('active');
+    const collSel = document.getElementById('filter-collection');
+    if (collSel) collSel.value = '0';
+    const protonSel = document.getElementById('filter-protondb');
+    if (protonSel) protonSel.value = '';
+    const tagSearch = document.getElementById('panel-tag-search');
+    if (tagSearch) { tagSearch.value = ''; filterPanelTags(); }
 }

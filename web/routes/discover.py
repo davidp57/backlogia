@@ -557,6 +557,11 @@ def discover(
             "show_search": False,
             "show_sort": False,
             "show_actions": True,
+            "active_filter_count": (
+                len(stores) + len(genres) + len(queries) +
+                (1 if exclude_streaming else 0) +
+                (1 if no_igdb else 0)
+            ),
         }
     )
 
