@@ -54,6 +54,9 @@ def create_database():
             added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
+            -- Soft-delete for games removed from store
+            removed BOOLEAN DEFAULT 0,
+
             UNIQUE(store, store_id)
         )
     """)
@@ -102,6 +105,38 @@ def create_database():
     return conn
 
 
+def mark_removed_games(conn, store_name, seen_store_ids):
+    """Mark games as removed if they were not seen during this sync.
+
+    Also restores previously-removed games that reappeared.
+    Returns (newly_removed_count, restored_count).
+    """
+    cursor = conn.cursor()
+
+    if not seen_store_ids:
+        return (0, 0)
+
+    placeholders = ",".join("?" * len(seen_store_ids))
+    seen_list = list(seen_store_ids)
+
+    # Mark games NOT in the seen set as removed
+    cursor.execute(
+        f"UPDATE games SET removed = 1 WHERE store = ? AND store_id NOT IN ({placeholders}) AND (removed IS NULL OR removed = 0)",
+        [store_name] + seen_list
+    )
+    newly_removed = cursor.rowcount
+
+    # Restore games that reappeared
+    cursor.execute(
+        f"UPDATE games SET removed = 0 WHERE store = ? AND store_id IN ({placeholders}) AND removed = 1",
+        [store_name] + seen_list
+    )
+    restored = cursor.rowcount
+
+    conn.commit()
+    return (newly_removed, restored)
+
+
 def import_steam_games(conn):
     """Import games from Steam."""
     print("Importing Steam library...")
@@ -116,10 +151,12 @@ def import_steam_games(conn):
             return 0
 
         count = 0
+        seen_store_ids = set()
         for game in games:
             try:
                 # Build cover image URL from appid
                 appid = game.get("appid")
+                store_id = str(appid) if appid else None
                 cover_image = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/library_600x900_2x.jpg" if appid else None
                 background_image = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/library_hero.jpg" if appid else None
 
@@ -140,7 +177,7 @@ def import_steam_games(conn):
                 """, (
                     game.get("name"),
                     "steam",
-                    str(appid) if appid else None,
+                    store_id,
                     cover_image,
                     background_image,
                     game.get("icon_url"),
@@ -149,11 +186,18 @@ def import_steam_games(conn):
                     json.dumps(game),
                     datetime.now().isoformat()
                 ))
+                if store_id:
+                    seen_store_ids.add(store_id)
                 count += 1
             except Exception as e:
                 print(f"  Error importing {game.get('name')}: {e}")
 
         conn.commit()
+        removed, restored = mark_removed_games(conn, "steam", seen_store_ids)
+        if removed:
+            print(f"  Marked {removed} Steam games as removed")
+        if restored:
+            print(f"  Restored {restored} previously removed Steam games")
         print(f"  Imported {count} Steam games")
         return count
     except Exception as e:
@@ -175,8 +219,10 @@ def import_epic_games(conn):
             return 0
 
         count = 0
+        seen_store_ids = set()
         for game in games:
             try:
+                store_id = game.get("app_name")
                 cursor.execute("""
                     INSERT INTO games (
                         name, store, store_id, description, developers,
@@ -200,7 +246,7 @@ def import_epic_games(conn):
                 """, (
                     game.get("name"),
                     "epic",
-                    game.get("app_name"),
+                    store_id,
                     game.get("description"),
                     json.dumps([game.get("developer")]) if game.get("developer") else None,
                     json.dumps(game.get("supported_platforms", [])),
@@ -213,11 +259,18 @@ def import_epic_games(conn):
                     json.dumps(game),
                     datetime.now().isoformat()
                 ))
+                if store_id:
+                    seen_store_ids.add(store_id)
                 count += 1
             except Exception as e:
                 print(f"  Error importing {game.get('name')}: {e}")
 
         conn.commit()
+        removed, restored = mark_removed_games(conn, "epic", seen_store_ids)
+        if removed:
+            print(f"  Marked {removed} Epic games as removed")
+        if restored:
+            print(f"  Restored {restored} previously removed Epic games")
         print(f"  Imported {count} Epic games")
         return count
     except Exception as e:
@@ -239,6 +292,7 @@ def import_gog_games(conn):
             return 0
 
         count = 0
+        seen_store_ids = set()
         for game in games:
             try:
                 # Convert Unix timestamp to ISO date if present
@@ -261,6 +315,7 @@ def import_gog_games(conn):
                         seen.add(tag.lower())
                         combined_tags.append(tag)
 
+                store_id = game.get("product_id")
                 cursor.execute("""
                     INSERT INTO games (
                         name, store, store_id, description, developers,
@@ -282,7 +337,7 @@ def import_gog_games(conn):
                 """, (
                     game.get("name"),
                     "gog",
-                    game.get("product_id"),
+                    store_id,
                     game.get("summary"),
                     json.dumps(game.get("developers", [])),
                     json.dumps(game.get("publishers", [])),
@@ -295,11 +350,18 @@ def import_gog_games(conn):
                     json.dumps(game),
                     datetime.now().isoformat()
                 ))
+                if store_id:
+                    seen_store_ids.add(str(store_id))
                 count += 1
             except Exception as e:
                 print(f"  Error importing {game.get('name')}: {e}")
 
         conn.commit()
+        removed, restored = mark_removed_games(conn, "gog", seen_store_ids)
+        if removed:
+            print(f"  Marked {removed} GOG games as removed")
+        if restored:
+            print(f"  Restored {restored} previously removed GOG games")
         print(f"  Imported {count} GOG games")
         return count
     except Exception as e:
@@ -328,6 +390,7 @@ def import_itch_games(conn):
             return 0
 
         count = 0
+        seen_store_ids = set()
         for game in games:
             try:
                 # Build platforms list
@@ -341,6 +404,7 @@ def import_itch_games(conn):
                 if game.get("platforms", {}).get("android"):
                     platforms.append("Android")
 
+                store_id = str(game.get("id"))
                 cursor.execute("""
                     INSERT INTO games (
                         name, store, store_id, description, cover_image,
@@ -357,7 +421,7 @@ def import_itch_games(conn):
                 """, (
                     game.get("title"),
                     "itch",
-                    str(game.get("id")),
+                    store_id,
                     game.get("short_text"),
                     game.get("cover_url"),
                     json.dumps(platforms) if platforms else None,
@@ -365,11 +429,18 @@ def import_itch_games(conn):
                     json.dumps(game),
                     datetime.now().isoformat()
                 ))
+                if store_id:
+                    seen_store_ids.add(store_id)
                 count += 1
             except Exception as e:
                 print(f"  Error importing {game.get('title')}: {e}")
 
         conn.commit()
+        removed, restored = mark_removed_games(conn, "itch", seen_store_ids)
+        if removed:
+            print(f"  Marked {removed} itch.io games as removed")
+        if restored:
+            print(f"  Restored {restored} previously removed itch.io games")
         print(f"  Imported {count} itch.io games")
         return count
     except ImportError:
@@ -395,8 +466,10 @@ def import_humble_games(conn):
             return 0
 
         count = 0
+        seen_store_ids = set()
         for game in games:
             try:
+                store_id = game.get("machine_name")
                 cursor.execute("""
                     INSERT INTO games (
                         name, store, store_id, cover_image, icon,
@@ -415,7 +488,7 @@ def import_humble_games(conn):
                 """, (
                     game.get("human_name"),
                     "humble",
-                    game.get("machine_name"),
+                    store_id,
                     game.get("icon"),
                     game.get("icon"),
                     json.dumps(game.get("platforms", [])),
@@ -424,11 +497,18 @@ def import_humble_games(conn):
                     json.dumps(game),
                     datetime.now().isoformat()
                 ))
+                if store_id:
+                    seen_store_ids.add(store_id)
                 count += 1
             except Exception as e:
                 print(f"  Error importing {game.get('human_name')}: {e}")
 
         conn.commit()
+        removed, restored = mark_removed_games(conn, "humble", seen_store_ids)
+        if removed:
+            print(f"  Marked {removed} Humble Bundle games as removed")
+        if restored:
+            print(f"  Restored {restored} previously removed Humble Bundle games")
         print(f"  Imported {count} Humble Bundle games")
         return count
     except ImportError:
@@ -454,8 +534,10 @@ def import_battlenet_games(conn):
             return 0
 
         count = 0
+        seen_store_ids = set()
         for game in games:
             try:
+                store_id = game.get("title_id")
                 cursor.execute("""
                     INSERT INTO games (
                         name, store, store_id, cover_image,
@@ -469,16 +551,23 @@ def import_battlenet_games(conn):
                 """, (
                     game.get("name"),
                     "battlenet",
-                    game.get("title_id"),
+                    store_id,
                     game.get("cover_image"),
                     json.dumps(game.get("raw_data", {})),
                     datetime.now().isoformat()
                 ))
+                if store_id:
+                    seen_store_ids.add(str(store_id))
                 count += 1
             except Exception as e:
                 print(f"  Error importing {game.get('name')}: {e}")
 
         conn.commit()
+        removed, restored = mark_removed_games(conn, "battlenet", seen_store_ids)
+        if removed:
+            print(f"  Marked {removed} Battle.net games as removed")
+        if restored:
+            print(f"  Restored {restored} previously removed Battle.net games")
         print(f"  Imported {count} Battle.net games")
         return count
     except ImportError:
@@ -504,12 +593,14 @@ def import_ea_games(conn):
             return 0
 
         count = 0
+        seen_store_ids = set()
         for game in games:
             try:
                 # Build developers/publishers JSON arrays
                 developers = [game.get("developer")] if game.get("developer") else None
                 publishers = [game.get("publisher")] if game.get("publisher") else None
 
+                store_id = game.get("offer_id")
                 cursor.execute("""
                     INSERT INTO games (
                         name, store, store_id, cover_image,
@@ -527,7 +618,7 @@ def import_ea_games(conn):
                 """, (
                     game.get("name"),
                     "ea",
-                    game.get("offer_id"),
+                    store_id,
                     game.get("cover_image"),
                     json.dumps(developers) if developers else None,
                     json.dumps(publishers) if publishers else None,
@@ -535,11 +626,18 @@ def import_ea_games(conn):
                     json.dumps(game.get("raw_data", {})),
                     datetime.now().isoformat()
                 ))
+                if store_id:
+                    seen_store_ids.add(store_id)
                 count += 1
             except Exception as e:
                 print(f"  Error importing {game.get('name')}: {e}")
 
         conn.commit()
+        removed, restored = mark_removed_games(conn, "ea", seen_store_ids)
+        if removed:
+            print(f"  Marked {removed} EA games as removed")
+        if restored:
+            print(f"  Restored {restored} previously removed EA games")
         print(f"  Imported {count} EA games")
         return count
     except ImportError:
@@ -565,12 +663,14 @@ def import_amazon_games(conn):
             return 0
 
         count = 0
+        seen_store_ids = set()
         for game in games:
             try:
                 # Build developers/publishers JSON arrays
                 developers = [game.get("developer")] if game.get("developer") else None
                 publishers = [game.get("publisher")] if game.get("publisher") else None
 
+                store_id = game.get("product_id")
                 cursor.execute("""
                     INSERT INTO games (
                         name, store, store_id, cover_image, icon,
@@ -587,7 +687,7 @@ def import_amazon_games(conn):
                 """, (
                     game.get("name"),
                     "amazon",
-                    game.get("product_id"),
+                    store_id,
                     game.get("icon_url"),
                     game.get("icon_url"),
                     json.dumps(developers) if developers else None,
@@ -595,11 +695,18 @@ def import_amazon_games(conn):
                     json.dumps(game.get("raw_data", {})),
                     datetime.now().isoformat()
                 ))
+                if store_id:
+                    seen_store_ids.add(store_id)
                 count += 1
             except Exception as e:
                 print(f"  Error importing {game.get('name')}: {e}")
 
         conn.commit()
+        removed, restored = mark_removed_games(conn, "amazon", seen_store_ids)
+        if removed:
+            print(f"  Marked {removed} Amazon games as removed")
+        if restored:
+            print(f"  Restored {restored} previously removed Amazon games")
         print(f"  Imported {count} Amazon games")
         return count
     except ImportError:
@@ -626,6 +733,7 @@ def import_xbox_games(conn):
             return 0
 
         count = 0
+        seen_store_ids = set()
         for game in games:
             try:
                 # Build developers/publishers JSON arrays
@@ -640,6 +748,7 @@ def import_xbox_games(conn):
                     "pfn": game.get("pfn"),
                 }
 
+                store_id = game.get("store_id")
                 cursor.execute("""
                     INSERT INTO games (
                         name, store, store_id, cover_image,
@@ -657,7 +766,7 @@ def import_xbox_games(conn):
                 """, (
                     game.get("name"),
                     "xbox",
-                    game.get("store_id"),
+                    store_id,
                     game.get("cover_image"),
                     json.dumps(developers) if developers else None,
                     json.dumps(publishers) if publishers else None,
@@ -665,11 +774,18 @@ def import_xbox_games(conn):
                     json.dumps(extra_data),
                     datetime.now().isoformat()
                 ))
+                if store_id:
+                    seen_store_ids.add(store_id)
                 count += 1
             except Exception as e:
                 print(f"  Error importing {game.get('name')}: {e}")
 
         conn.commit()
+        removed, restored = mark_removed_games(conn, "xbox", seen_store_ids)
+        if removed:
+            print(f"  Marked {removed} Xbox games as removed")
+        if restored:
+            print(f"  Restored {restored} previously removed Xbox games")
         print(f"  Imported {count} Xbox games")
         return count
     except ImportError:
@@ -695,6 +811,7 @@ def import_local_games(conn):
             return 0
 
         count = 0
+        seen_store_ids = set()
         for game in games:
             try:
                 # Build developers/genres JSON arrays if provided
@@ -708,6 +825,7 @@ def import_local_games(conn):
                 if game.get("igdb_id"):
                     extra_data["manual_igdb_id"] = game.get("igdb_id")
 
+                store_id = game.get("store_id")
                 cursor.execute("""
                     INSERT INTO games (
                         name, store, store_id, description, cover_image,
@@ -725,7 +843,7 @@ def import_local_games(conn):
                 """, (
                     game.get("name"),
                     "local",
-                    game.get("store_id"),
+                    store_id,
                     game.get("description"),
                     game.get("cover_image"),
                     json.dumps(developers) if developers else None,
@@ -734,11 +852,18 @@ def import_local_games(conn):
                     json.dumps(extra_data),
                     datetime.now().isoformat()
                 ))
+                if store_id:
+                    seen_store_ids.add(store_id)
                 count += 1
             except Exception as e:
                 print(f"  Error importing {game.get('name')}: {e}")
 
         conn.commit()
+        removed, restored = mark_removed_games(conn, "local", seen_store_ids)
+        if removed:
+            print(f"  Marked {removed} local games as removed")
+        if restored:
+            print(f"  Restored {restored} previously removed local games")
         print(f"  Imported {count} local games")
         return count
     except ImportError:
