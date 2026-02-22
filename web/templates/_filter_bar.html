@@ -1,272 +1,204 @@
-{# Filter bar component - can be included in any page that supports filtering #}
+{# Filter Bar Component — Panel approach
+   Variables used:
+     show_search  (default: True)  — show the search box
+     show_sort    (default: True)  — show the sort select
+     show_actions (default: True)  — show the filter toggle button
+     current_stores, current_genres, current_queries
+     current_exclude_streaming, current_no_igdb
+     current_collection (default: 0), current_protondb_tier (default: '')
+     current_search (default: ''), current_sort (default: 'name'), current_order (default: 'asc')
+     store_counts, genre_counts, collections (default: [])
+     query_categories, query_display_names, query_descriptions, query_filter_counts
+     available_sorts (default: [])
+     active_filter_count (default: none)
+#}
+
+{% set _has_filter = current_stores or current_genres or current_queries
+    or current_exclude_streaming or current_no_igdb
+    or current_collection|default(0) or current_protondb_tier|default('') %}
+
 <div class="filters">
-    {% set store_icons = {'steam': 'steam-100.png', 'epic': 'epic-100.png', 'gog': 'gog-48.png', 'itch': 'itch-90.png', 'humble': 'humble-96.png', 'battlenet': 'battlenet-100.png', 'amazon': 'amazon-120.png', 'ea': 'ea-256.png', 'xbox': 'xbox-100.png', 'ubisoft': 'ubisoft-96.png', 'local': 'local-96.png'} %}
-    <div class="store-dropdown" id="store-dropdown" role="group" aria-label="Store filter">
-        <button type="button" class="store-dropdown-btn {% if current_stores %}active{% endif %}" onclick="toggleStoreDropdown()" aria-haspopup="true" aria-expanded="false" aria-label="Filter by store">
-            <span class="btn-text">
-                {% if current_stores %}
-                    {% if current_stores|length == 1 %}
-                        {{ current_stores[0]|capitalize }}
-                    {% else %}
-                        {{ current_stores|length }} Stores
-                    {% endif %}
-                {% else %}
-                    All Stores
-                {% endif %}
-            </span>
-            <span class="arrow">&#9662;</span>
-        </button>
-        <div class="store-dropdown-menu">
-            {% for store, count in store_counts.items() %}
-            <label class="store-option">
-                <input type="checkbox" name="stores" value="{{ store }}" {% if store in current_stores %}checked{% endif %}>
-                <span class="checkbox"></span>
-                <img src="/static/images/{{ store_icons.get(store, 'steam-100.png') }}" alt="{{ store }}" class="store-icon">
-                <span class="store-label">{{ store|capitalize }}</span>
-                <span class="store-count">{{ count }}</span>
-            </label>
-            {% endfor %}
-            <div class="store-dropdown-actions">
-                <button type="button" class="clear-btn" onclick="clearStoreFilter()">Clear</button>
-                <button type="button" class="apply-btn" onclick="applyStoreFilter()">Apply</button>
-            </div>
-        </div>
-    </div>
-
-    {% if genre_counts %}
-    <div class="store-dropdown" id="genre-dropdown" role="group" aria-label="Genre filter">
-        <button type="button" class="store-dropdown-btn {% if current_genres %}active{% endif %}" onclick="toggleGenreDropdown()" aria-haspopup="true" aria-expanded="false" aria-label="Filter by genre or tag">
-            <span class="btn-text">
-                {% if current_genres %}
-                    {% if current_genres|length == 1 %}
-                        {{ current_genres[0] }}
-                    {% else %}
-                        {{ current_genres|length }} Tags
-                    {% endif %}
-                {% else %}
-                    All Tags
-                {% endif %}
-            </span>
-            <span class="arrow">&#9662;</span>
-        </button>
-        <div class="store-dropdown-menu genre-dropdown-menu">
-            <div class="genre-search">
-                <input type="text" placeholder="Search tags..." id="genre-search-input" oninput="filterGenreOptions()">
-            </div>
-            <div class="genre-options-list">
-                {% for genre, count in genre_counts.items() %}
-                <label class="store-option genre-option">
-                    <input type="checkbox" name="genres" value="{{ genre }}" {% if genre in current_genres %}checked{% endif %}>
-                    <span class="checkbox"></span>
-                    <span class="store-label">{{ genre }}</span>
-                    <span class="store-count">{{ count }}</span>
-                </label>
-                {% endfor %}
-            </div>
-            <div class="store-dropdown-actions">
-                <button type="button" class="clear-btn" onclick="clearGenreFilter()">Clear</button>
-                <button type="button" class="apply-btn" onclick="applyGenreFilter()">Apply</button>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Quick Filters Dropdown -->
-    <div class="dropdown" style="position: relative;" role="group" aria-label="Quick filters">
-        <button class="dropdown-btn" onclick="toggleDropdown('queries-dropdown')" aria-haspopup="true" aria-expanded="false" aria-label="Select quick filters">
-            Quick Filters
-            {% if current_queries %}
-            <span class="filter-count">{{ current_queries|length }}</span>
-            {% endif %}
-            <span class="dropdown-arrow">&#9662;</span>
-        </button>
-        <div id="queries-dropdown" class="dropdown-content" style="display: none;">
-            {% for category, filter_ids in query_categories.items() %}
-            <div class="dropdown-category">
-                <div class="category-header">{{ category }}</div>
-                {% for filter_id in filter_ids %}
-                <div class="dropdown-item" title="{{ query_descriptions[filter_id] }}">
-                    <input type="checkbox" 
-                           id="query-{{ filter_id }}" 
-                           name="queries"
-                           value="{{ filter_id }}"
-                           {% if filter_id in current_queries %}checked{% endif %}>
-                    <label for="query-{{ filter_id }}">
-                        {{ query_display_names[filter_id] }}
-                        {% if query_filter_counts and filter_id in query_filter_counts and query_filter_counts[filter_id] > 0 %}
-                        <span class="filter-result-count">{{ query_filter_counts[filter_id] }}</span>
-                        {% endif %}
-                    </label>
-                </div>
-                {% endfor %}
-            </div>
-            {% endfor %}
-            <div class="store-dropdown-actions">
-                <button type="button" class="clear-btn" onclick="clearQueryFilter()">Clear</button>
-                <button type="button" class="apply-btn" onclick="applyQueryFilter()">Apply</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Advanced Filters (from MAIN branch) -->
-    {% if collections|default([]) %}
-    <!-- Collection Filter -->
-    <div class="dropdown" style="position: relative;" role="group" aria-label="Collection filter">
-        <button class="dropdown-btn {% if current_collection %}active{% endif %}" onclick="toggleDropdown('collection-dropdown')" aria-haspopup="true" aria-expanded="false" aria-label="Filter by collection">
-            {% if current_collection %}
-                Collection: {{ collections|selectattr('id', 'equalto', current_collection)|map(attribute='name')|first|default('Selected') }}
-            {% else %}
-                All Collections
-            {% endif %}
-            <span class="dropdown-arrow">&#9662;</span>
-        </button>
-        <div id="collection-dropdown" class="dropdown-content" style="display: none; min-width: 200px;">
-            <div class="dropdown-item" onclick="applyCollectionFilter(0)">
-                <label style="cursor: pointer;">All Collections</label>
-            </div>
-            {% for col in collections %}
-            <div class="dropdown-item" onclick="applyCollectionFilter({{ col.id }})">
-                <label style="cursor: pointer;">{{ col.name }}</label>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- ProtonDB Tier Filter -->
-    <div class="dropdown" style="position: relative;" role="group" aria-label="ProtonDB tier filter">
-        <button class="dropdown-btn {% if current_protondb_tier %}active{% endif %}" onclick="toggleDropdown('protondb-dropdown')" aria-haspopup="true" aria-expanded="false" aria-label="Filter by ProtonDB tier">
-            {% if current_protondb_tier == 'platinum' %}ProtonDB: Platinum+
-            {% elif current_protondb_tier == 'gold' %}ProtonDB: Gold+
-            {% elif current_protondb_tier == 'silver' %}ProtonDB: Silver+
-            {% elif current_protondb_tier == 'bronze' %}ProtonDB: Bronze+
-            {% else %}All ProtonDB
-            {% endif %}
-            <span class="dropdown-arrow">&#9662;</span>
-        </button>
-        <div id="protondb-dropdown" class="dropdown-content" style="display: none; min-width: 180px;">
-            <div class="dropdown-item" onclick="applyProtonDBFilter('')">
-                <label style="cursor: pointer;">All ProtonDB Tiers</label>
-            </div>
-            <div class="dropdown-item" onclick="applyProtonDBFilter('platinum')">
-                <label style="cursor: pointer;">Platinum+</label>
-            </div>
-            <div class="dropdown-item" onclick="applyProtonDBFilter('gold')">
-                <label style="cursor: pointer;">Gold+</label>
-            </div>
-            <div class="dropdown-item" onclick="applyProtonDBFilter('silver')">
-                <label style="cursor: pointer;">Silver+</label>
-            </div>
-            <div class="dropdown-item" onclick="applyProtonDBFilter('bronze')">
-                <label style="cursor: pointer;">Bronze+</label>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toggle Buttons for Advanced Filters -->
-    <button class="dropdown-btn {% if current_exclude_streaming %}active{% endif %}" 
-            onclick="toggleExcludeStreaming()" 
-            title="Exclude Xbox Cloud/streaming games"
-            aria-label="{% if current_exclude_streaming %}Including{% else %}Excluding{% endif %} streaming games">
-        {% if current_exclude_streaming %}✓{% endif %} Exclude Streaming
+    {% if show_actions|default(True) %}
+    <button class="filter-toggle-btn {% if current_stores or current_genres or current_queries or current_exclude_streaming or current_no_igdb or current_collection|default(0) or current_protondb_tier|default('') %}active{% endif %}" onclick="toggleFilterPanel()" id="filter-toggle" title="Filters">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+        </svg>
+        {% if active_filter_count|default(0) %}<span class="filter-badge">{{ active_filter_count }}</span>{% endif %}
     </button>
-
-    <button class="dropdown-btn {% if current_no_igdb %}active{% endif %}" 
-            onclick="toggleNoIGDB()" 
-            title="Show only games without IGDB metadata"
-            aria-label="{% if current_no_igdb %}Showing{% else %}Not showing{% endif %} only games without IGDB">
-        {% if current_no_igdb %}✓{% endif %} No IGDB Data
-    </button>
+    {% endif %}
 
     {% if show_search|default(True) %}
     <div class="search-box">
-        <form action="" method="get" id="search-form" onsubmit="saveSearchPreferences()" role="search">
+        <form action="" method="get" id="search-form">
             {% for store in current_stores %}<input type="hidden" name="stores" value="{{ store }}">{% endfor %}
             {% for genre in current_genres %}<input type="hidden" name="genres" value="{{ genre }}">{% endfor %}
             {% for query in current_queries %}<input type="hidden" name="queries" value="{{ query }}">{% endfor %}
-            <input type="hidden" name="sort" value="{{ current_sort }}">
-            <input type="hidden" name="order" value="{{ current_order }}">
-            <input type="text" name="search" placeholder="Search games..." value="{{ current_search }}" aria-label="Search for games by title">
+            <input type="hidden" name="sort" value="{{ current_sort|default('name') }}">
+            <input type="hidden" name="order" value="{{ current_order|default('asc') }}">
+            {% if current_exclude_streaming %}<input type="hidden" name="exclude_streaming" value="true">{% endif %}
+            {% if current_collection|default(0) %}<input type="hidden" name="collection" value="{{ current_collection }}">{% endif %}
+            {% if current_protondb_tier|default('') %}<input type="hidden" name="protondb_tier" value="{{ current_protondb_tier }}">{% endif %}
+            {% if current_no_igdb %}<input type="hidden" name="no_igdb" value="true">{% endif %}
+            <input type="text" name="search" placeholder="Search games..." value="{{ current_search|default('') }}">
         </form>
     </div>
     {% endif %}
 
     {% if show_sort|default(True) %}
-    <!-- Sort Dropdown -->
-    <div class="dropdown" style="position: relative;" role="group" aria-label="Sort options">
-        <button class="dropdown-btn" onclick="toggleDropdown('sort-dropdown')" aria-haspopup="true" aria-expanded="false" aria-label="Select sort order">
-            {% if current_sort == 'name' and current_order == 'asc' %}Name (A-Z)
-            {% elif current_sort == 'name' and current_order == 'desc' %}Name (Z-A)
-            {% elif current_sort == 'average_rating' %}Average Rating (High-Low)
-            {% elif current_sort == 'critics_score' %}Steam Rating (High-Low)
-            {% elif current_sort == 'metacritic_score' %}Metacritic Score (High-Low)
-            {% elif current_sort == 'metacritic_user_score' %}Metacritic User Score (High-Low)
-            {% elif current_sort == 'total_rating' %}IGDB Rating (High-Low)
-            {% elif current_sort == 'igdb_rating' %}IGDB User Rating (High-Low)
-            {% elif current_sort == 'aggregated_rating' %}IGDB Critic Rating (High-Low)
-            {% elif current_sort == 'playtime_hours' %}Most Played
-            {% elif current_sort == 'personal_rating' %}My Rating (High-Low)
-            {% elif current_sort == 'priority' %}Priority (High first)
-            {% elif current_sort == 'release_date' and current_order == 'desc' %}Release Date (Newest)
-            {% elif current_sort == 'release_date' and current_order == 'asc' %}Release Date (Oldest)
-            {% elif current_sort == 'added_at' and current_order == 'desc' %}Recently Added
-            {% elif current_sort == 'added_at' and current_order == 'asc' %}Oldest in Library
-            {% endif %}
-            <span class="dropdown-arrow">&#9662;</span>
+    {% set _s = current_sort|default('name') %}{% set _o = current_order|default('asc') %}
+    <div class="sort-dropdown">
+        <button class="sort-dropdown-btn" onclick="toggleSortDropdown(event)" type="button" id="sort-toggle">
+            <span>{% if _s == 'name' and _o == 'asc' %}Name (A-Z){% elif _s == 'name' and _o == 'desc' %}Name (Z-A){% elif _s == 'average_rating' %}Average Rating{% elif _s == 'critics_score' %}Steam Rating{% elif _s == 'metacritic_score' %}Metacritic Score{% elif _s == 'metacritic_user_score' %}Metacritic User Score{% elif _s == 'total_rating' %}IGDB Rating{% elif _s == 'igdb_rating' %}IGDB User Rating{% elif _s == 'aggregated_rating' %}IGDB Critic Rating{% elif _s == 'playtime_hours' %}Most Played{% elif _s == 'personal_rating' %}My Rating{% elif _s == 'priority' %}Priority{% elif _s == 'release_date' and _o == 'desc' %}Release Date (Newest){% elif _s == 'release_date' and _o == 'asc' %}Release Date (Oldest){% elif _s == 'added_at' and _o == 'desc' %}Recently Added{% elif _s == 'added_at' and _o == 'asc' %}Oldest in Library{% else %}Sort{% endif %}</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </button>
-        <div id="sort-dropdown" class="dropdown-content" style="display: none; min-width: 260px;">
-            <div class="dropdown-item" onclick="applySort('name-asc')">
-                <label style="cursor: pointer;">Name (A-Z)</label>
-            </div>
-            <div class="dropdown-item" onclick="applySort('name-desc')">
-                <label style="cursor: pointer;">Name (Z-A)</label>
-            </div>
-            <div class="dropdown-item" onclick="applySort('added_at-desc')">
-                <label style="cursor: pointer;">Recently Added</label>
-            </div>
-            <div class="dropdown-item" onclick="applySort('added_at-asc')">
-                <label style="cursor: pointer;">Oldest in Library</label>
-            </div>
-            <div class="dropdown-item" onclick="applySort('release_date-desc')">
-                <label style="cursor: pointer;">Release Date (Newest)</label>
-            </div>
-            <div class="dropdown-item" onclick="applySort('release_date-asc')">
-                <label style="cursor: pointer;">Release Date (Oldest)</label>
-            </div>
-            <div class="dropdown-item" onclick="applySort('playtime_hours-desc')">
-                <label style="cursor: pointer;">Most Played</label>
-            </div>
-            <div class="dropdown-item" onclick="applySort('average_rating-desc')">
-                <label style="cursor: pointer;">Average Rating (High-Low)</label>
-            </div>
-            <div class="dropdown-item" onclick="applySort('critics_score-desc')">
-                <label style="cursor: pointer;">Steam Rating (High-Low)</label>
-            </div>
-            <div class="dropdown-item" onclick="applySort('total_rating-desc')">
-                <label style="cursor: pointer;">IGDB Rating (High-Low)</label>
-            </div>
-            <div class="dropdown-item" onclick="applySort('igdb_rating-desc')">
-                <label style="cursor: pointer;">IGDB User Rating (High-Low)</label>
-            </div>
-            <div class="dropdown-item" onclick="applySort('aggregated_rating-desc')">
-                <label style="cursor: pointer;">IGDB Critic Rating (High-Low)</label>
-            </div>
-            <div class="dropdown-item" onclick="applySort('personal_rating-desc')">
-                <label style="cursor: pointer;">My Rating (High-Low)</label>
-            </div>
-            <div class="dropdown-item" onclick="applySort('priority-asc')">
-                <label style="cursor: pointer;">Priority (High first)</label>
-            </div>
+        <div class="sort-dropdown-menu" id="sort-dropdown-menu">
+            <div class="sort-option {% if _s == 'name' and _o == 'asc' %}active{% endif %}" onclick="applySort('name-asc')">Name (A-Z)</div>
+            <div class="sort-option {% if _s == 'name' and _o == 'desc' %}active{% endif %}" onclick="applySort('name-desc')">Name (Z-A)</div>
+            <div class="sort-option {% if _s == 'added_at' and _o == 'desc' %}active{% endif %}" onclick="applySort('added_at-desc')">Recently Added</div>
+            <div class="sort-option {% if _s == 'added_at' and _o == 'asc' %}active{% endif %}" onclick="applySort('added_at-asc')">Oldest in Library</div>
+            <div class="sort-option {% if _s == 'release_date' and _o == 'desc' %}active{% endif %}" onclick="applySort('release_date-desc')">Release Date (Newest)</div>
+            <div class="sort-option {% if _s == 'release_date' and _o == 'asc' %}active{% endif %}" onclick="applySort('release_date-asc')">Release Date (Oldest)</div>
+            <div class="sort-option {% if _s == 'playtime_hours' %}active{% endif %}" onclick="applySort('playtime_hours-desc')">Most Played</div>
+            <div class="sort-option {% if _s == 'average_rating' %}active{% endif %}" onclick="applySort('average_rating-desc')">Average Rating (High-Low)</div>
+            <div class="sort-option {% if _s == 'critics_score' %}active{% endif %}" onclick="applySort('critics_score-desc')">Steam Rating (High-Low)</div>
+            {% if 'metacritic_score' in available_sorts|default([]) %}
+            <div class="sort-option {% if _s == 'metacritic_score' %}active{% endif %}" onclick="applySort('metacritic_score-desc')">Metacritic Score (High-Low)</div>
+            {% endif %}
+            {% if 'metacritic_user_score' in available_sorts|default([]) %}
+            <div class="sort-option {% if _s == 'metacritic_user_score' %}active{% endif %}" onclick="applySort('metacritic_user_score-desc')">Metacritic User Score (High-Low)</div>
+            {% endif %}
+            <div class="sort-option {% if _s == 'total_rating' %}active{% endif %}" onclick="applySort('total_rating-desc')">IGDB Rating (High-Low)</div>
+            <div class="sort-option {% if _s == 'igdb_rating' %}active{% endif %}" onclick="applySort('igdb_rating-desc')">IGDB User Rating (High-Low)</div>
+            <div class="sort-option {% if _s == 'aggregated_rating' %}active{% endif %}" onclick="applySort('aggregated_rating-desc')">IGDB Critic Rating (High-Low)</div>
+            <div class="sort-option {% if _s == 'personal_rating' %}active{% endif %}" onclick="applySort('personal_rating-desc')">My Rating (High-Low)</div>
+            <div class="sort-option {% if _s == 'priority' %}active{% endif %}" onclick="applySort('priority-asc')">Priority (High first)</div>
         </div>
     </div>
     {% endif %}
 
-    {% if show_actions|default(True) %}
-    <button class="clear-filters-btn" onclick="clearAllFilters()" style="margin-left: auto;" aria-label="Reset all active filters">
-        <svg style="width: 16px; height: 16px; margin-right: 6px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
-        Reset all filters
+    {% if _has_filter %}
+    <button class="reset-filters-btn" onclick="clearAllPanelFilters(); window.location.href = window.location.pathname" title="Reset all filters">
+        &#10005;
     </button>
     {% endif %}
+</div>
+
+<!-- Filter Panel -->
+<div class="filter-panel" id="filter-panel">
+    <div class="filter-panel-grid">
+
+        <!-- Stores -->
+        {% if store_counts is defined and store_counts %}
+        {% set _store_icons = {'steam': 'steam-100.png', 'epic': 'epic-100.png', 'gog': 'gog-48.png', 'itch': 'itch-90.png', 'humble': 'humble-96.png', 'battlenet': 'battlenet-100.png', 'amazon': 'amazon-120.png', 'ea': 'ea-256.png', 'xbox': 'xbox-100.png', 'ubisoft': 'ubisoft-96.png', 'local': 'local-96.png'} %}
+        <div class="filter-section">
+            <div class="filter-section-title">Stores</div>
+            <div class="filter-store-list" id="filter-stores">
+                {% for store, count in store_counts.items() %}
+                <label class="filter-store-chip {% if store in current_stores %}selected{% endif %}">
+                    <input type="checkbox" name="panel-stores" value="{{ store }}" {% if store in current_stores %}checked{% endif %}>
+                    {% if store in _store_icons %}
+                    <img src="{{ url_for('static', path='images/' + _store_icons[store]) }}" alt="{{ store }}">
+                    {% endif %}
+                    <span>{{ store|capitalize }}</span>
+                    <span class="chip-count">{{ count }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Tags -->
+        {% if genre_counts is defined and genre_counts %}
+        <div class="filter-section">
+            <div class="filter-section-title">Tags</div>
+            <input type="text" class="filter-tag-search" placeholder="Search tags..." id="panel-tag-search" oninput="filterPanelTags()">
+            <div class="filter-tags-container" id="filter-tags">
+                {% for genre, count in genre_counts.items() %}
+                <label class="filter-tag-option">
+                    <input type="checkbox" name="panel-genres" value="{{ genre }}" {% if genre in current_genres %}checked{% endif %}>
+                    <span class="tag-checkbox"></span>
+                    <span class="tag-label">{{ genre }}</span>
+                    <span class="tag-count">{{ count }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Quick Filters -->
+        {% if query_categories is defined and query_categories %}
+        <div class="filter-section filter-section-queries">
+            <div class="filter-section-title">Quick Filters{% if current_queries %} <span class="filter-badge-inline">{{ current_queries|length }}</span>{% endif %}</div>
+            <div class="filter-queries-container" id="filter-queries">
+                {% for category, filter_ids in query_categories.items() %}
+                <div class="filter-query-category">
+                    <div class="filter-query-category-header">{{ category }}</div>
+                    {% for filter_id in filter_ids %}
+                    <label class="filter-tag-option" title="{{ query_descriptions[filter_id] if filter_id in query_descriptions else '' }}">
+                        <input type="checkbox" name="panel-queries" value="{{ filter_id }}" {% if filter_id in current_queries %}checked{% endif %}>
+                        <span class="tag-checkbox"></span>
+                        <span class="tag-label">{{ query_display_names[filter_id] if filter_id in query_display_names else filter_id }}</span>
+                        {% if query_filter_counts and filter_id in query_filter_counts and query_filter_counts[filter_id] > 0 %}
+                        <span class="tag-count">{{ query_filter_counts[filter_id] }}</span>
+                        {% endif %}
+                    </label>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Exclude Streaming -->
+        <div class="filter-section">
+            <div class="filter-section-title">Streaming</div>
+            <div class="toggle-switch {% if current_exclude_streaming %}active{% endif %}" id="toggle-exclude-streaming" onclick="toggleSwitch(this)">
+                <div class="toggle-track"><div class="toggle-thumb"></div></div>
+                <span class="toggle-label">Exclude streaming-only games</span>
+            </div>
+        </div>
+
+        <!-- Collection -->
+        {% if collections is defined and collections %}
+        <div class="filter-section">
+            <div class="filter-section-title">Collection</div>
+            <select class="filter-select" id="filter-collection">
+                <option value="0">All Games</option>
+                {% for col in collections %}
+                <option value="{{ col.id }}" {% if current_collection|default(0) == col.id %}selected{% endif %}>{{ col.name }} ({{ col.game_count }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <!-- ProtonDB Tier -->
+        <div class="filter-section">
+            <div class="filter-section-title">ProtonDB Tier</div>
+            <select class="filter-select" id="filter-protondb">
+                <option value="">Any</option>
+                <option value="platinum" {% if current_protondb_tier|default('') == 'platinum' %}selected{% endif %}>Platinum</option>
+                <option value="gold" {% if current_protondb_tier|default('') == 'gold' %}selected{% endif %}>Gold or higher</option>
+                <option value="silver" {% if current_protondb_tier|default('') == 'silver' %}selected{% endif %}>Silver or higher</option>
+                <option value="bronze" {% if current_protondb_tier|default('') == 'bronze' %}selected{% endif %}>Bronze or higher</option>
+            </select>
+        </div>
+
+        <!-- No IGDB Data -->
+        <div class="filter-section">
+            <div class="filter-section-title">IGDB Match</div>
+            <div class="toggle-switch {% if current_no_igdb %}active{% endif %}" id="toggle-no-igdb" onclick="toggleSwitch(this)">
+                <div class="toggle-track"><div class="toggle-thumb"></div></div>
+                <span class="toggle-label">Show only games without IGDB data</span>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="filter-panel-footer">
+        <div class="filter-panel-footer-left"></div>
+        <div class="filter-panel-footer-right">
+            <button class="filter-clear-btn" onclick="clearAllPanelFilters()">Clear All</button>
+            <button class="filter-apply-btn" onclick="applyPanelFilters()">Apply Filters</button>
+        </div>
+    </div>
 </div>

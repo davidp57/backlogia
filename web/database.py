@@ -29,6 +29,8 @@ def ensure_extra_columns():
         cursor.execute("ALTER TABLE games ADD COLUMN nsfw BOOLEAN DEFAULT 0")
     if "cover_url_override" not in columns:
         cursor.execute("ALTER TABLE games ADD COLUMN cover_url_override TEXT")
+    if "removed" not in columns:
+        cursor.execute("ALTER TABLE games ADD COLUMN removed BOOLEAN DEFAULT 0")
     conn.commit()
     conn.close()
 
