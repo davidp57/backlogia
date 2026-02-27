@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from ..dependencies import get_db
+from ..utils.filters import PLAYTIME_LABELS
 
 router = APIRouter(tags=["Metadata"])
 
@@ -48,6 +49,22 @@ class BulkGameIdsRequest(BaseModel):
 class BulkAddToCollectionRequest(BaseModel):
     game_ids: list[int]
     collection_id: int
+
+
+class BulkEditRequest(BaseModel):
+    """Request body for the bulk-edit endpoint.
+
+    Fields that the user did not interact with should not be sent (or sent as
+    ``None``).  Set the companion ``update_*`` flag to ``True`` to actually
+    write the value to the database (this lets the caller distinguish "not
+    touched" from "explicitly cleared").
+    """
+
+    game_ids: list[int]
+    genres_override: Optional[list[str]] = None
+    update_genres_override: bool = False
+    playtime_label: Optional[str] = None
+    update_playtime_label: bool = False
 
 
 @router.post("/api/game/{game_id}/igdb")
@@ -435,6 +452,53 @@ def recalculate_average_ratings(conn: sqlite3.Connection = Depends(get_db)):
 
     conn.commit()
     return {"success": True, "updated": updated, "message": f"Recalculated average ratings for {updated} games"}
+
+
+@router.post("/api/games/bulk/edit")
+def bulk_edit_games(body: BulkEditRequest, conn: sqlite3.Connection = Depends(get_db)):
+    """Edit metadata overrides for one or more games.
+
+    Only fields whose companion ``update_*`` flag is ``True`` are written.
+    Passing ``None`` with the flag set to ``True`` clears the stored value.
+    """
+    game_ids = body.game_ids
+    if not game_ids:
+        raise HTTPException(status_code=400, detail="No games selected")
+
+    # Validate playtime_label when provided
+    if body.update_playtime_label and body.playtime_label is not None:
+        if body.playtime_label not in PLAYTIME_LABELS:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Invalid playtime_label. Must be one of: {', '.join(sorted(PLAYTIME_LABELS))}",
+            )
+
+    if not body.update_genres_override and not body.update_playtime_label:
+        raise HTTPException(status_code=400, detail="Nothing to update")
+
+    cursor = conn.cursor()
+    placeholders = ",".join("?" * len(game_ids))
+    set_clauses: list[str] = []
+    params: list = []
+
+    if body.update_genres_override:
+        genres_json = json.dumps(body.genres_override) if body.genres_override is not None else None
+        set_clauses.append("genres_override = ?")
+        params.append(genres_json)
+
+    if body.update_playtime_label:
+        set_clauses.append("playtime_label = ?")
+        params.append(body.playtime_label)
+
+    params.extend(game_ids)
+    cursor.execute(
+        f"UPDATE games SET {', '.join(set_clauses)} WHERE id IN ({placeholders})",
+        params,
+    )
+    updated = cursor.rowcount
+    conn.commit()
+
+    return {"success": True, "updated": updated}
 
 
 @router.post("/api/games/bulk/hide")

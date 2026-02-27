@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from ..dependencies import get_db
-from ..utils.filters import EXCLUDE_HIDDEN_FILTER, EXCLUDE_DUPLICATES_FILTER
+from ..utils.filters import EXCLUDE_HIDDEN_FILTER, EXCLUDE_DUPLICATES_FILTER, PLAYTIME_LABELS
 from ..utils.helpers import parse_json_field, get_store_url, group_games_by_igdb
 
 router = APIRouter()
@@ -36,6 +36,7 @@ def library(
     collection: int = 0,
     protondb_tier: str = "",
     no_igdb: bool = False,
+    playtime_label: list[str] = Query(default=[]),
     conn: sqlite3.Connection = Depends(get_db)
 ):
     """Library page - list all games."""
@@ -51,12 +52,10 @@ def library(
         params.extend(stores)
 
     if genres:
-        # Filter by genres (JSON array stored in genres column)
-        # Use LIKE with JSON pattern matching for each genre
+        # Filter by genres, preferring genres_override if set
         genre_conditions = []
         for genre in genres:
-            # Match genre in JSON array (case-insensitive)
-            genre_conditions.append("LOWER(genres) LIKE ?")
+            genre_conditions.append("LOWER(COALESCE(genres_override, genres)) LIKE ?")
             params.append(f'%"{genre.lower()}"%')
         query += " AND (" + " OR ".join(genre_conditions) + ")"
 
@@ -82,6 +81,36 @@ def library(
     if no_igdb:
         query += " AND (igdb_id IS NULL OR igdb_id = 0)"
 
+    # Playtime label filter – supports multiple values; unplayed/tried/played
+    # also match games with no explicit label using playtime_hours ranges.
+    active_labels = [l for l in playtime_label if l in PLAYTIME_LABELS]
+    if active_labels:
+        label_conditions: list[str] = []
+        for lbl in active_labels:
+            if lbl == "unplayed":
+                label_conditions.append(
+                    "(playtime_label = 'unplayed' OR "
+                    "(playtime_label IS NULL AND (playtime_hours IS NULL OR playtime_hours = 0)))"
+                )
+            elif lbl == "tried":
+                label_conditions.append(
+                    "(playtime_label = 'tried' OR "
+                    "(playtime_label IS NULL AND playtime_hours > 0 AND playtime_hours <= 2))"
+                )
+            elif lbl == "played":
+                label_conditions.append(
+                    "(playtime_label = 'played' OR "
+                    "(playtime_label IS NULL AND playtime_hours > 2 AND playtime_hours <= 20))"
+                )
+            elif lbl == "heavily_played":
+                label_conditions.append(
+                    "(playtime_label = 'heavily_played' OR "
+                    "(playtime_label IS NULL AND playtime_hours > 20))"
+                )
+            else:  # abandoned – explicit label only
+                label_conditions.append(f"playtime_label = '{lbl}'")
+        query += " AND (" + " OR ".join(label_conditions) + ")"
+
     # Sorting - detect which columns actually exist in the DB
     cursor.execute("PRAGMA table_info(games)")
     existing_columns = {row[1] for row in cursor.fetchall()}
@@ -91,7 +120,21 @@ def library(
         sort = "name"
     if sort in available_sorts:
         order_dir = "DESC" if order == "desc" else "ASC"
-        if sort in ["playtime_hours", "critics_score", "total_rating", "igdb_rating", "aggregated_rating", "average_rating", "metacritic_score", "metacritic_user_score"]:
+        if sort == "playtime_hours":
+            # Respect manual playtime_label when playtime_hours is NULL:
+            # COALESCE tries hours first, then falls back to a sentinel derived from the label.
+            query += f""" ORDER BY COALESCE(
+                playtime_hours,
+                CASE playtime_label
+                    WHEN 'heavily_played' THEN 1000
+                    WHEN 'abandoned'      THEN 50
+                    WHEN 'played'         THEN 11
+                    WHEN 'tried'          THEN 1
+                    WHEN 'unplayed'       THEN 0
+                    ELSE NULL
+                END
+            ) {order_dir} NULLS LAST"""
+        elif sort in ["critics_score", "total_rating", "igdb_rating", "aggregated_rating", "average_rating", "metacritic_score", "metacritic_user_score"]:
             query += f" ORDER BY {sort} {order_dir} NULLS LAST"
         else:
             query += f" ORDER BY {sort} COLLATE NOCASE {order_dir}"
@@ -109,18 +152,35 @@ def library(
     # Sort grouped games by primary game's sort field
     # Separate games with null sort values so nulls are always last
     reverse = order == "desc"
+
+    _PLAYTIME_LABEL_SENTINEL = {
+        "heavily_played": 1000,
+        "abandoned": 50,
+        "played": 11,
+        "tried": 1,
+        "unplayed": 0,
+    }
+
+    def effective_sort_value(game: dict, field: str):
+        """Return the value used for sorting, applying label-based fallback for playtime_hours."""
+        val = game.get(field)
+        if field == "playtime_hours" and val is None:
+            label = game.get("playtime_label")
+            val = _PLAYTIME_LABEL_SENTINEL.get(label)  # None if no label
+        return val
+
     with_values = []
     without_values = []
 
     for g in grouped_games:
-        val = g["primary"].get(sort)
+        val = effective_sort_value(g["primary"], sort)
         if val is None:
             without_values.append(g)
         else:
             with_values.append(g)
 
     def get_sort_key(g):
-        val = g["primary"].get(sort)
+        val = effective_sort_value(g["primary"], sort)
         if isinstance(val, str):
             return val.lower()
         return val
@@ -156,8 +216,8 @@ def library(
     """)
     collections = [{"id": row[0], "name": row[1], "game_count": row[2]} for row in cursor.fetchall()]
 
-    # Get all unique genres with counts
-    cursor.execute("SELECT genres FROM games WHERE genres IS NOT NULL AND genres != '[]'" + EXCLUDE_HIDDEN_FILTER)
+    # Get all unique genres with counts, preferring genres_override if set
+    cursor.execute("SELECT COALESCE(genres_override, genres) FROM games WHERE COALESCE(genres_override, genres) IS NOT NULL AND COALESCE(genres_override, genres) != '[]'" + EXCLUDE_HIDDEN_FILTER)
     genre_rows = cursor.fetchall()
     genre_counts = {}
     for row in genre_rows:
@@ -191,6 +251,7 @@ def library(
             "current_collection": collection,
             "current_protondb_tier": protondb_tier,
             "current_no_igdb": no_igdb,
+            "current_playtime_labels": playtime_label,
             "collections": collections,
             "available_sorts": available_sorts,
             "parse_json": parse_json_field
