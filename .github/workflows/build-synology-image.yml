@@ -1,0 +1,33 @@
+name: Build Docker Image for Synology
+
+on:
+  push:
+    branches: [deploy-synology]
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: docker build -t backlogia:latest .
+
+      - name: Export image to TAR
+        run: docker save backlogia:latest -o backlogia.tar
+
+      - name: Compress TAR file
+        run: gzip backlogia.tar
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backlogia-docker-image
+          path: backlogia.tar.gz
+          retention-days: 30
+          compression-level: 0  # Already compressed with gzip
